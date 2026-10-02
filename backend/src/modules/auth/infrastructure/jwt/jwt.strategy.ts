@@ -1,0 +1,1 @@
+// Estrategia Passport para validar el JWT y cargar el usuario en la request.

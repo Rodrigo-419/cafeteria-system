@@ -1,0 +1,1 @@
+// Script de seed con los datos iniciales (roles, permisos y admin).

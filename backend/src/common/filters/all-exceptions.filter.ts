@@ -1,0 +1,1 @@
+// Filtro global que normaliza las excepciones y la respuesta de error.

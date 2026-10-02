@@ -1,0 +1,1 @@
+// Guard que verifica los permisos requeridos por rol sobre la ruta.

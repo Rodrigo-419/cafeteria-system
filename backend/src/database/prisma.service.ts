@@ -1,0 +1,1 @@
+// Servicio que extiende PrismaClient y expone la conexion a la base de datos.

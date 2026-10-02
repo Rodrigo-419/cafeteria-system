@@ -1,0 +1,1 @@
+// Guard que valida el token JWT en las rutas protegidas.

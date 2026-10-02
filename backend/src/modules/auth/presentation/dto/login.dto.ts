@@ -1,0 +1,1 @@
+// DTO con las credenciales (email y password) del endpoint de login.

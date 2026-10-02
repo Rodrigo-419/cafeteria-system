@@ -1,0 +1,1 @@
+// Regla de dominio con la politica de contrasenas (longitud y complejidad).

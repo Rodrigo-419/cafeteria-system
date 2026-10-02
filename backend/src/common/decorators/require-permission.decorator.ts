@@ -1,0 +1,1 @@
+// Decorador que declara el permiso requerido por un handler o controller.
