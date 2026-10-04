@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Permisos minimos: el workflow solo necesita leer el repositorio.
+permissions:
+  contents: read
+
+# Cancela la ejecucion anterior de la misma rama cuando llega una nueva.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # src/generated/ esta en .gitignore, asi que el cliente se genera en CI.
+      # prisma.config.ts lee DATABASE_URL de process.env y en CI no hay .env,
+      # por eso se pasa una URL ficticia: `generate` no abre conexion a la DB.
+      - name: Generar cliente de Prisma
+        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
