@@ -1,7 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Schema generado desde docs/database/modelo.dbml
+// Convenciones: modelos en PascalCase singular con @@map, campos en camelCase
+// con @map, IDs uuid, timestamps created_at/updated_at y enums tipados.
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +9,597 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ==================== Organizacion ====================
+
+model Sucursal {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  nombre    String   @unique
+  direccion String
+  telefono  String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  usuarios             Usuario[]
+  empleados            Empleado[]
+  turnos               Turno[]
+  registrosAsistencia  RegistroAsistencia[]
+  productosSucursalVar ProductoSucursalVariante[]
+  insumosSucursal      InsumoSucursal[]
+  recuentosInventario  RecuentoInventario[]
+  ventas               Venta[]
+  equipos              Equipo[]
+
+  @@map("sucursal")
+}
+
+// ==================== Seguridad ====================
+
+model Rol {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  nombre    String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  usuarios     Usuario[]
+  rolesPermiso RolPermiso[]
+
+  @@map("rol")
+}
+
+model Permiso {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  codigo      String   @unique
+  descripcion String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolesPermiso      RolPermiso[]
+  usuariosPermiso   UsuarioPermiso[]
+  historialPermisos HistorialPermisos[]
+
+  @@map("permiso")
+}
+
+model RolPermiso {
+  rolId     String   @map("rol_id") @db.Uuid
+  permisoId String   @map("permiso_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  rol     Rol     @relation(fields: [rolId], references: [id], onDelete: Restrict)
+  permiso Permiso @relation(fields: [permisoId], references: [id], onDelete: Restrict)
+
+  @@id([rolId, permisoId])
+  @@index([permisoId])
+  @@map("rol_permiso")
+}
+
+model Usuario {
+  id           String        @id @default(uuid(7)) @db.Uuid
+  nombre       String
+  email        String        @unique
+  passwordHash String        @map("password_hash")
+  rolId        String        @map("rol_id") @db.Uuid
+  /// NULLABLE — el Admin es central, no pertenece a una sucursal
+  sucursalId   String?       @map("sucursal_id") @db.Uuid
+  /// activo, bloqueado
+  estado       UsuarioEstado @default(activo)
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  rol                    Rol                    @relation(fields: [rolId], references: [id], onDelete: Restrict)
+  sucursal               Sucursal?              @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  permisos               UsuarioPermiso[]
+  historialAfectado      HistorialPermisos[]    @relation("HistorialPermisosAfectado")
+  historialEjecutado     HistorialPermisos[]    @relation("HistorialPermisosEjecutor")
+  empleados              Empleado[]
+  movimientosInventario  MovimientoInventario[]
+  recuentosInventario    RecuentoInventario[]
+  ventas                 Venta[]                @relation("VentaVendedor")
+  ventasAnuladas         Venta[]                @relation("VentaAnulador")
+  correccionesAsistencia RegistroAsistencia[]   @relation("RegistroAsistenciaCorrector")
+  historialEquipos       HistorialEquipo[]
+
+  @@index([rolId])
+  @@index([sucursalId])
+  @@map("usuario")
+}
+
+model UsuarioPermiso {
+  id        String             @id @default(uuid(7)) @db.Uuid
+  usuarioId String             @map("usuario_id") @db.Uuid
+  permisoId String             @map("permiso_id") @db.Uuid
+  /// concedido, revocado
+  tipo      UsuarioPermisoTipo
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  permiso Permiso @relation(fields: [permisoId], references: [id], onDelete: Restrict)
+
+  @@unique([usuarioId, permisoId])
+  @@index([permisoId])
+  @@map("usuario_permiso")
+}
+
+model HistorialPermisos {
+  id                String                  @id @default(uuid(7)) @db.Uuid
+  usuarioAfectadoId String                  @map("usuario_afectado_id") @db.Uuid
+  permisoId         String                  @map("permiso_id") @db.Uuid
+  /// asignado, revocado
+  accion            HistorialPermisosAccion
+  usuarioEjecutorId String                  @map("usuario_ejecutor_id") @db.Uuid
+  valorAnterior     String?                 @map("valor_anterior")
+  createdAt         DateTime                @default(now()) @map("created_at")
+
+  usuarioAfectado Usuario @relation("HistorialPermisosAfectado", fields: [usuarioAfectadoId], references: [id], onDelete: Restrict)
+  usuarioEjecutor Usuario @relation("HistorialPermisosEjecutor", fields: [usuarioEjecutorId], references: [id], onDelete: Restrict)
+  permiso         Permiso @relation(fields: [permisoId], references: [id], onDelete: Restrict)
+
+  @@index([usuarioAfectadoId])
+  @@index([permisoId])
+  @@index([usuarioEjecutorId])
+  @@index([usuarioAfectadoId, createdAt])
+  @@map("historial_permisos")
+}
+
+// ==================== Personal ====================
+
+model Empleado {
+  id                String         @id @default(uuid(7)) @db.Uuid
+  usuarioId         String         @unique @map("usuario_id") @db.Uuid
+  cargo             String
+  sucursalId        String         @map("sucursal_id") @db.Uuid
+  fechaContratacion DateTime       @map("fecha_contratacion") @db.Date
+  fechaCese         DateTime?      @map("fecha_cese") @db.Date
+  /// activo, inactivo
+  estado            EmpleadoEstado @default(activo)
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  usuario             Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  sucursal            Sucursal             @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  asignacionesTurno   AsignacionTurno[]
+  registrosAsistencia RegistroAsistencia[]
+
+  @@index([sucursalId])
+  @@map("empleado")
+}
+
+model Turno {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  sucursalId String    @map("sucursal_id") @db.Uuid
+  /// fijo, variable
+  tipo       TurnoTipo
+  horaInicio DateTime  @map("hora_inicio") @db.Time
+  horaFin    DateTime  @map("hora_fin") @db.Time
+  diasSemana String?   @map("dias_semana")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  sucursal          Sucursal          @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  asignacionesTurno AsignacionTurno[]
+
+  @@index([sucursalId])
+  @@map("turno")
+}
+
+model AsignacionTurno {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  empleadoId  String    @map("empleado_id") @db.Uuid
+  turnoId     String    @map("turno_id") @db.Uuid
+  fechaInicio DateTime  @map("fecha_inicio") @db.Date
+  fechaFin    DateTime? @map("fecha_fin") @db.Date
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+  turno    Turno    @relation(fields: [turnoId], references: [id], onDelete: Restrict)
+
+  @@index([empleadoId])
+  @@index([turnoId])
+  @@map("asignacion_turno")
+}
+
+model RegistroAsistencia {
+  id                 String                 @id @default(uuid(7)) @db.Uuid
+  empleadoId         String                 @map("empleado_id") @db.Uuid
+  sucursalId         String                 @map("sucursal_id") @db.Uuid
+  /// entrada, salida
+  tipo               RegistroAsistenciaTipo
+  fechaHora          DateTime               @map("fecha_hora")
+  metodo             String
+  esCorreccion       Boolean                @default(false) @map("es_correccion")
+  registroOriginalId String?                @map("registro_original_id") @db.Uuid
+  motivo             String?
+  usuarioCorrectorId String?                @map("usuario_corrector_id") @db.Uuid
+  /// Tabla inmutable — solo INSERT, nunca UPDATE ni DELETE
+  createdAt          DateTime               @default(now()) @map("created_at")
+
+  empleado         Empleado             @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+  sucursal         Sucursal             @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  usuarioCorrector Usuario?             @relation("RegistroAsistenciaCorrector", fields: [usuarioCorrectorId], references: [id], onDelete: Restrict)
+  registroOriginal RegistroAsistencia?  @relation("RegistroAsistenciaCorreccion", fields: [registroOriginalId], references: [id], onDelete: Restrict)
+  correcciones     RegistroAsistencia[] @relation("RegistroAsistenciaCorreccion")
+
+  @@index([empleadoId])
+  @@index([sucursalId])
+  @@index([registroOriginalId])
+  @@index([usuarioCorrectorId])
+  @@index([empleadoId, fechaHora])
+  @@map("registro_asistencia")
+}
+
+// ==================== Catalogo ====================
+
+model CategoriaProducto {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  nombre    String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  productos Producto[]
+
+  @@map("categoria_producto")
+}
+
+model Producto {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  nombre      String
+  categoriaId String   @map("categoria_id") @db.Uuid
+  descripcion String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  categoria            CategoriaProducto          @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  productosSucursalVar ProductoSucursalVariante[]
+
+  @@index([categoriaId])
+  @@map("producto")
+}
+
+model Variante {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  /// La variante "Única" es un registro base del sistema utilizado para productos que no manejan tamaños.
+  nombre    String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  productosSucursalVar ProductoSucursalVariante[]
+
+  @@map("variante")
+}
+
+model ProductoSucursalVariante {
+  id         String                         @id @default(uuid(7)) @db.Uuid
+  productoId String                         @map("producto_id") @db.Uuid
+  sucursalId String                         @map("sucursal_id") @db.Uuid
+  varianteId String                         @map("variante_id") @db.Uuid
+  precio     Decimal                        @db.Decimal(10, 2)
+  /// activo, inactivo
+  estado     ProductoSucursalVarianteEstado @default(activo)
+  createdAt  DateTime                       @default(now()) @map("created_at")
+  updatedAt  DateTime                       @updatedAt @map("updated_at")
+
+  producto     Producto       @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  sucursal     Sucursal       @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  variante     Variante       @relation(fields: [varianteId], references: [id], onDelete: Restrict)
+  ventaDetalle VentaDetalle[]
+
+  @@unique([productoId, sucursalId, varianteId])
+  @@index([productoId])
+  @@index([sucursalId])
+  @@index([varianteId])
+  @@map("producto_sucursal_variante")
+}
+
+// ==================== Inventario ====================
+
+model Insumo {
+  id           String             @id @default(uuid(7)) @db.Uuid
+  nombre       String
+  /// paquete, bolsa, caja, unidad, paquete_varias_unidades
+  presentacion InsumoPresentacion
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  insumosSucursal InsumoSucursal[]
+
+  @@map("insumo")
+}
+
+model InsumoSucursal {
+  id          String               @id @default(uuid(7)) @db.Uuid
+  insumoId    String               @map("insumo_id") @db.Uuid
+  sucursalId  String               @map("sucursal_id") @db.Uuid
+  stockActual Decimal              @default(0) @map("stock_actual") @db.Decimal(12, 2)
+  stockMinimo Decimal              @default(0) @map("stock_minimo") @db.Decimal(12, 2)
+  /// activo, descontinuado
+  estado      InsumoSucursalEstado @default(activo)
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  insumo                Insumo                      @relation(fields: [insumoId], references: [id], onDelete: Restrict)
+  sucursal              Sucursal                    @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  movimientosInventario MovimientoInventario[]
+  recuentosDetalle      RecuentoInventarioDetalle[]
+  alertasStock          AlertaStock[]
+
+  @@unique([insumoId, sucursalId])
+  @@index([insumoId])
+  @@index([sucursalId])
+  @@map("insumo_sucursal")
+}
+
+model MovimientoInventario {
+  id               String                   @id @default(uuid(7)) @db.Uuid
+  insumoSucursalId String                   @map("insumo_sucursal_id") @db.Uuid
+  /// entrada, ajuste
+  tipo             MovimientoInventarioTipo
+  /// Representa la variación del stock (+/-), no el valor final
+  cantidad         Decimal                  @db.Decimal(12, 2)
+  usuarioId        String                   @map("usuario_id") @db.Uuid
+  motivo           String
+  createdAt        DateTime                 @default(now()) @map("created_at")
+
+  insumoSucursal InsumoSucursal @relation(fields: [insumoSucursalId], references: [id], onDelete: Restrict)
+  usuario        Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([insumoSucursalId])
+  @@index([usuarioId])
+  @@index([insumoSucursalId, createdAt])
+  @@map("movimiento_inventario")
+}
+
+model RecuentoInventario {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  sucursalId String   @map("sucursal_id") @db.Uuid
+  usuarioId  String   @map("usuario_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  sucursal Sucursal                    @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  usuario  Usuario                     @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  detalles RecuentoInventarioDetalle[]
+
+  @@index([sucursalId])
+  @@index([usuarioId])
+  @@map("recuento_inventario")
+}
+
+model RecuentoInventarioDetalle {
+  id               String   @id @default(uuid(7)) @db.Uuid
+  recuentoId       String   @map("recuento_id") @db.Uuid
+  insumoSucursalId String   @map("insumo_sucursal_id") @db.Uuid
+  stockSistema     Decimal  @map("stock_sistema") @db.Decimal(12, 2)
+  stockFisico      Decimal  @map("stock_fisico") @db.Decimal(12, 2)
+  diferencia       Decimal  @db.Decimal(12, 2)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  recuento       RecuentoInventario @relation(fields: [recuentoId], references: [id], onDelete: Restrict)
+  insumoSucursal InsumoSucursal     @relation(fields: [insumoSucursalId], references: [id], onDelete: Restrict)
+
+  @@index([recuentoId])
+  @@index([insumoSucursalId])
+  @@map("recuento_inventario_detalle")
+}
+
+model AlertaStock {
+  id               String            @id @default(uuid(7)) @db.Uuid
+  insumoSucursalId String            @map("insumo_sucursal_id") @db.Uuid
+  /// abierta, resuelta — se dispara cuando stock_actual <= stock_minimo
+  estado           AlertaStockEstado @default(abierta)
+  fechaResuelta    DateTime?         @map("fecha_resuelta")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  insumoSucursal InsumoSucursal @relation(fields: [insumoSucursalId], references: [id], onDelete: Restrict)
+
+  @@index([insumoSucursalId])
+  @@index([insumoSucursalId, estado])
+  @@map("alerta_stock")
+}
+
+// ==================== Ventas ====================
+
+model Venta {
+  id                String          @id @default(uuid(7)) @db.Uuid
+  sucursalId        String          @map("sucursal_id") @db.Uuid
+  usuarioId         String          @map("usuario_id") @db.Uuid
+  /// efectivo, tarjeta — solo registro, sin procesar pago real
+  metodoPago        VentaMetodoPago @map("metodo_pago")
+  /// completada, anulada — solo anulable el mismo día
+  estado            VentaEstado     @default(completada)
+  fechaAnulacion    DateTime?       @map("fecha_anulacion")
+  usuarioAnuladorId String?         @map("usuario_anulador_id") @db.Uuid
+  motivoAnulacion   String?         @map("motivo_anulacion")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  sucursal Sucursal       @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  vendedor Usuario        @relation("VentaVendedor", fields: [usuarioId], references: [id], onDelete: Restrict)
+  anulador Usuario?       @relation("VentaAnulador", fields: [usuarioAnuladorId], references: [id], onDelete: Restrict)
+  detalles VentaDetalle[]
+
+  @@index([sucursalId])
+  @@index([usuarioId])
+  @@index([usuarioAnuladorId])
+  @@index([sucursalId, createdAt])
+  @@map("venta")
+}
+
+model VentaDetalle {
+  id                         String   @id @default(uuid(7)) @db.Uuid
+  ventaId                    String   @map("venta_id") @db.Uuid
+  productoSucursalVarianteId String   @map("producto_sucursal_variante_id") @db.Uuid
+  cantidad                   Int
+  /// Precio congelado al momento de la venta
+  precioUnitarioSnapshot     Decimal  @map("precio_unitario_snapshot") @db.Decimal(10, 2)
+  subtotal                   Decimal  @db.Decimal(10, 2)
+  createdAt                  DateTime @default(now()) @map("created_at")
+
+  venta                    Venta                    @relation(fields: [ventaId], references: [id], onDelete: Restrict)
+  productoSucursalVariante ProductoSucursalVariante @relation(fields: [productoSucursalVarianteId], references: [id], onDelete: Restrict)
+
+  @@index([ventaId])
+  @@index([productoSucursalVarianteId])
+  @@map("venta_detalle")
+}
+
+// ==================== Equipamiento ====================
+
+model Equipo {
+  id            String       @id @default(uuid(7)) @db.Uuid
+  sucursalId    String       @map("sucursal_id") @db.Uuid
+  nombre        String
+  tipo          String
+  /// funcionando, dañado, en_mantenimiento, retirado
+  estado        EquipoEstado @default(funcionando)
+  observaciones String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  sucursal  Sucursal          @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
+  historial HistorialEquipo[]
+
+  @@index([sucursalId])
+  @@map("equipo")
+}
+
+model HistorialEquipo {
+  id                    String       @id @default(uuid(7)) @db.Uuid
+  equipoId              String       @map("equipo_id") @db.Uuid
+  estadoAnterior        EquipoEstado @map("estado_anterior")
+  estadoNuevo           EquipoEstado @map("estado_nuevo")
+  observacionesAnterior String?      @map("observaciones_anterior")
+  observacionesNuevas   String?      @map("observaciones_nuevas")
+  usuarioId             String       @map("usuario_id") @db.Uuid
+  createdAt             DateTime     @default(now()) @map("created_at")
+
+  equipo  Equipo  @relation(fields: [equipoId], references: [id], onDelete: Restrict)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([equipoId])
+  @@index([usuarioId])
+  @@index([equipoId, createdAt])
+  @@map("historial_equipo")
+}
+
+// ==================== Enums ====================
+
+/// activo, bloqueado
+enum UsuarioEstado {
+  activo
+  bloqueado
+
+  @@map("usuario_estado")
+}
+
+/// concedido, revocado
+enum UsuarioPermisoTipo {
+  concedido
+  revocado
+
+  @@map("usuario_permiso_tipo")
+}
+
+/// asignado, revocado
+enum HistorialPermisosAccion {
+  asignado
+  revocado
+
+  @@map("historial_permisos_accion")
+}
+
+/// activo, inactivo
+enum EmpleadoEstado {
+  activo
+  inactivo
+
+  @@map("empleado_estado")
+}
+
+/// fijo, variable
+enum TurnoTipo {
+  fijo
+  variable
+
+  @@map("turno_tipo")
+}
+
+/// entrada, salida
+enum RegistroAsistenciaTipo {
+  entrada
+  salida
+
+  @@map("registro_asistencia_tipo")
+}
+
+/// activo, inactivo
+enum ProductoSucursalVarianteEstado {
+  activo
+  inactivo
+
+  @@map("producto_sucursal_variante_estado")
+}
+
+/// paquete, bolsa, caja, unidad, paquete_varias_unidades
+enum InsumoPresentacion {
+  paquete
+  bolsa
+  caja
+  unidad
+  paquete_varias_unidades
+
+  @@map("insumo_presentacion")
+}
+
+/// activo, descontinuado
+enum InsumoSucursalEstado {
+  activo
+  descontinuado
+
+  @@map("insumo_sucursal_estado")
+}
+
+/// entrada, ajuste
+enum MovimientoInventarioTipo {
+  entrada
+  ajuste
+
+  @@map("movimiento_inventario_tipo")
+}
+
+/// abierta, resuelta — se dispara cuando stock_actual <= stock_minimo
+enum AlertaStockEstado {
+  abierta
+  resuelta
+
+  @@map("alerta_stock_estado")
+}
+
+/// efectivo, tarjeta — solo registro, sin procesar pago real
+enum VentaMetodoPago {
+  efectivo
+  tarjeta
+
+  @@map("venta_metodo_pago")
+}
+
+/// completada, anulada — solo anulable el mismo día
+enum VentaEstado {
+  completada
+  anulada
+
+  @@map("venta_estado")
+}
+
+/// funcionando, dañado, en_mantenimiento, retirado — compartido por equipo.estado,
+/// historial_equipo.estado_anterior e historial_equipo.estado_nuevo
+enum EquipoEstado {
+  funcionando
+  danado
+  en_mantenimiento
+  retirado
+
+  @@map("equipo_estado")
 }

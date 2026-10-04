@@ -1,0 +1,354 @@
+// Modelo de datos — Sistema de Gestión de Cadena de Cafeterías
+// Pegar este código en https://dbdiagram.io para visualizar el diagrama ER
+
+Table sucursal {
+  id uuid [pk]
+  nombre varchar
+  direccion varchar
+  telefono varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table rol {
+  id uuid [pk]
+  nombre varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table permiso {
+  id uuid [pk]
+  codigo varchar
+  descripcion varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table rol_permiso {
+  rol_id uuid
+  permiso_id uuid
+  created_at timestamp
+  Indexes {
+    (rol_id, permiso_id) [pk]
+  }
+}
+
+Table usuario {
+  id uuid [pk]
+  nombre varchar
+  email varchar [unique]
+  password_hash varchar
+  rol_id uuid
+  sucursal_id uuid [note: 'NULLABLE — el Admin es central, no pertenece a una sucursal']
+  estado varchar [note: 'activo, bloqueado']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table usuario_permiso {
+  id uuid [pk]
+  usuario_id uuid
+  permiso_id uuid
+  tipo varchar [note: 'concedido, revocado']
+  created_at timestamp
+  Indexes {
+    (usuario_id, permiso_id) [unique]
+  }
+}
+
+Table historial_permisos {
+  id uuid [pk]
+  usuario_afectado_id uuid
+  permiso_id uuid
+  accion varchar [note: 'asignado, revocado']
+  usuario_ejecutor_id uuid
+  valor_anterior varchar
+  created_at timestamp
+}
+
+Table empleado {
+  id uuid [pk]
+  usuario_id uuid [unique]
+  cargo varchar
+  sucursal_id uuid
+  fecha_contratacion date
+  fecha_cese date
+  estado varchar [note: 'activo, inactivo']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table turno {
+  id uuid [pk]
+  sucursal_id uuid
+  tipo varchar [note: 'fijo, variable']
+  hora_inicio time
+  hora_fin time
+  dias_semana varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table asignacion_turno {
+  id uuid [pk]
+  empleado_id uuid
+  turno_id uuid
+  fecha_inicio date
+  fecha_fin date
+  created_at timestamp
+}
+
+Table registro_asistencia {
+  id uuid [pk]
+  empleado_id uuid
+  sucursal_id uuid
+  tipo varchar [note: 'entrada, salida']
+  fecha_hora timestamp
+  metodo varchar
+  es_correccion boolean
+  registro_original_id uuid
+  motivo varchar
+  usuario_corrector_id uuid
+  created_at timestamp [note: 'Tabla inmutable — solo INSERT, nunca UPDATE ni DELETE']
+}
+
+Table categoria_producto {
+  id uuid [pk]
+  nombre varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table producto {
+  id uuid [pk]
+  nombre varchar
+  categoria_id uuid
+  descripcion varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table variante {
+  id uuid [pk]
+  nombre varchar [note: 'La variante "Única" es un registro base del sistema utilizado para productos que no manejan tamaños.']
+  created_at timestamp
+}
+
+Table producto_sucursal_variante {
+  id uuid [pk]
+  producto_id uuid
+  sucursal_id uuid
+  variante_id uuid
+  precio decimal
+  estado varchar [note: 'activo, inactivo']
+  created_at timestamp
+  updated_at timestamp
+  Indexes {
+    (producto_id, sucursal_id, variante_id) [unique]
+  }
+}
+
+Table insumo {
+  id uuid [pk]
+  nombre varchar
+  presentacion varchar [note: 'paquete, bolsa, caja, unidad, paquete_varias_unidades']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table insumo_sucursal {
+  id uuid [pk]
+  insumo_id uuid
+  sucursal_id uuid
+  stock_actual decimal
+  stock_minimo decimal
+  estado varchar [note: 'activo, descontinuado']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table movimiento_inventario {
+  id uuid [pk]
+  insumo_sucursal_id uuid
+  tipo varchar [note: 'entrada, ajuste']
+  cantidad decimal [note: 'Representa la variación del stock (+/-), no el valor final']
+  usuario_id uuid
+  motivo varchar
+  created_at timestamp
+}
+
+Table recuento_inventario {
+  id uuid [pk]
+  sucursal_id uuid
+  usuario_id uuid
+  created_at timestamp
+}
+
+Table recuento_inventario_detalle {
+  id uuid [pk]
+  recuento_id uuid
+  insumo_sucursal_id uuid
+  stock_sistema decimal
+  stock_fisico decimal
+  diferencia decimal
+  created_at timestamp
+}
+
+Table alerta_stock {
+  id uuid [pk]
+  insumo_sucursal_id uuid
+  estado varchar [note: 'abierta, resuelta — se dispara cuando stock_actual <= stock_minimo']
+  fecha_resuelta timestamp
+  created_at timestamp
+}
+
+Table venta {
+  id uuid [pk]
+  sucursal_id uuid
+  usuario_id uuid
+  metodo_pago varchar [note: 'efectivo, tarjeta — solo registro, sin procesar pago real']
+  estado varchar [note: 'completada, anulada — solo anulable el mismo día']
+  fecha_anulacion timestamp
+  usuario_anulador_id uuid
+  motivo_anulacion varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table venta_detalle {
+  id uuid [pk]
+  venta_id uuid
+  producto_sucursal_variante_id uuid
+  cantidad int
+  precio_unitario_snapshot decimal [note: 'Precio congelado al momento de la venta']
+  subtotal decimal
+  created_at timestamp
+}
+
+Table equipo {
+  id uuid [pk]
+  sucursal_id uuid
+  nombre varchar
+  tipo varchar
+  estado varchar [note: 'funcionando, dañado, en_mantenimiento, retirado']
+  observaciones varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table historial_equipo {
+  id uuid [pk]
+  equipo_id uuid
+  estado_anterior varchar
+  estado_nuevo varchar
+  observaciones_anterior varchar
+  observaciones_nuevas varchar
+  usuario_id uuid
+  created_at timestamp
+}
+
+// ==================== Relaciones ====================
+
+Ref: usuario.rol_id > rol.id
+Ref: usuario.sucursal_id > sucursal.id
+
+Ref: rol_permiso.rol_id > rol.id
+Ref: rol_permiso.permiso_id > permiso.id
+
+Ref: usuario_permiso.usuario_id > usuario.id
+Ref: usuario_permiso.permiso_id > permiso.id
+
+Ref: historial_permisos.usuario_afectado_id > usuario.id
+Ref: historial_permisos.usuario_ejecutor_id > usuario.id
+Ref: historial_permisos.permiso_id > permiso.id
+
+Ref: empleado.usuario_id > usuario.id
+Ref: empleado.sucursal_id > sucursal.id
+
+Ref: turno.sucursal_id > sucursal.id
+Ref: asignacion_turno.empleado_id > empleado.id
+Ref: asignacion_turno.turno_id > turno.id
+
+Ref: registro_asistencia.empleado_id > empleado.id
+Ref: registro_asistencia.sucursal_id > sucursal.id
+Ref: registro_asistencia.usuario_corrector_id > usuario.id
+Ref: registro_asistencia.registro_original_id > registro_asistencia.id
+
+Ref: producto.categoria_id > categoria_producto.id
+Ref: producto_sucursal_variante.producto_id > producto.id
+Ref: producto_sucursal_variante.sucursal_id > sucursal.id
+Ref: producto_sucursal_variante.variante_id > variante.id
+
+Ref: insumo_sucursal.insumo_id > insumo.id
+Ref: insumo_sucursal.sucursal_id > sucursal.id
+
+Ref: movimiento_inventario.insumo_sucursal_id > insumo_sucursal.id
+Ref: movimiento_inventario.usuario_id > usuario.id
+
+Ref: recuento_inventario.sucursal_id > sucursal.id
+Ref: recuento_inventario.usuario_id > usuario.id
+Ref: recuento_inventario_detalle.recuento_id > recuento_inventario.id
+Ref: recuento_inventario_detalle.insumo_sucursal_id > insumo_sucursal.id
+
+Ref: alerta_stock.insumo_sucursal_id > insumo_sucursal.id
+
+Ref: venta.sucursal_id > sucursal.id
+Ref: venta.usuario_id > usuario.id
+Ref: venta.usuario_anulador_id > usuario.id
+Ref: venta_detalle.venta_id > venta.id
+Ref: venta_detalle.producto_sucursal_variante_id > producto_sucursal_variante.id
+
+Ref: equipo.sucursal_id > sucursal.id
+Ref: historial_equipo.equipo_id > equipo.id
+Ref: historial_equipo.usuario_id > usuario.id
+
+// ==================== Grupos visuales por dominio ====================
+// Colorea las tablas por zona para que el diagrama se lea por bloques,
+// en vez de una fila desordenada de 25+ tablas.
+
+TableGroup organizacion {
+  sucursal
+  usuario
+}
+
+TableGroup seguridad {
+  rol
+  permiso
+  rol_permiso
+  usuario_permiso
+  historial_permisos
+}
+
+TableGroup personal {
+  empleado
+  turno
+  asignacion_turno
+  registro_asistencia
+}
+
+TableGroup catalogo {
+  categoria_producto
+  producto
+  variante
+  producto_sucursal_variante
+}
+
+TableGroup inventario {
+  insumo
+  insumo_sucursal
+  movimiento_inventario
+  recuento_inventario
+  recuento_inventario_detalle
+  alerta_stock
+}
+
+TableGroup ventas {
+  venta
+  venta_detalle
+}
+
+TableGroup equipamiento {
+  equipo
+  historial_equipo
+}
