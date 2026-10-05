@@ -4,6 +4,20 @@
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
-  }
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": "<rootDir>/../tsconfig.json",
+        "isolatedModules": false
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^(\\.{1,2}/.*)\\.js$": "$1"
+  },
+  "setupFiles": ["<rootDir>/entorno-pruebas.ts"],
+  "globalSetup": "<rootDir>/setup-e2e.ts",
+  "maxWorkers": 1,
+  "testTimeout": 60000,
+  "forceExit": true
 }

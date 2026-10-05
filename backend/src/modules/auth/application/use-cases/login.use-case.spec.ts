@@ -154,14 +154,14 @@ describe('LoginUseCase', () => {
 
     it('usa el MISMO mensaje para correo inexistente y contrasena erronea', async () => {
       authRepository.buscarUsuarioPorEmail.mockResolvedValue(null);
-      const errorCorretoInexistente = await useCase
+      const errorCorretoInexistente = (await useCase
         .ejecutar('nadie@cafeteria.test', 'cualquiera')
-        .catch((e: unknown) => e as Error);
+        .catch((e: unknown) => e)) as Error;
 
       authRepository.buscarUsuarioPorEmail.mockResolvedValue(usuarioActivo() as never);
-      const errorContrasenaErronea = await useCase
+      const errorContrasenaErronea = (await useCase
         .ejecutar('ana@cafeteria.test', 'contrasena-mala')
-        .catch((e: unknown) => e as Error);
+        .catch((e: unknown) => e)) as Error;
 
       expect(errorCorretoInexistente).toBeInstanceOf(UnauthorizedException);
       expect(errorContrasenaErronea).toBeInstanceOf(UnauthorizedException);
@@ -206,9 +206,9 @@ describe('LoginUseCase', () => {
         usuarioActivo({ estado: 'bloqueado' }) as never,
       );
 
-      const error = await useCase
+      const error = (await useCase
         .ejecutar('ana@cafeteria.test', PASSWORD)
-        .catch((e: unknown) => e as Error);
+        .catch((e: unknown) => e)) as Error;
 
       expect(error.message).toBe('Cuenta bloqueada');
     });

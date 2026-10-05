@@ -63,7 +63,10 @@ const PERMISOS: { codigo: string; descripcion: string; roles: NombreRol[] }[] = 
 
 type Db = Prisma.TransactionClient;
 
-type Contadores = Record<string, { creados: number; existentes: number }>;
+export type Contadores = Record<string, { creados: number; existentes: number }>;
+
+/** Credenciales del administrador inicial. Las pasa quien invoca el seed. */
+export type CredencialesAdmin = { email: string; password: string };
 
 function anotar(contadores: Contadores, entidad: string, estado: 'creado' | 'existente'): void {
   const actual = contadores[entidad] ?? { creados: 0, existentes: 0 };
@@ -273,18 +276,7 @@ async function ejecutar(): Promise<void> {
 
   try {
     const { email, password } = leerCredencialesAdmin();
-
-    const contadores = await prisma.$transaction<Contadores>(async (tx) => {
-      const resumen: Contadores = {};
-
-      await asegurarSucursales(tx, resumen);
-      await asegurarVariantes(tx, resumen);
-      const idsRol = await asegurarRoles(tx, resumen);
-      await asegurarPermisos(tx, resumen, idsRol);
-      await asegurarAdmin(tx, resumen, idDe(idsRol, NOMBRE_ROL_ADMIN, 'roles'), email, password);
-
-      return resumen;
-    });
+    const contadores = await ejecutarSeed(prisma, { email, password });
 
     imprimirResumen(contadores);
   } catch (error) {
@@ -296,4 +288,43 @@ async function ejecutar(): Promise<void> {
   }
 }
 
-void ejecutar();
+/**
+ * Nucleo del seed, reutilizable.
+ *
+ * Se exporta para que las pruebas end-to-end puedan sembrar la base de prueba
+ * pasando su propio cliente de Prisma y sus propias credenciales de
+ * administrador, sin depender de las variables de entorno ni de tener que
+ * duplicar la definicion de roles, permisos y sucursales.
+ *
+ * Es idempotente y NO imprime nada: la salida por consola es responsabilidad
+ * del comando de CLI, para que quien la use pueda decidir como informar.
+ */
+export async function ejecutarSeed(
+  prisma: PrismaClient,
+  credenciales: CredencialesAdmin,
+): Promise<Contadores> {
+  return prisma.$transaction<Contadores>(async (tx) => {
+    const resumen: Contadores = {};
+
+    await asegurarSucursales(tx, resumen);
+    await asegurarVariantes(tx, resumen);
+    const idsRol = await asegurarRoles(tx, resumen);
+    await asegurarPermisos(tx, resumen, idsRol);
+    await asegurarAdmin(
+      tx,
+      resumen,
+      idDe(idsRol, NOMBRE_ROL_ADMIN, 'roles'),
+      credenciales.email,
+      credenciales.password,
+    );
+
+    return resumen;
+  });
+}
+
+// Solo se ejecuta el seed cuando este archivo es el programa principal. Asi las
+// pruebas pueden importar `ejecutarSeed` sin que se dispare el seed como efecto
+// secundario al cargar el modulo.
+if (require.main === module) {
+  void ejecutar();
+}

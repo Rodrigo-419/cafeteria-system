@@ -8,6 +8,7 @@ import { appConfig } from './config/app.config';
 import { validate } from './config/env.config';
 import { PrismaModule } from './database/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 import { JwtAuthGuard } from './modules/auth/presentation/guards/jwt-auth.guard';
 import { PermissionsGuard } from './modules/auth/presentation/guards/permissions.guard';
 
@@ -27,6 +28,7 @@ import { PermissionsGuard } from './modules/auth/presentation/guards/permissions
     ]),
     PrismaModule,
     AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [
