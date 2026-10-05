@@ -10,6 +10,12 @@ export const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   PORT: z.coerce.number().int().positive().default(3000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  // Firma de los tokens de acceso. Los 32 caracteres son el minimo que exige
+  // HS256 para tener margen frente a fuerza bruta de la firma.
+  JWT_SECRET: z.string().min(32),
+  // Duracion de la validez del token. Acepta el formato de jsonwebtoken
+  // ("8h", "30m", "45s") o un numero de segundos.
+  JWT_EXPIRES_IN: z.string().min(1).default('8h'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -24,6 +30,10 @@ const DESCRIPCIONES: Record<string, string> = {
     'es obligatoria y debe ser una cadena de conexion no vacia (ej. postgresql://usuario:clave@localhost:5432/basedatos)',
   PORT: 'debe ser un numero entero mayor que 0 (por defecto 3000)',
   NODE_ENV: 'debe ser uno de: development, production, test (por defecto development)',
+  JWT_SECRET:
+    'es obligatoria y debe ser una cadena de al menos 32 caracteres usada para firmar los tokens de acceso',
+  JWT_EXPIRES_IN:
+    'debe ser una duracion como 8h, 30m, 45s o un numero de segundos (por defecto 8h)',
 };
 
 /**
