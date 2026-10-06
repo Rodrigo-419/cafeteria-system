@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { ProductsModule } from './modules/products/products.module';
+import { SalesModule } from './modules/sales/sales.module';
 import { UsersModule } from './modules/users/users.module';
 import { JwtAuthGuard } from './modules/auth/presentation/guards/jwt-auth.guard';
 import { PermissionsGuard } from './modules/auth/presentation/guards/permissions.guard';
@@ -35,6 +36,7 @@ import { PermissionsGuard } from './modules/auth/presentation/guards/permissions
     BranchesModule,
     ProductsModule,
     InventoryModule,
+    SalesModule,
   ],
   controllers: [AppController],
   providers: [
