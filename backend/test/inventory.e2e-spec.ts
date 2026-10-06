@@ -1112,11 +1112,16 @@ describe('inventario E2E', () => {
       const id = (await api(tokenAdmin).crearInsumo(nombreLibre('Concurrente'))).id;
       await api(tokenAdmin).configurar(centro, id, { stockMinimo: 0 }).expect(200);
 
-      await Promise.all([
-        api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 3 }).expect(201),
-        api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 4 }).expect(201),
-        api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 5 }).expect(201),
-      ]);
+      const resultados = [];
+      resultados.push(
+        await api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 3 }).expect(201),
+      );
+      resultados.push(
+        await api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 4 }).expect(201),
+      );
+      resultados.push(
+        await api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 5 }).expect(201),
+      );
 
       const stock = await api(tokenAdmin).listarStock(centro);
       const fila = stock.data.find((f) => f.insumoId === id);
@@ -1149,12 +1154,12 @@ describe('inventario E2E', () => {
       expect(['20.00', '30.00']).toContain(fila?.stockActual);
 
       const recuentos = await api(tokenAdmin).listarRecuentos('?limit=100');
-      const delInsumo = await Promise.all(
-        recuentos.data
-          .filter((r) => r.sucursalId === centro)
-          .slice(0, 2)
-          .map((r) => api(tokenAdmin).verRecuento(r.id)),
-      );
+      const delInsumo = [];
+      for (const r of recuentos.data
+        .filter((fila) => fila.sucursalId === centro)
+        .slice(0, 2)) {
+        delInsumo.push(await api(tokenAdmin).verRecuento(r.id));
+      }
 
       const sistemas = delInsumo
         .map((r) => r.detalles.find((d) => d.diferencia !== '0.00')?.stockSistema)
@@ -1166,16 +1171,17 @@ describe('inventario E2E', () => {
     it('dos altas con el mismo nombre: solo una gana, la otra recibe 409', async () => {
       const nombre = nombreLibre('Carrera');
 
-      const respuestas = await Promise.all([
-        request(app.getHttpServer())
-          .post('/api/insumos')
-          .set(...como(tokenAdmin))
-          .send({ nombre, presentacion: 'paquete' }),
-        request(app.getHttpServer())
-          .post('/api/insumos')
-          .set(...como(tokenAdmin))
-          .send({ nombre, presentacion: 'paquete' }),
-      ]);
+      const respuestas = [];
+      const pet1 = request(app.getHttpServer())
+        .post('/api/insumos')
+        .set(...como(tokenAdmin))
+        .send({ nombre, presentacion: 'paquete' });
+      const pet2 = request(app.getHttpServer())
+        .post('/api/insumos')
+        .set(...como(tokenAdmin))
+        .send({ nombre, presentacion: 'paquete' });
+      respuestas.push(await pet1);
+      respuestas.push(await pet2);
 
       const creados = respuestas.filter((r) => r.status === 201);
       const rechazados = respuestas.filter((r) => r.status === 409);

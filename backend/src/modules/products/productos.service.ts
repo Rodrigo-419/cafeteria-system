@@ -47,10 +47,12 @@ export class ProductosService {
         : {}),
     };
 
-    const [data, total] = await Promise.all([
-      this.productsRepository.listarProductos(filtrosNormalizados),
-      this.productsRepository.contarProductos(filtrosNormalizados),
-    ]);
+    const data = await this.productsRepository.listarProductos(
+      filtrosNormalizados,
+    );
+    const total = await this.productsRepository.contarProductos(
+      filtrosNormalizados,
+    );
 
     return {
       data,

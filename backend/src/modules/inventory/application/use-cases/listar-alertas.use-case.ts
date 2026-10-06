@@ -65,10 +65,8 @@ export class ListarAlertasUseCase {
       ...(estado !== undefined ? { estado } : {}),
     };
 
-    const [data, total] = await Promise.all([
-      this.inventoryRepository.listarAlertas(filtros),
-      this.inventoryRepository.contarAlertas(filtros),
-    ]);
+    const data = await this.inventoryRepository.listarAlertas(filtros);
+    const total = await this.inventoryRepository.contarAlertas(filtros);
 
     return pagina(data, total, entrada.page, entrada.limit);
   }

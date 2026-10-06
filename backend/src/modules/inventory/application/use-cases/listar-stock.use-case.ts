@@ -61,10 +61,8 @@ export class ListarStockUseCase {
         : {}),
     };
 
-    const [data, total] = await Promise.all([
-      this.inventoryRepository.listarStock(filtros),
-      this.inventoryRepository.contarStock(filtros),
-    ]);
+    const data = await this.inventoryRepository.listarStock(filtros);
+    const total = await this.inventoryRepository.contarStock(filtros);
 
     return pagina(data, total, entrada.page, entrada.limit);
   }

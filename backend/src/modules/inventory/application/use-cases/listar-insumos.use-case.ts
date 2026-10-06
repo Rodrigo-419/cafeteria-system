@@ -44,12 +44,9 @@ export class ListarInsumosUseCase {
       ...(presentacion !== undefined ? { presentacion } : {}),
     };
 
-    // Las dos consultas van en paralelo: son independientes y sin esto el
-    // listado tarda el doble.
-    const [data, total] = await Promise.all([
-      this.inventoryRepository.listarInsumos(filtros),
-      this.inventoryRepository.contarInsumos(filtros),
-    ]);
+    // Las dos consultas se lanzan una detras de otra, sin solaparlas.
+    const data = await this.inventoryRepository.listarInsumos(filtros);
+    const total = await this.inventoryRepository.contarInsumos(filtros);
 
     return pagina(data, total, entrada.page, entrada.limit);
   }

@@ -49,10 +49,8 @@ export class ListarRecuentosUseCase {
       ...(sucursalId !== undefined ? { sucursalId } : {}),
     };
 
-    const [data, total] = await Promise.all([
-      this.inventoryRepository.listarRecuentos(filtros),
-      this.inventoryRepository.contarRecuentos(filtros),
-    ]);
+    const data = await this.inventoryRepository.listarRecuentos(filtros);
+    const total = await this.inventoryRepository.contarRecuentos(filtros);
 
     return pagina(data, total, entrada.page, entrada.limit);
   }

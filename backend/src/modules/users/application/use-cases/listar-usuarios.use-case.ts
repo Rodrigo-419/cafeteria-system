@@ -52,10 +52,11 @@ export class ListarUsuariosUseCase {
 
     // El alcance del actor se combina con los filtros pedidos: nunca se
     // puede ampliar el alcance con un filtro.
-    const [data, total] = await Promise.all([
-      this.usersRepository.listar(filtrosNormalizados, alcance),
-      this.usersRepository.contar(filtrosNormalizados, alcance),
-    ]);
+    const data = await this.usersRepository.listar(
+      filtrosNormalizados,
+      alcance,
+    );
+    const total = await this.usersRepository.contar(filtrosNormalizados, alcance);
 
     return {
       data,

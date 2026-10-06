@@ -67,10 +67,8 @@ export class ListarMovimientosUseCase {
       ...(entrada.hasta !== undefined ? { hasta: entrada.hasta } : {}),
     };
 
-    const [data, total] = await Promise.all([
-      this.inventoryRepository.listarMovimientos(filtros),
-      this.inventoryRepository.contarMovimientos(filtros),
-    ]);
+    const data = await this.inventoryRepository.listarMovimientos(filtros);
+    const total = await this.inventoryRepository.contarMovimientos(filtros);
 
     return pagina(data, total, entrada.page, entrada.limit);
   }

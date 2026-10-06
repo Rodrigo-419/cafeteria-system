@@ -27,10 +27,10 @@ export class ListarPermisosUsuarioUseCase {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    const [individuales, porDefecto] = await Promise.all([
-      this.usersRepository.permisosIndividuales(id),
-      this.usersRepository.permisosPorDefectoDeRol(objetivo.rolId),
-    ]);
+    const individuales = await this.usersRepository.permisosIndividuales(id);
+    const porDefecto = await this.usersRepository.permisosPorDefectoDeRol(
+      objetivo.rolId,
+    );
 
     // Todos los permisos conocidos: los del rol mas los individuales.
     const todos = new Map<
