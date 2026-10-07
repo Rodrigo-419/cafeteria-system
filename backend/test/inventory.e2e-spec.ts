@@ -1112,16 +1112,11 @@ describe('inventario E2E', () => {
       const id = (await api(tokenAdmin).crearInsumo(nombreLibre('Concurrente'))).id;
       await api(tokenAdmin).configurar(centro, id, { stockMinimo: 0 }).expect(200);
 
-      const resultados = [];
-      resultados.push(
-        await api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 3 }).expect(201),
-      );
-      resultados.push(
-        await api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 4 }).expect(201),
-      );
-      resultados.push(
-        await api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 5 }).expect(201),
-      );
+      await Promise.all([
+        api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 3 }).expect(201),
+        api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 4 }).expect(201),
+        api(tokenAdmin).registrarEntrada(centro, id, { cantidad: 5 }).expect(201),
+      ]);
 
       const stock = await api(tokenAdmin).listarStock(centro);
       const fila = stock.data.find((f) => f.insumoId === id);
@@ -1171,7 +1166,6 @@ describe('inventario E2E', () => {
     it('dos altas con el mismo nombre: solo una gana, la otra recibe 409', async () => {
       const nombre = nombreLibre('Carrera');
 
-      const respuestas = [];
       const pet1 = request(app.getHttpServer())
         .post('/api/insumos')
         .set(...como(tokenAdmin))
@@ -1180,8 +1174,7 @@ describe('inventario E2E', () => {
         .post('/api/insumos')
         .set(...como(tokenAdmin))
         .send({ nombre, presentacion: 'paquete' });
-      respuestas.push(await pet1);
-      respuestas.push(await pet2);
+      const respuestas = await Promise.all([pet1, pet2]);
 
       const creados = respuestas.filter((r) => r.status === 201);
       const rechazados = respuestas.filter((r) => r.status === 409);

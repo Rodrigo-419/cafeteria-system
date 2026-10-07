@@ -51,8 +51,12 @@ class AlmacenamientoSinLimites implements ThrottlerStorage {
  * mediante `setupFiles`, antes de importar este modulo. Aqui solo queda
  * comprobar la invariante y montar la app.
  *
- * El servidor HTTP se levanta sin `listen`: supertest abre un puerto efimero
- * por peticion, que es lo que evita que las suites colisionen.
+ * El servidor HTTP se levanta una sola vez en el puerto 0 (un puerto efimero
+ * que asigna el sistema operativo y que solo conoce esta suite). supertest
+ * reutiliza ese servidor ya escuchando, asi que las peticiones simultaneas se
+ * concentran sobre la misma direccion y no se abre un puerto nuevo por
+ * peticion (eso podia fallar con ECONNREFUSED en los tests de concurrencia).
+ * Cada suite es responsable de cerrar la app en su `afterAll`.
  */
 export async function crearAppDePruebas(): Promise<INestApplication> {
   exigirBaseDePruebas(urlBaseDePruebas());
@@ -68,6 +72,7 @@ export async function crearAppDePruebas(): Promise<INestApplication> {
   configureApp(app);
 
   await app.init();
+  await app.listen(0);
 
   return app;
 }
