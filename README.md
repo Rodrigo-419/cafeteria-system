@@ -6,12 +6,12 @@ Monorepo con backend NestJS, frontend y documentación técnica.
 
 ## Estructura del repositorio
 
-| Ruta      | Contenido                                                        |
-| --------- | ---------------------------------------------------------------- |
-| `backend/` | API REST con NestJS, Prisma y PostgreSQL (módulos y pruebas).    |
-| `frontend/` | Aplicación cliente (por implementar; solo esqueleto del monorepo). |
-| `docs/`    | Documentación técnica del sistema.                               |
-| `docker-compose.yml` | Base de datos PostgreSQL para desarrollo.              |
+| Ruta                | Contenido                                                      |
+| ------------------- | -------------------------------------------------------------- |
+| `backend/`          | API REST con NestJS, Prisma y PostgreSQL (módulos y pruebas).  |
+| `frontend/`         | Aplicación cliente (por implementar; solo esqueleto del monorepo). |
+| `docs/`             | Documentación técnica del sistema.                             |
+| `docker-compose.yml`| Base de datos PostgreSQL para desarrollo.                      |
 
 ## Requisitos
 
@@ -21,26 +21,48 @@ Monorepo con backend NestJS, frontend y documentación técnica.
 ## Documentación
 
 El índice completo de la documentación técnica está en [docs/README.md](docs/README.md).
-Incluye guías de inicio y pruebas, la visión general de la arquitectura, el modelo
-de seguridad y permisos, el modelo de datos y la referencia de la API.
+Incluye la guía de inicio, la visión general de la arquitectura, la seguridad y
+permisos, el modelo de datos, la referencia de la API, las decisiones de diseño
+y la estrategia de pruebas.
 
 Documentos destacados:
 
+- [Guía de inicio](docs/guia-de-inicio.md)
 - [Visión general de la arquitectura](docs/architecture/vision-general.md)
-- [Seguridad y permisos](docs/architecture/seguridad-y-permisos.md)
-- [Modelo de datos](docs/database/modelo-de-datos.md)
-- [Referencia de la API](docs/api/referencia-api.md)
+- [Seguridad y permisos](docs/seguridad-y-permisos.md)
+- [Modelo de datos](docs/modelo-de-datos.md)
+- [Referencia de la API](docs/referencia-api.md)
 - [Decisiones de diseño](docs/architecture/decisiones-de-diseno.md)
+- [Estrategia de pruebas](docs/estrategia-de-pruebas.md)
+
+## Estado por módulo
+
+| Módulo       | Estado      | Descripción |
+| ------------ | ----------- | ----------- |
+| `auth`       | Implementado | Login JWT (8 h), límite de 5 intentos/min/IP y perfil propio. |
+| `users`      | Implementado | Usuarios, roles, alcance por sucursal y permisos individuales con historial. |
+| `branches`   | Implementado | Sucursales: crear, editar y consultar con visibilidad por rol. |
+| `products`   | Implementado | Catálogo global (categorías, variantes, productos) y precios por sucursal. |
+| `inventory`  | Implementado | Insumos, stock, entradas, recuentos, movimientos y alertas automáticas. |
+| `sales`      | Implementado | Registro (precios congelados), consulta y anulación del mismo día. |
+| `equipment`  | Implementado | Equipos por sucursal con historial de estado y observaciones. |
+| `employees`  | Esqueleto   | Archivos base sin lógica (pendiente). |
+| `shifts`     | Esqueleto   | Archivos base sin lógica (pendiente). |
+| `attendance` | Esqueleto   | Sin lógica; la tabla `registro_asistencia` ya existe y es inmutable. |
+| `reports`    | Esqueleto   | Archivos base sin lógica (pendiente). |
+
+Módulos esqueleto: tienen archivos base y permisos ya sembrados, pero **sin rutas
+ni lógica**. Sus reglas de negocio están por definir (ver [Decisiones de diseño](docs/architecture/decisiones-de-diseno.md#11-pendiente-de-implementar)).
 
 ## Puesta en marcha
 
 La guía paso a paso (base de datos, variables de entorno, migraciones, seed y
-servidor de desarrollo) está en [docs/guides/guia-de-inicio.md](docs/guides/guia-de-inicio.md).
+servidor de desarrollo) está en [docs/guia-de-inicio.md](docs/guia-de-inicio.md).
 
 ## API
 
 - Base de la API: `http://localhost:3000/api` (el prefijo `/api` lo define
-  `app.setup.ts`).
+  `backend/src/app.setup.ts`).
 - Documentación interactiva (Swagger): `http://localhost:3000/api/docs` cuando el
   entorno de ejecución no es `production`.
 - Autenticación: `POST /api/auth/login` devuelve un token JWT que debe enviarse en
@@ -48,7 +70,8 @@ servidor de desarrollo) está en [docs/guides/guia-de-inicio.md](docs/guides/gui
 
 ## Pruebas
 
-La estrategia y el detalle de las suites están en [docs/guides/pruebas.md](docs/guides/pruebas.md).
+La estrategia, las cifras actuales y el detalle de las suites están en
+[docs/estrategia-de-pruebas.md](docs/estrategia-de-pruebas.md).
 
 ### Unitarias
 
@@ -71,7 +94,7 @@ npm run test:e2e
 La configuración vive en `backend/test/jest-e2e.json` y:
 
 - corre en serie (`--runInBand`) porque las pruebas comparten una única base de datos;
-- fija `DATABASE_URL` y el secreto JWT en `test/entorno-pruebas.ts` como `setupFiles`, antes de que se importe `AppModule`, porque `ConfigModule.forRoot()` lee el entorno en el momento de la importación;
+- fija `DATABASE_URL` y el secreto JWT en `backend/test/entorno-pruebas.ts` como `setupFiles`, antes de que se importe `AppModule`, porque `ConfigModule.forRoot()` lee el entorno en el momento de la importación;
 - redirige los imports del cliente Prisma generado a su `.ts`, ya que Node no resuelve el `.js` que aparece en el código generado.
 
 #### Base de datos de pruebas

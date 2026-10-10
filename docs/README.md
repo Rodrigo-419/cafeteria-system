@@ -6,29 +6,30 @@ de documentos.
 
 ## Índice
 
-| Documento | Descripción |
-| --------- | ----------- |
-| [Guía de inicio](guides/guia-de-inicio.md) | Requisitos, base de datos, variables de entorno, migraciones, seed y servidor de desarrollo. |
-| [Visión general de la arquitectura](architecture/vision-general.md) | Capas del backend, mapa de módulos y recorrido de una petición autenticada. |
-| [Seguridad y permisos](architecture/seguridad-y-permisos.md) | Autenticación, roles, tabla de permisos sembrados y reglas de alcance por módulo. |
-| [Modelo de datos](database/modelo-de-datos.md) | Entidades por dominio, enums, precisiones y reglas de integridad en la base. |
-| [Referencia de la API](api/referencia-api.md) | Todas las rutas, su permiso, su alcance y los códigos de respuesta más comunes. |
-| [Decisiones de diseño](architecture/decisiones-de-diseno.md) | Documento vivo con las decisiones, sus alternativas, consecuencias y discrepancias conocidas. |
-| [Guía de pruebas](guides/pruebas.md) | Estrategia de pruebas, cómo ejecutarlas y qué cubre cada suite. |
-| [Modelo de datos (DBML)](database/modelo.dbml) | Esquema fuente en lenguaje DBML, del que se genera `backend/prisma/schema.prisma`. |
+| Documento | Ruta | Descripción |
+| --------- | ---- | ----------- |
+| [Guía de inicio](guia-de-inicio.md) | `docs/guia-de-inicio.md` | Requisitos, base de datos, variables de entorno, migraciones, seed y servidor de desarrollo. |
+| [Visión general de la arquitectura](architecture/vision-general.md) | `docs/architecture/vision-general.md` | Capas del backend, mapa de módulos y recorrido de una petición autenticada. |
+| [Seguridad y permisos](seguridad-y-permisos.md) | `docs/seguridad-y-permisos.md` | Autenticación, roles, tabla de permisos sembrados y reglas de alcance por módulo. |
+| [Modelo de datos](modelo-de-datos.md) | `docs/modelo-de-datos.md` | Entidades por dominio, enums, precisiones y reglas de integridad en la base. |
+| [Referencia de la API](referencia-api.md) | `docs/referencia-api.md` | Todas las rutas, su permiso, su alcance y los códigos de respuesta más comunes. |
+| [Decisiones de diseño](architecture/decisiones-de-diseno.md) | `docs/architecture/decisiones-de-diseno.md` | Documento vivo con las reglas de negocio por módulo (tablas), supuestos a confirmar y pendientes. |
+| [Estrategia de pruebas](estrategia-de-pruebas.md) | `docs/estrategia-de-pruebas.md` | Estrategia de pruebas, cifras actuales, cómo ejecutarlas y qué cubre cada suite. |
+| [Modelo de datos (DBML)](database/modelo.dbml) | `docs/database/modelo.dbml` | Esquema fuente en lenguaje DBML, del que se genera `backend/prisma/schema.prisma`. |
 
 ## Cómo leer la documentación
 
 - **Por rol de lector**: quien quiera levantar el proyecto en local empieza por la
-  [guía de inicio](guides/guia-de-inicio.md); quien quiera entender cómo funciona
-  el backend sigue la [visión general](architecture/vision-general.md) y la
-  [referencia de la API](api/referencia-api.md); quien vaya a trabajar sobre datos
-  o permisos lee el [modelo de datos](database/modelo-de-datos.md) y la
-  [seguridad](architecture/seguridad-y-permisos.md).
+  [guía de inicio](guia-de-inicio.md); quien quiera entender cómo funciona el
+  backend sigue la [visión general](architecture/vision-general.md) y la
+  [referencia de la API](referencia-api.md); quien vaya a trabajar sobre datos o
+  permisos lee el [modelo de datos](modelo-de-datos.md) y la
+  [seguridad](seguridad-y-permisos.md).
 - **Criterio de veracidad**: toda afirmación de estos documentos es verificable en
   el código, el esquema de Prisma, el seed o las pruebas. Aquello que no pudo
   comprobarse contra ellos está marcado como pendiente en la sección final de
-  este índice.
+  este índice o con el estado **POR CONFIRMAR** en las tablas de
+  [decisiones de diseño](architecture/decisiones-de-diseno.md).
 
 ## Módulos del backend
 
@@ -67,10 +68,18 @@ el momento de redactar esta documentación. No se afirmaron como ciertos:
   personal, el trigger de inmutabilidad de `registro_asistencia`) y en el seed
   (los permisos `asistencia.*` y `turnos.editar`).
 
+### Supuestos a confirmar
+
+Las reglas que se asumieron durante el diseño y que hoy no tienen requisito
+escrito, ni constraint en la base ni prueba dedicada están listadas —con su
+estado **Confirmada / POR CONFIRMAR**— en la sección [inventario de supuestos
+clave](architecture/decisiones-de-diseno.md#10-inventario-de-supuestos-clave-resumen)
+de Decisiones de diseño.
+
 ### Discrepancias conocidas (código vs. especificación inicial)
 
 Las diferencias entre lo que hace el código y lo que pedía la especificación
 original están documentadas —y contrastadas contra el código— en
-[Decisiones de diseño](architecture/decisiones-de-diseno.md), en la sección de
-discrepancias. No se repiten aquí para evitar que el índice quede desactualizado
-si se corrige el código.
+[Decisiones de diseño](architecture/decisiones-de-diseno.md), en su sección de
+limitaciones y observaciones. No se repiten aquí para evitar que el índice quede
+desactualizado si se corrige el código.

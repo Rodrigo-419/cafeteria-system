@@ -1,4 +1,4 @@
-# Guía de pruebas
+# Estrategia de pruebas
 
 Estrategia de pruebas del backend, cómo se configuran, qué cubre cada suite y
 cómo agregar pruebas a un módulo nuevo.
@@ -15,6 +15,11 @@ Dos niveles complementarios:
 Por qué dos niveles: las unitarias son rápidas y cubren reglas finas; las e2e
 verifican el contrato HTTP completo y el comportamiento con una base real
 (oom, transacciones, migraciones).
+
+Las pruebas unitarias se escriben junto al código: `*.spec.ts` al lado de la
+regla o caso de uso (p. ej. `password-policy.spec.ts`, `reglas-permisos.spec.ts`,
+`dinero.spec.ts`, `estados-venta.spec.ts`, `alcance.spec.ts`). El `testRegex`
+`.spec.ts$` de la configuración de Jest las descubre automáticamente.
 
 ## 2. Ejecución
 
@@ -86,6 +91,9 @@ Helpers compartidos en `backend/test/utils/`:
 
 Los ids que usa una prueba (sucursales, permisos) se **leen de la base** cada vez,
 porque el seed genera UUIDs v7 nuevas en cada reset.
+
+Para e2e, el `moduleNameMapper` de `jest-e2e.json` remapea el `.js` del cliente
+generado a su `.ts` (Node no lo resuelve solo).
 
 ## 5. Cobertura
 

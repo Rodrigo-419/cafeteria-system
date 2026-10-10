@@ -5,10 +5,13 @@ usa, cómo se relacionan los módulos y qué ocurre en una petición autenticada
 
 ## 1. Qué es el backend
 
-El backend es una **API REST** construida con NestJS que gestiona la operación de
-una cadena de cafeterías con varias sucursales: usuarios y permisos, sucursales,
-catálogo de productos con precios por sucursal, inventario con alertas y
-recuentos, ventas con anulación, y equipos por sucursal.
+El backend es una **API REST** construida como un **monolito modular** con NestJS.
+Gestiona la operación de una cadena de cafeterías con varias sucursales: usuarios
+y permisos, sucursales, catálogo de productos con precios por sucursal, inventario
+con alertas y recuentos, ventas con anulación, y equipos por sucursal. En este
+momento los módulos de personal, turnos, asistencia y reportes son **esqueletos**
+(archivos base sin lógica); sus permisos y tablas ya existen en el seed y en la
+base, pero no están importados en `AppModule`.
 
 Características centrales:
 
@@ -22,35 +25,57 @@ Características centrales:
 - Las pruebas end-to-end reutilizan la misma configuración de la instancia real a
   través de `configureApp` (`backend/src/app.setup.ts`).
 
-## 2. Stack tecnológico
+## 2. ¿Por qué monolito modular?
 
-| Capa        | Tecnología                                                          |
-| ----------- | ------------------------------------------------------------------- |
-| Framework   | NestJS (módulos, DI, guards, pipes y Swagger por decoradores).      |
-| Validación  | `class-validator` + `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`). |
-| Configuración | `@nestjs/config` + esquema Zod.                                   |
-| ORM         | Prisma (cliente generado en `backend/src/generated/prisma`), con driver `pg`. |
-| Base de datos | PostgreSQL 17 (contenidor en `docker-compose.yml`).               |
-| Autenticación | `@nestjs/jwt`, estrategia de guardia que recalcula permisos en cada petición. |
+Se eligió un **monolito modular** en lugar de microservicios:
+
+- Todo el equipo entrega en un solo despliegue y una sola base de datos, sin la
+  complejidad operativa de los microservicios (red, versionado independiente,
+  integridad distribuida).
+- Los **módulos** (`backend/src/modules/*`) son la frontera de responsabilidad: cada
+  uno agrupa su lógica de negocio y no se importa desde otros módulos salvo por
+  piezas explícitas y compartidas (p. ej. las reglas de roles en `users/domain`).
+- Las **transacciones multi-módulo** no existen: cada caso de uso opera sobre su
+  propio agregado y toda escritura se hace en una transacción local (Prisma), lo
+  que preserva la consistencia sin servicio de mensajería.
+- El día que algún módulo necesite escalar o desplegarse aparte (p. ej. ventas),
+  la frontera ya está marcada y el movimiento natural es extraer ese módulo tal
+  cual, porque no depende de clases internas de los demás.
+
+## 3. Stack tecnológico
+
+| Capa            | Tecnología                                                          |
+| --------------- | ------------------------------------------------------------------- |
+| Framework       | NestJS (módulos, DI, guards, pipes y Swagger por decoradores).      |
+| Validación      | `class-validator` + `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`). |
+| Configuración   | `@nestjs/config` + esquema Zod.                                     |
+| ORM             | Prisma (cliente generado en `backend/src/generated/prisma`), con driver `pg`. |
+| Base de datos   | PostgreSQL 17 (contenedor en `docker-compose.yml`).                 |
+| Autenticación   | `@nestjs/jwt`, estrategia que recalcula permisos en cada petición.  |
 | Limitación de tráfico | `@nestjs/throttler`.                                           |
-| Lenguaje    | TypeScript con compilación de Nest (`npm run build`).               |
-| Lint        | oxlint (`npm run lint`).                                            |
-| CI          | GitHub Actions (ver `backend/.github/workflows/ci.yml`).            |
+| Lenguaje        | TypeScript con compilación de Nest (`npm run build`).               |
+| Lint            | oxlint (`npm run lint`).                                            |
+| CI              | GitHub Actions (ver `backend/.github/workflows/ci.yml`).            |
 
-## 3. Organización en capas
+## 4. Organización en capas: completas vs. livianas
 
-Cada módulo funcional (auth, users, branches, products, inventory, sales,
-equipment) se organiza por capas. No es una regla impuesta por Nest, pero es el
-patrón seguido por los módulos implementados:
+Los módulos con lógica real (auth, users, branches, products, inventory, sales,
+equipment) implementan las **capas completas**:
 
 - **presentation**: controllers HTTP, DTOs y guards específicos del módulo.
-- **application**: casos de uso orquestando la lógica (operaciones de un paso,
-  transacciones).
-- **domain**: reglas puras del negocio (alcance por rol/sucursal, invariantes).
-- **infrastructure**: adaptadores externos (estrategia JWT, repositorio Prisma).
+- **application**: casos de uso que orquestan la operación (y, cuando hace falta,
+  la transacción).
+- **domain**: reglas puras del negocio (alcance por rol/sucursal, invariantes de
+  cantidad, dinero, estados). Son funciones sin dependencias de Nest ni Prisma.
+- **infrastructure**: adaptadores externos (estrategia JWT, repositorios Prisma).
+
+Los módulos esqueleto (employees, shifts, attendance, reports) usan la estructura
+**liviana**: archivos de `controller`/`service`/`repository`/`dto`/`module` en su
+raíz, sin capas y sin lógica, para marcar la forma que tendrán cuando se
+implementen.
 
 Elementos comunes en `backend/src/common/`: decoradores `Public`,
-`RequirePermission`, `User` y filtros/excepciones globales.
+`RequirePermission`, `User` y el manejo global de excepciones.
 
 ```mermaid
 flowchart LR
@@ -65,9 +90,10 @@ flowchart LR
     REPO --> DB[("PostgreSQL 17")]
 ```
 
-Los tres guards se registran como `APP_GUARD` en `AppModule`, en ese orden.
+Los tres guards se registran como `APP_GUARD` en `AppModule`, en ese orden
+(JWT → permisos → throttling).
 
-## 4. Módulos
+## 5. Módulos
 
 Todo el código está en `backend/src/modules/`. Estado real de cada paquete:
 
@@ -84,13 +110,13 @@ Todo el código está en `backend/src/modules/`. Estado real de cada paquete:
 
 Los módulos de personal, turnos, asistencia y reportes son esqueletos: existen
 las carpetas e incluso algunos archivos base, pero **no se importan en
-`AppModule`**, por lo que no expone rutas. Su presencia en la base de datos es
-otra cosa: el esquema, el seed y una migración ya cubren esos dominios
-(ver `docs/database/modelo-de-datos.md`).
+`AppModule`**, por lo que no exponen rutas. Su presencia en la base de datos es
+otra cosa: el esquema, el seed y la migración de integridad ya cubren esos
+dominios (ver [Modelo de datos](../modelo-de-datos.md)).
 
-## 5. Ciclo de una petición autenticada
+## 6. Ciclo de una petición autenticada
 
-Con las tiendas de los guards globales y la validación global:
+Con los guards globales y la validación global:
 
 ```mermaid
 sequenceDiagram
@@ -127,8 +153,8 @@ Detalles importantes del flujo:
 
 - **El permiso se recalcula en cada petición**: la estrategia JWT vuelve a la base
   de datos para calcular `permisosEfectivos` (permisos del rol + permisos
-  individuales del usuario). Cambiar un rol o revocar un permiso surte efecto
-  inmediatamente, sin esperar a que expire el token.
+  individuales del usuario, − revocados). Cambiar un rol o revocar un permiso
+  surte efecto inmediatamente, sin esperar a que expire el token.
 - **Alcance por sucursal**: no depende del guard, sino de las reglas del caso de
   uso. Por ejemplo, un Gerente solo opera con datos de su propia sucursal y una
   sucursal ajena se responde `404`, no `403` (para no filtrar existencia).
@@ -136,7 +162,7 @@ Detalles importantes del flujo:
   (`forbidNonWhitelisted`): el cuerpo y los query de la petición solo pueden traer
   lo que el DTO declara.
 
-## 6. Arranque y configuración
+## 7. Arranque y configuración
 
 Flujo de arranque de `backend/src/main.ts`:
 
@@ -151,9 +177,9 @@ Variables de entorno validadas (defectos entre paréntesis): `DATABASE_URL`
 (obligatoria), `PORT` (3000), `NODE_ENV` (development), `JWT_SECRET` (obligatorio,
 mínimo 32), `JWT_EXPIRES_IN` (8h). Ver `backend/src/config/env.config.ts`.
 
-## 7. Frontend
+## 8. Frontend
 
 El directorio `frontend/` aún no tiene implementación (solo el esqueleto del
 monorepo). No existe aplicación cliente que consuma la API en estos momentos; la
-referencia de contrato es la [API](../api/referencia-api.md) y los documentos de
-diseño en `docs/design/`.
+referencia de contrato es la [API](../referencia-api.md) y los documentos de
+diseño en `docs/architecture/`.

@@ -8,8 +8,8 @@ bajo el prefijo global `/api`.
 - **Autenticación**: todas las rutas exigen `Authorization: Bearer <token>`,
   salvo `POST /api/auth/login`. El token se obtiene al iniciar sesión.
 - **Permisos**: cada ruta exige el permiso indicado (matriz en
-  `docs/architecture/seguridad-y-permisos.md`). Si el token falta o es inválido →
-  `401`; si el usuario no tiene el permiso → `403`.
+  [Seguridad y permisos](seguridad-y-permisos.md)). Si el token falta o es
+  inválido → `401`; si el usuario no tiene el permiso → `403`.
 - **Validación**: el `ValidationPipe` global valida cuerpo y query contra el DTO
   declarado; los campos desconocidos se rechazan (`400`).
 - **Paginado**: los listados usan `page` y `limit` por query (por defecto 20 en
@@ -185,8 +185,10 @@ transacción que cambió stock o mínimo.
   productos repetidos; solo ofertas activas de la sucursal; el servidor calcula
   subtotales y total y congela el precio en un snapshot.
 - `POST /api/sales/:id/anular` anula una venta del **mismo día** con un `motivo`
-  de entre 1 y 200 caracteres. Anula cualquier venta de su sucursal (Gerente) o
-  las propias (Empleado). Solo el Admin consulta ventas; no registra ni anula.
+  de entre 1 y 200 caracteres. La anula el **Gerente** (cualquier venta de su
+  sucursal) **o quien la registró**: un Empleado solo anula las ventas que él
+  mismo registró (una ajena responde **403**). El Admin no registra ni anula
+  ventas.
 - El método de pago es solo registro: no hay procesamiento de cobro real.
 
 ### Equipos (`/api/equipment`)
@@ -216,7 +218,7 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
 
 ## Documentos relacionados
 
-- Alcances y reglas por rol: [Seguridad y permisos](../architecture/seguridad-y-permisos.md).
-- Modelo subyacente: [Modelo de datos](../database/modelo-de-datos.md).
+- Alcances y reglas por rol: [Seguridad y permisos](seguridad-y-permisos.md).
+- Modelo subyacente: [Modelo de datos](modelo-de-datos.md).
 - Decisiones y discrepancias conocidas (p. ej. límites reales de líneas/cantidad
-  de venta): [Decisiones de diseño](../architecture/decisiones-de-diseno.md).
+  de venta): [Decisiones de diseño](architecture/decisiones-de-diseno.md).

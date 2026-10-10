@@ -14,9 +14,11 @@ permisos individuales y qué alcance tiene cada módulo.
   global de la API es de 100 peticiones/minuto (`ThrottlerModule` en `AppModule`).
 - **Misma respuesta para credenciales incorrectas**: cuando el correo no existe se
   compara la contraseña contra un *hash falso* fijo para no revelar, por el tiempo
-  de respuesta, si el correo está registrado.
+  de respuesta, si el correo está registrado. Correo inexistente y contraseña
+  errónea responden el mismo mensaje y `401`.
 - **Cuenta bloqueada**: un usuario con `estado = bloqueado` no inicia sesión
-  (responde `403 Cuenta bloqueada`).
+  (responde `403 Cuenta bloqueada`). Si además la contraseña es incorrecta, el
+  login responde `401` para no revelar el estado de la cuenta.
 - **El token se valida contra la base en cada petición**: la estrategia JWT
   (`backend/src/modules/auth/infrastructure/jwt/jwt.strategy.ts`) recarga el
   usuario y **recalcula sus permisos efectivos** en cada request. Si el usuario
@@ -26,20 +28,25 @@ permisos individuales y qué alcance tiene cada módulo.
 ## 2. Política de contraseñas
 
 Definida en `backend/src/modules/auth/domain/rules/password-policy.ts` y aplicada
-a la creación, al restablecimiento y al cambio de contraseña propia:
+a la creación de usuarios, al restablecimiento y al cambio de la contraseña
+propia (el login **no** la aplica: solo compara el hash guardado):
 
-- mínimo **12 caracteres**;
-- máximo **72 bytes** (límite de bcrypt);
-- se recortan los espacios en blanco al inicio y al final;
-- el hash se genera con **bcrypt de 12 rondas**.
+- mínimo **12 caracteres** (longitud de la cadena);
+- máximo **72 bytes** en UTF-8 (el límite que bcrypt considera; lo sobrante se
+  ignoraría en silencio);
+- el hash se genera con **bcryptjs de 12 rondas**
+  (`RONDAS_BCRYPT` en `crear-usuario.use-case.ts`).
 
-El seed del administrador aplica la misma política a `SEED_ADMIN_PASSWORD`.
+El seed del administrador exige lo mismo a `SEED_ADMIN_PASSWORD`.
 
 ## 3. Roles y permisos
 
 Tres roles fijos sembrados (`backend/src/database/seed.ts`):
 
 - **Admin**: usuario central, no pertenece a una sucursal (`sucursalId = null`).
+  Efectivamente posee **20 de los 24 permisos** sembrados (le faltan los
+  exclusivos de Gerente: `productos.precio.editar`, `ventas.registrar`,
+  `ventas.anular` y `asistencia.corregir`).
 - **Gerente**: pertenece a una sucursal y opera dentro de ella.
 - **Empleado**: pertenece a una sucursal; puede recibir permisos individuales.
 
@@ -62,7 +69,7 @@ completa sembrada es:
 | `inventario.recuento`       | Registrar recuentos                      |   ✓   |    ✓    |          |
 | `alertas.ver_resolver`      | Ver y resolver alertas de stock          |   ✓   |    ✓    |          |
 | `ventas.registrar`          | Registrar ventas                         |       |    ✓    |          |
-| `ventas.anular`             | Anular ventas del día                    |   ✓   |    ✓    |    ✓     |
+| `ventas.anular`             | Anular ventas del día                    |       |    ✓    |    ✓     |
 | `ventas.ver`                | Ver ventas                               |   ✓   |    ✓    |          |
 | `equipo.registrar_editar`   | Registrar y editar equipos               |   ✓   |    ✓    |          |
 | `equipo.ver`                | Ver equipos y su historial               |   ✓   |    ✓    |          |
@@ -75,8 +82,10 @@ completa sembrada es:
 
 Son **24 permisos**. Los 18 primeros tienen rutas implementadas; los 6 últimos
 (`reportes.comparativos.ver`, `empleados.crear_editar`, `turnos.editar`,
-`asistencia.*`) están sembrados pero **no tienen aún controladores**: pertenecen a
-los módulos `reports`, `employees`, `shifts` y `attendance`, que son esqueletos.
+`asistencia.marcar`, `asistencia.corregir`, `asistencia.ver`) están sembrados
+pero **no tienen aún controladores**: pertenecen a los módulos `reports`,
+`employees`, `shifts` y `attendance`, que son esqueletos (ver
+[Decisiones de diseño](architecture/decisiones-de-diseno.md)).
 
 ## 4. Permisos individuales
 
@@ -104,12 +113,14 @@ se registra en `historial_permisos` en la misma transacción.
 ## 5. Quién gestiona a quién (alcance)
 
 - **Solo el Admin** gestiona a Administradores, y el Admin no pertenece a ninguna
-  sucursal. Un Gerente solo gestiona **Empleados de su propia sucursal**; tocar un
-  usuario fuera de su alcance responde `403`.
+  sucursal. Un Gerente solo gestiona **Empleados de su propia sucursal**.
+- Tocar un usuario **fuera del alcance** responde **404** (no se revela que existe);
+  pedir una operación rechazada sobre un usuario **dentro del alcance** (cambiar el
+  rol o la sucursal de un Empleado) responde **403**.
 - Nadie puede modificar su propio rol o estado, ni asignarse/revocarse permisos a
   sí mismo.
 - No se puede dejar al sistema **sin Admin activo**: se bloquea la operación que
-  convertiría al último Admin activo en no activo o en otro rol.
+  convertiría al último Admin activo en bloqueado o en otro rol.
 
 ## 6. Modelo de permisos por módulo
 
@@ -125,13 +136,13 @@ se registra en `historial_permisos` en la misma transacción.
 ## 7. Notas de verificación
 
 - La matriz de esta sección se leyó del seed (`backend/src/database/seed.ts`), que
-  es la fuente de verdad ejecutable.
-- Los flujos de concesión/revocación se contrastaron con
-  `reglas-permisos.ts` y su suite de pruebas.
+  es la fuente de verdad ejecutable. El recuento de permisos del Admin (20 de 24)
+  se confirma en `backend/test/auth.e2e-spec.ts` ("devuelve exactamente 20
+  permisos al Admin").
+- Los flujos de concesión/revocación se contrastaron con `reglas-permisos.ts` y su
+  suite de pruebas.
 - Los alcances por sucursal (responder `404` ante sucursal ajena, no `403`) se
   verifican en las reglas de cada módulo; el detalle por endpoint está en
-  `docs/api/referencia-api.md`.
-- Diferencia con la especificación original conocida: el permiso `equipo.ver` se
-  sembra solo para Admin y Gerente (el Empleado lo obtiene únicamente mediante
-  concesión individual). Cualquier otra discrepancia está registrada en
-  `docs/architecture/decisiones-de-diseno.md`.
+  [Referencia de la API](referencia-api.md).
+- Las reglas asumidas y las que están **POR CONFIRMAR** están en
+  [Decisiones de diseño](architecture/decisiones-de-diseno.md).

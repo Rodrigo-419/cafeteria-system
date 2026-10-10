@@ -1,7 +1,7 @@
 # Modelo de datos
 
 Estructura de la base de datos PostgreSQL 17 del backend. El esquema fuente está
-en [modelo.dbml](../database/modelo.dbml) y de él se genera
+en [modelo.dbml](database/modelo.dbml) y de él se genera
 `backend/prisma/schema.prisma`; ambos deben permanecer en sincronía.
 
 ## 1. Convenciones
@@ -28,8 +28,8 @@ en [modelo.dbml](../database/modelo.dbml) y de él se genera
 | Ventas         | `Venta`, `VentaDetalle`                                        |
 | Equipamiento   | `Equipo`, `HistorialEquipo`                                    |
 
-Los modelos del dominio **Personal** existen en el esquema y el módulo
-`attendance`/`employees`/`shifts` aún no tiene lógica: son tablas preparadas por
+Los modelos del dominio **Personal** existen en el esquema y los módulos
+`employees`/`shifts`/`attendance` aún no tienen lógica: son tablas preparadas por
 la migración, no operadas por la API de hoy.
 
 ## 3. Relevancia por dominio
@@ -188,6 +188,9 @@ del equipo; nunca se borran equipos.
 
 ## 4. Enums
 
+Los enums de PostgreSQL (tipos `usuario_estado`, `insumo_presentacion`, etc.) se
+leen de `backend/prisma/schema.prisma`:
+
 | Enum                         | Valores                                                    |
 | ---------------------------- | ---------------------------------------------------------- |
 | `UsuarioEstado`              | `activo`, `bloqueado`                                       |
@@ -206,7 +209,7 @@ del equipo; nunca se borran equipos.
 | `EquipoEstado`               | `funcionando`, `danado`, `en_mantenimiento`, `retirado`     |
 
 > Nota: `EquipoEstado` usa `danado` (sin tilde) en código y base, tal como quedó
-> documentado en [Decisiones de diseño](../architecture/decisiones-de-diseno.md).
+> documentado en [Decisiones de diseño](architecture/decisiones-de-diseno.md).
 
 ## 5. Precisiones
 
@@ -238,14 +241,21 @@ aplicación:
 4. **Alerta con fecha resuelta coherente** (`chk_alerta_stock_fecha_resuelta_coherente`).
 5. **Corrección de asistencia coherente** (`chk_registro_asistencia_correccion_coherente`).
 6. **No negativos**: cantidad y subtotales de `venta_detalle`, precio de
-   `producto_sucursal_variante` y `stock_minimo` de `insumo_sucursal`.
+   `producto_sucursal_variante`, y `stock_minimo` y `stock_actual` de
+   `insumo_sucursal`.
 7. **Cese posterior a contratación** (`chk_empleado_cese_posterior_a_contratacion`).
+
+La migración **`20261009120000_chk_insumo_sucursal_stock_actual_no_negativo`** añade
+el `CHECK` `chk_insumo_sucursal_stock_actual_no_negativo` (`stock_actual >= 0`), que
+completa el punto 6: el stock **nunca puede quedar negativo**, aunque se escriba
+por fuera de la aplicación.
 
 ## 7. Comportamientos notables del dominio
 
 - **Ventas**: el precio se congela en `VentaDetalle.precioUnitarioSnapshot` al
   registrar; los totales los calcula el servidor, y registrar una venta **no
-  descuenta inventario**.
+  descuenta inventario** (regla confirmada en
+  [Decisiones de diseño](architecture/decisiones-de-diseno.md)).
 - **Inventario**: el stock solo varía con entradas (`> 0`) y recuentos; un recuento
   guarda `stockSistema`, `stockFisico` y `diferencia` por línea, y no existe forma
   de "editar" el stock a mano.
