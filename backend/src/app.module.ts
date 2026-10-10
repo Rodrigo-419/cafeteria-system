@@ -8,10 +8,12 @@ import { appConfig } from './config/app.config';
 import { validate } from './config/env.config';
 import { PrismaModule } from './database/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { ProductsModule } from './modules/products/products.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { SalesModule } from './modules/sales/sales.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
 import { UsersModule } from './modules/users/users.module';
@@ -38,11 +40,13 @@ import { PermissionsGuard } from './modules/auth/presentation/guards/permissions
     UsersModule,
     EmployeesModule,
     ShiftsModule,
+    AttendanceModule,
     BranchesModule,
     ProductsModule,
     InventoryModule,
     SalesModule,
     EquipmentModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [
