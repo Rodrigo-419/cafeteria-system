@@ -17,6 +17,13 @@ const config: Config = {
   transform: {
     '^.+\\.(t|j)s$': 'ts-jest',
   },
+  // Sin tope, Jest lanza un worker por CPU menos uno (11 en una maquina de 12).
+  // Cada worker de ts-jest compila su propio TypeScript y se queda con bastante
+  // memoria, asi que en paralelo agotan la RAM disponible y V8 aborta con un
+  // fallo de asignacion ("Scavenge ... failure"). Se acotan los workers y se
+  // reciclan los que se quedan ociosos por encima de 512 MB.
+  maxWorkers: 4,
+  workerIdleMemoryLimit: '512MB',
   moduleNameMapper: pathsToModuleNameMapper(paths, { prefix: '<rootDir>/' }),
   collectCoverageFrom: [
     'src/**/*.(t|j)s',
