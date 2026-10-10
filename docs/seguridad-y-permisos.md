@@ -80,12 +80,11 @@ completa sembrada es:
 | `asistencia.corregir`       | Corregir registros de asistencia         |       |    ✓    |          |
 | `asistencia.ver`            | Ver registros de asistencia              |   ✓   |    ✓    |    ✓     |
 
-Son **24 permisos**. Los 18 primeros tienen rutas implementadas; los 6 últimos
-(`reportes.comparativos.ver`, `empleados.crear_editar`, `turnos.editar`,
-`asistencia.marcar`, `asistencia.corregir`, `asistencia.ver`) están sembrados
-pero **no tienen aún controladores**: pertenecen a los módulos `reports`,
-`employees`, `shifts` y `attendance`, que son esqueletos (ver
-[Decisiones de diseño](architecture/decisiones-de-diseno.md)).
+Son **24 permisos**. Todos tienen rutas implementadas salvo
+`reportes.comparativos.ver`, sembrado pero **sin controlador**: pertenece al módulo
+`reports`, que sigue siendo un esqueleto (ver
+[Decisiones de diseño](architecture/decisiones-de-diseno.md)). Los permisos de
+`employees`, `shifts` y `attendance` ya se consumen desde sus rutas.
 
 ## 4. Permisos individuales
 

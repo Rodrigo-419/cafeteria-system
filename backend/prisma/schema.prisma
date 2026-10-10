@@ -248,6 +248,7 @@ model JustificacionFalta {
   usuarioJustificador  Usuario  @relation(fields: [usuarioJustificadorId], references: [id], onDelete: Restrict)
 
   @@unique([empleadoId, fecha])
+  @@index([fecha])
   @@map("justificacion_falta")
 }
 
@@ -445,6 +446,7 @@ model Venta {
   @@index([usuarioId])
   @@index([usuarioAnuladorId])
   @@index([sucursalId, createdAt])
+  @@index([estado, createdAt])
   @@map("venta")
 }
 

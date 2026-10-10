@@ -189,6 +189,79 @@ erDiagram
 El historial se escribe solo cuando cambia el **estado** o las **observaciones**
 del equipo; nunca se borran equipos.
 
+### Personal (empleados, turnos y asistencia)
+
+```mermaid
+erDiagram
+    USUARIO ||--o| EMPLEADO : "se vincula como"
+    SUCURSAL ||--o{ EMPLEADO : "tiene"
+    SUCURSAL ||--o{ TURNO : "define"
+    EMPLEADO ||--o{ ASIGNACIONTURNO : "tiene"
+    TURNO ||--o{ ASIGNACIONTURNO : "se asigna en"
+    EMPLEADO ||--o{ REGISTROASISTENCIA : "marca"
+    SUCURSAL ||--o{ REGISTROASISTENCIA : "ocurre en"
+    REGISTROASISTENCIA ||--o{ REGISTROASISTENCIA : "corrige"
+    USUARIO ||--o{ REGISTROASISTENCIA : "corrige"
+    EMPLEADO ||--o{ JUSTIFICACIONFALTA : "justifica"
+    USUARIO ||--o{ JUSTIFICACIONFALTA : "registra"
+
+    EMPLEADO {
+        uuid id PK
+        uuid usuarioId FK "UNIQUE"
+        uuid sucursalId FK
+        string cargo
+        date fechaContratacion
+        date fechaCese "nullable"
+        varchar pinHash "bcrypt, nullable"
+        empleado_estado estado
+    }
+    TURNO {
+        uuid id PK
+        uuid sucursalId FK
+        turno_tipo tipo
+        time horaInicio "nullable"
+        time horaFin "nullable"
+        varchar diasSemana "ISO 1-7, nullable"
+    }
+    ASIGNACIONTURNO {
+        uuid id PK
+        uuid empleadoId FK
+        uuid turnoId FK
+        date fechaInicio
+        date fechaFin "nullable"
+    }
+    REGISTROASISTENCIA {
+        uuid id PK
+        uuid empleadoId FK
+        uuid sucursalId FK
+        registro_asistencia_tipo tipo
+        datetime fechaHora
+        string metodo "pin"
+        boolean esCorreccion
+        uuid registroOriginalId FK "si es correccion"
+        string motivo "si es correccion"
+        uuid usuarioCorrectorId FK "si es correccion"
+    }
+    JUSTIFICACIONFALTA {
+        uuid id PK
+        uuid empleadoId FK
+        date fecha
+        string motivo
+        uuid usuarioJustificadorId FK
+    }
+```
+
+- `EMPLEADO.usuarioId` es **único**: un usuario se vincula como máximo a un
+  empleado, y hereda su sucursal.
+- `TURNO` puede ser `fijo` (con `horaInicio`/`horaFin` y `diasSemana`) o
+  `variable` (sin horario).
+- `REGISTROASISTENCIA` es de **solo inserción**: un `UPDATE`/`DELETE` falla por
+  trigger. Una corrección es **otra fila** con `esCorreccion = true` que apunta al
+  original (`registroOriginalId`), indicando quién (`usuarioCorrectorId`) y por qué
+  (`motivo`).
+- `JUSTIFICACIONFALTA` tiene unicidad `(empleadoId, fecha)`: un solo justificante
+  por empleado y día.
+
 ## 4. Enums
 
 Los enums de PostgreSQL (tipos `usuario_estado`, `insumo_presentacion`, etc.) se
@@ -225,7 +298,10 @@ leen de `backend/prisma/schema.prisma`:
 | `Empleado.pinHash` | `Varchar` | Hash bcrypt (12 rondas) del PIN de marcación; `null` hasta que se genera. El PIN en claro (6 dígitos) no se guarda. |
 | `Turno.horaInicio`/`horaFin`      | `Time`      | Horario del turno (**nullable**: un turno puede no tener horario). La API la escribe y la lee como texto `"HH:mm"`. |
 | `Turno.diasSemana`           | `Varchar`   | Días de la semana del turno como números ISO `1-7` separados por comas (1=lunes); **nullable**. |
-| `RegistroAsistencia.fechaHora` | `DateTime` | Momento exacto de la marcación.     |
+| `RegistroAsistencia.fechaHora` | `DateTime` | Momento exacto de la marcación, **puesto por el servidor** (el cliente no lo fija). Con corrección, la hora **efectiva** del registro es la de la corrección. |
+| `RegistroAsistencia.metodo` | `Varchar` | Origen de la marca; hoy siempre `"pin"` (terminal con PIN). |
+| `RegistroAsistencia.esCorreccion`, `.registroOriginalId`, `.motivo`, `.usuarioCorrectorId` | `Boolean` / `Uuid?` / `Varchar?` / `Uuid?` | Si es `true`, la fila es una **corrección** que reemplaza la hora de la original: apunta a ella, guarda el motivo (1-200) y a quién corrigió. |
+| `JustificacionFalta.fecha` | `Date` | Día justificado (calendario), único por empleado. |
 
 ## 6. Reglas de integridad de la base
 
@@ -266,6 +342,13 @@ añade:
    de marcación.
 10. **`turno.hora_inicio` y `turno.hora_fin` nullable**: un turno puede no tener
     horario.
+11. **Unicidad de justificación**: índice único
+    `justificacion_falta_empleado_id_fecha_key` sobre `(empleado_id, fecha)`; un
+    empleado solo puede tener una justificación por día.
+
+> La regla "**una corrección por (registro original, tipo)**" **no** vive en la
+> base (no hay índice único para el par): la valida la aplicación en
+> `corregir-registro.use-case.ts` (`existeParCorreccion`), que responde `409`.
 
 ## 7. Comportamientos notables del dominio
 
@@ -287,6 +370,15 @@ añade:
   **retira** fijando su `fecha_fin`, nunca se borra, y el solapamiento se valida
   por empleado bloqueando su fila (`SELECT ... FOR UPDATE`) dentro de una
   transacción, de modo que dos altas simultáneas conflictivas solo dejan pasar una.
+- **Asistencia**: `registro_asistencia` es de **solo inserción**; una **corrección
+  es una fila nueva** (`es_correccion = true`) que apunta al original y **reemplaza
+  su hora efectiva**, sin tocar el original. El "**registro efectivo**" (la hora
+  corregida, si existe) es la base de todas las lecturas y de la derivación de
+  entradas **abiertas** (entrada efectiva sin salida efectiva posterior). Una
+  **falta** es un día con asignación vigente de un turno **fijo** cuyo `diasSemana`
+  incluye ese día, sin entrada efectiva ni justificación; los turnos **variables no
+  generan faltas**. Marcar no exige turno activo (ver limitaciones en
+  [Decisiones de diseño](architecture/decisiones-de-diseno.md)).
 
 ## 8. Relación con el DBML
 

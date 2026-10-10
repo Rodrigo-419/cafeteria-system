@@ -80,6 +80,9 @@ Cada módulo tiene su suite en `backend/test/`:
 | `sales`               | `sales.e2e-spec.ts`        | Registrar, listar, obtener y anular ventas; validaciones y anulación. |
 | `users`               | `users.e2e-spec.ts`        | Gestión de usuarios, estado, contraseñas y permisos individuales. |
 | `equipment`           | `equipment.e2e-spec.ts`    | CRUD de equipos, cambio de estado e historial. |
+| `employees`           | `employees.e2e-spec.ts`    | Vínculo con usuario, cargo, cese, PIN e inmutabilidad de justificaciones. |
+| `shifts`              | `shifts.e2e-spec.ts`       | Turnos fijos/variables, asignaciones, solapamiento y retiro. |
+| `attendance`          | `attendance.e2e-spec.ts`   | Marcación con PIN, doble marcaje, correcciones, cierre administrativo, justificación de faltas, lecturas y terminal. |
 
 Helpers compartidos en `backend/test/utils/`:
 
@@ -98,14 +101,14 @@ generado a su `.ts` (Node no lo resuelve solo).
 ## 5. Cobertura
 
 Las cifras siguientes corresponden a la última ejecución limpia, verificada en
-**2026-10-07** con `npm run build`, `npm run lint`, `npm test` y
+**2026-10-10** con `npm run build`, `npm run lint`, `npm test` y
 `npm run test:e2e` (Docker con la base de pruebas disponible). Se refrescan
 ejecutando los comandos de la sección 2.
 
 | Nivel     | Suites | Casos |
 | --------- | ------ | ----- |
-| Unitarias | 35     | 611   |
-| E2E       | 8      | 295   |
+| Unitarias | 50     | 735   |
+| E2E       | 11     | 377   |
 
 > La tabla no incluye un % de cobertura de código: el repo no define el comando
 > `coverage` como parte del flujo estándar.

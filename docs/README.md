@@ -45,9 +45,9 @@ El backend vive en `backend/` y expone los siguientes módulos en
 | `inventory` | Implementado | Insumos, stock, entradas, recuentos, movimientos y alertas. |
 | `sales`     | Implementado | Registro, consulta y anulación de ventas. |
 | `equipment` | Implementado | Equipos por sucursal y su historial de estado. |
-| `employees` | Esqueleto   | Archivos base (`controller`, `service`, `repository`) sin lógica. |
-| `shifts`    | Esqueleto   | Archivos base sin lógica. |
-| `attendance`| Esqueleto   | Módulo vacío; la tabla ya existe y es inmutable en la base. |
+| `employees` | Implementado | Empleados vinculados a un usuario, cargo, cese y PIN de marcación. |
+| `shifts`    | Implementado | Turnos fijos/variables y asignaciones con control de solapamiento. |
+| `attendance`| Implementado | Marcación con PIN, correcciones, faltas justificadas y lecturas. |
 | `reports`   | Esqueleto   | Archivos base sin lógica. |
 
 ## Pendientes de verificar
@@ -55,18 +55,12 @@ El backend vive en `backend/` y expone los siguientes módulos en
 Los siguientes puntos no pudieron confirmarse contra código, esquema o pruebas en
 el momento de redactar esta documentación. No se afirmaron como ciertos:
 
-- **Módulos `attendance` y `reports`**: el esquema, el seed y una migración ya
-  contienen tablas, enumeraciones, permisos y un trigger para estos dominios, pero
-  su lógica de aplicación no está implementada. La documentación describe solo lo
+- **Módulo `reports`**: el seed ya siembra su permiso
+  (`reportes.comparativos.ver`) y el esquema puede contener tablas afines, pero la
+  lógica de aplicación **no está implementada**. La documentación describe solo lo
   que existe en la base o en el seed, no un comportamiento de API que aún no
-  existe. (Los módulos `employees` y `shifts` **sí** tienen lógica implementada.)
-- **Flujo operativo de asistencia**: el comportamiento de este dominio (marcar
-  entradas y salidas, corregir registros) no se pudo contrastar con el código de
-  aplicación, porque el módulo `attendance` no tiene lógica implementada. Solo es
-  verificable lo que ya existe en el esquema (entidades y enums de personal, el
-  trigger de inmutabilidad de `registro_asistencia`) y en el seed (los permisos
-  `asistencia.*`). Los turnos y las asignaciones ya están implementados (ver
-  [Referencia de la API](referencia-api.md) y
+  existe. Los módulos `employees`, `shifts` y `attendance` **sí** están
+  implementados (ver [Referencia de la API](referencia-api.md) y
   [Decisiones de diseño](architecture/decisiones-de-diseno.md)).
 
 ### Supuestos a confirmar
@@ -74,7 +68,7 @@ el momento de redactar esta documentación. No se afirmaron como ciertos:
 Las reglas que se asumieron durante el diseño y que hoy no tienen requisito
 escrito, ni constraint en la base ni prueba dedicada están listadas —con su
 estado **Confirmada / POR CONFIRMAR**— en la sección [inventario de supuestos
-clave](architecture/decisiones-de-diseno.md#10-inventario-de-supuestos-clave-resumen)
+clave](architecture/decisiones-de-diseno.md#13-inventario-de-supuestos-clave-resumen)
 de Decisiones de diseño.
 
 ### Discrepancias conocidas (código vs. especificación inicial)

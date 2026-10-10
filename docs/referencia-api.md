@@ -276,6 +276,56 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
 - `GET /api/assignments` acepta filtros `empleadoId`, `turnoId` y `vigente=true`
   (solo las vigentes hoy), y pagina con `page` y `limit` (≤ 100).
 
+### Asistencia (`/api/attendance`)
+
+| Método | Ruta                                    | Permiso               | Códigos                 |
+| ------ | --------------------------------------- | --------------------- | ----------------------- |
+| POST   | `/api/attendance/mark`                  | `asistencia.marcar`   | 201, 400, 403, 404, 409, 429 |
+| GET    | `/api/attendance/terminal/employees`    | `asistencia.marcar`   | 200, 403                |
+| POST   | `/api/attendance/records/:id/correct`   | `asistencia.corregir` | 201, 400, 403, 404, 409 |
+| POST   | `/api/attendance/absences/justify`      | `asistencia.corregir` | 201, 400, 403, 404, 409 |
+| GET    | `/api/attendance/records`               | `asistencia.ver`      | 200, 400, 403, 404      |
+| GET    | `/api/attendance/records/:id`           | `asistencia.ver`      | 200, 403, 404           |
+| GET    | `/api/attendance/absences`              | `asistencia.ver`      | 200, 400, 403, 404      |
+
+- **Marcar** (`POST /mark`, cuerpo `{ empleadoId, tipo: 'entrada' | 'salida', pin }`):
+  la **hora la pone el servidor** con `metodo = 'pin'`; se registra en la sucursal
+  del usuario autenticado. El `fechaHora` que envíe el cliente se **ignora**. El
+  Admin (sin sucursal) recibe **403**; un empleado de otra sucursal, inactivo o
+  inexistente, **404**. El PIN se valida contra su hash bcrypt (`403` si no
+  coincide; si el empleado no tiene PIN también **403**). Con **5 fallos en 1
+  minuto** la marcación responde **429** aunque el PIN sea correcto. **409** para
+  doble marcaje: una entrada con otra entrada abierta del **mismo día** (América/
+  Lima), o una salida sin entrada abierta del mismo día.
+- **Terminal** (`GET /terminal/employees`): solo `id` y `nombre` de los empleados
+  **activos** de la sucursal del actor. El Admin sin sucursal recibe **403**.
+- **Corregir** (`POST /records/:id/correct`, cuerpo `{ motivo (1-200), fechaHora
+  (ISO), tipo? }`): inserta una **fila nueva** (`esCorreccion = true`) que
+  **reemplaza la hora** del registro efectivo; el original queda intacto. Solo se
+  corrigen registros **originales** (corregir una corrección → `400`); **una
+  corrección por par (original, tipo)** → `409`; `fechaHora` no puede ser futura
+  (`400`). Si el original es una **entrada abierta** y se corrige como **salida**,
+  es un **cierre administrativo**: la salida debe ser **posterior** a la entrada
+  (`400`) y la entrada debe seguir abierta (`409` si ya está cerrada). Registro de
+  otra sucursal → `404`. El **Admin no tiene** `asistencia.corregir` (`403`) y un
+  Gerente no corrige sus propios registros (`403`).
+- **Justificar falta** (`POST /absences/justify`, cuerpo `{ empleadoId, fecha
+  (YYYY-MM-DD), motivo (1-200) }`): registra la justificación del actor. `409` si
+  el día ya está justificado o si hay una entrada efectiva ese día; `400` si la
+  fecha es futura o anterior a la contratación; empleado fuera de alcance → `404`.
+- **Registros** (`GET /records`): filtros `empleadoId`, `sucursalId`, `desde`,
+  `hasta`, `abierta=true`, y `page`/`limit` (≤ 100). Alcance: Admin todo; Gerente
+  solo su sucursal (fuera → `404`); Empleado solo lo suyo. `GET /records/:id`
+  devuelve el registro con su lista de `correcciones[]`.
+- **Faltas** (`GET /absences`): **exige** el rango `desde`-`hasta` (`YYYY-MM-DD`) y
+  no admite más de **92 días** (`400`). Una falta es un día con asignación vigente
+  de un turno **fijo** cuyo `diasSemana` incluye ese día, sin entrada efectiva y
+  sin justificación; los **turnos variables no generan faltas** y solo se cuentan
+  días hasta hoy (América/Lima).
+- **Registro efectivo**: las correcciones no son marcaciones nuevas; sustituyen la
+  hora del original. "Abierta" significa entrada efectiva **sin salida efectiva
+  posterior**.
+
 ## Códigos de error más comunes
 
 | Código | Significado                                                  |
@@ -285,6 +335,7 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
 | 403    | Usuario autenticado pero sin el permiso (o sin alcance sobre la entidad). |
 | 404    | Recurso inexistente o fuera del alcance del usuario.         |
 | 409    | Conflicto con el estado (registro duplicado, dependencias, acción no permitida). |
+| 429    | Demasiados intentos (p. ej. protección de fuerza bruta del PIN de asistencia). |
 
 ## Documentos relacionados
 
