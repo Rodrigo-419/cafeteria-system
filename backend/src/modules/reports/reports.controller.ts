@@ -1,1 +1,0 @@
-// Controller HTTP de reportes; solo lectura y agregacion de datos.
