@@ -482,6 +482,39 @@ describe('inventario E2E', () => {
 
       expect((respuesta.body as ErrorE2E).message).toBe('La sucursal no existe');
     });
+
+    it('la base rechaza que el stock actual quede negativo', async () => {
+      // La fila se crea en la propia prueba para no depender de datos previos:
+      // se usa un insumo nuevo y una escritura directa contra la base, porque
+      // lo que se comprueba es el CHECK, no el caso de uso.
+      const insumo = await api(tokenAdmin).crearInsumo(
+        nombreLibre('Para chequeo negativo'),
+        'paquete',
+      );
+
+      const fila = await clientePrueba().insumoSucursal.create({
+        data: {
+          insumoId: insumo.id,
+          sucursalId: centro,
+          stockActual: 0,
+          stockMinimo: 0,
+          estado: 'activo',
+        },
+      });
+
+      await expect(
+        clientePrueba().$executeRaw`
+          UPDATE insumo_sucursal
+             SET stock_actual = -1
+           WHERE id = ${fila.id}
+        `,
+      ).rejects.toThrow();
+
+      const intacta = await clientePrueba().insumoSucursal.findUniqueOrThrow({
+        where: { id: fila.id },
+      });
+      expect(Number(intacta.stockActual)).toBe(0);
+    });
   });
 
   describe('entradas de stock', () => {
