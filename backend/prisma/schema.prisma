@@ -100,6 +100,7 @@ model Usuario {
   ventasAnuladas         Venta[]                @relation("VentaAnulador")
   correccionesAsistencia RegistroAsistencia[]   @relation("RegistroAsistenciaCorrector")
   historialEquipos       HistorialEquipo[]
+  justificacionesFalta   JustificacionFalta[]
 
   @@index([rolId])
   @@index([sucursalId])
@@ -154,6 +155,8 @@ model Empleado {
   fechaCese         DateTime?      @map("fecha_cese") @db.Date
   /// activo, inactivo
   estado            EmpleadoEstado @default(activo)
+  /// PIN de marcacion (bcrypt). Nullable: sin PIN el empleado no puede marcar.
+  pinHash           String?        @map("pin_hash")
   createdAt         DateTime       @default(now()) @map("created_at")
   updatedAt         DateTime       @updatedAt @map("updated_at")
 
@@ -161,6 +164,7 @@ model Empleado {
   sucursal            Sucursal             @relation(fields: [sucursalId], references: [id], onDelete: Restrict)
   asignacionesTurno   AsignacionTurno[]
   registrosAsistencia RegistroAsistencia[]
+  justificacionesFalta JustificacionFalta[]
 
   @@index([sucursalId])
   @@map("empleado")
@@ -171,8 +175,9 @@ model Turno {
   sucursalId String    @map("sucursal_id") @db.Uuid
   /// fijo, variable
   tipo       TurnoTipo
-  horaInicio DateTime  @map("hora_inicio") @db.Time
-  horaFin    DateTime  @map("hora_fin") @db.Time
+  /// Nullable: un turno variable puede no tener franja definida.
+  horaInicio DateTime? @map("hora_inicio") @db.Time
+  horaFin    DateTime? @map("hora_fin") @db.Time
   diasSemana String?   @map("dias_semana")
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
@@ -228,6 +233,22 @@ model RegistroAsistencia {
   @@index([usuarioCorrectorId])
   @@index([empleadoId, fechaHora])
   @@map("registro_asistencia")
+}
+
+model JustificacionFalta {
+  id                    String   @id @default(uuid(7)) @db.Uuid
+  empleadoId            String   @map("empleado_id") @db.Uuid
+  fecha                 DateTime @db.Date
+  motivo                String
+  usuarioJustificadorId String   @map("usuario_justificador_id") @db.Uuid
+  /// Tabla inmutable — solo INSERT, nunca UPDATE ni DELETE
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  empleado             Empleado @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+  usuarioJustificador  Usuario  @relation(fields: [usuarioJustificadorId], references: [id], onDelete: Restrict)
+
+  @@unique([empleadoId, fecha])
+  @@map("justificacion_falta")
 }
 
 // ==================== Catalogo ====================
