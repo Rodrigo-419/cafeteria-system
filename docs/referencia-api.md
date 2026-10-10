@@ -232,6 +232,50 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
   generados por el sistema, devuelto **una sola vez**; en la base solo queda su
   hash bcrypt. El listado/detalle de empleados nunca incluye el PIN ni su hash.
 
+### Turnos (`/api/shifts`)
+
+| Método | Ruta               | Permiso          | Códigos                 |
+| ------ | ------------------ | ---------------- | ----------------------- |
+| POST   | `/api/shifts`      | `turnos.editar`  | 201, 400, 403, 404      |
+| GET    | `/api/shifts`      | `turnos.editar`  | 200, 400, 403           |
+| GET    | `/api/shifts/:id`  | `turnos.editar`  | 200, 403, 404           |
+| PATCH  | `/api/shifts/:id`  | `turnos.editar`  | 200, 400, 403, 404, 409 |
+
+- Un turno es `fijo` (con `horaInicio` y `horaFin`, `horaFin > horaInicio`, sin
+  cruzar medianoche, y `diasSemana`) o `variable` (sin horario). `diasSemana` son
+  números ISO `1-7` separados por comas, sin repetir y en orden ascendente.
+- Alcance: el Admin elige la sucursal (400 si falta, 404 si no existe); el
+  Gerente la tiene **forzada** a la suya. Un Gerente no ve turnos de otra
+  sucursal (`404`).
+- `PATCH /api/shifts/:id` solo edita horas y `diasSemana` (nunca el tipo ni la
+  sucursal) y responde `409` si dejaría **solapadas asignaciones vigentes** del
+  mismo empleado. No existe DELETE de turnos.
+- `GET /api/shifts` acepta filtros `sucursalId` y `tipo`, y pagina con `page` y
+  `limit` (≤ 100).
+
+### Asignaciones (`/api/assignments`)
+
+| Método | Ruta                    | Permiso          | Códigos           |
+| ------ | ----------------------- | ---------------- | ----------------- |
+| POST   | `/api/assignments`      | `turnos.editar`  | 201, 400, 403, 404, 409 |
+| GET    | `/api/assignments`      | `turnos.editar`  | 200, 400, 403     |
+| PATCH  | `/api/assignments/:id`  | `turnos.editar`  | 200, 400, 403, 404 |
+
+- `POST /api/assignments` asigna un turno a un empleado de la **misma sucursal**
+  (si no, `404`); el empleado debe estar **activo** (`409` si está cesado);
+  `fechaInicio` (`YYYY-MM-DD`) no puede ser anterior a la contratación (`400`) y
+  `fechaFin` opcional no puede ser anterior a `fechaInicio` (`400`).
+- **Solapamiento** (`409`): el mismo empleado no puede tener dos asignaciones con
+  rangos de fechas solapados cuyos turnos a su vez se crucen (ambos fijos con
+  días y horas cruzados, o alguno variable). La comprobación se hace en una
+  transacción que bloquea la fila del empleado, de modo que dos altas simultáneas
+  conflictivas solo dejan pasar una.
+- `PATCH /api/assignments/:id` **retira** la asignación fijando `fechaFin`, que no
+  puede ser anterior a la de inicio ni a hoy (América/Lima) (`400`). No existe
+  DELETE: retirar es cerrar la vigencia.
+- `GET /api/assignments` acepta filtros `empleadoId`, `turnoId` y `vigente=true`
+  (solo las vigentes hoy), y pagina con `page` y `limit` (≤ 100).
+
 ## Códigos de error más comunes
 
 | Código | Significado                                                  |

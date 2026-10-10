@@ -30,9 +30,10 @@ en [modelo.dbml](database/modelo.dbml) y de él se genera
 
 Los modelos del dominio **Personal** existen en el esquema. El módulo `employees`
 ya opera `Empleado` (alta, edición, cese y PIN) y `JustificacionFalta`
-(actualmente solo su tabla inmutable); los módulos `shifts`/`attendance` aún no
-tienen lógica operativa (las tablas de turnos y asistencia están preparadas por
-la migración, no operadas por la API de hoy).
+(actualmente solo su tabla inmutable). El módulo `shifts` ya opera `Turno` y
+`AsignacionTurno` (alta, edición de horario y asignación/retiro); el módulo
+`attendance` aún no tiene lógica operativa (la tabla de asistencia está
+preparada por la migración, no operada por la API de hoy).
 
 ## 3. Relevancia por dominio
 
@@ -222,7 +223,8 @@ leen de `backend/prisma/schema.prisma`:
 | `VentaDetalle.cantidad`      | `Int`       | Cantidad entera positiva por línea.  |
 | Fechas de empleado y asignaciones | `Date`  | Día calendario.                      |
 | `Empleado.pinHash` | `Varchar` | Hash bcrypt (12 rondas) del PIN de marcación; `null` hasta que se genera. El PIN en claro (6 dígitos) no se guarda. |
-| `Turno.horaInicio`/`horaFin`      | `Time`      | Horario del turno (**nullable**: un turno puede no tener horario). |
+| `Turno.horaInicio`/`horaFin`      | `Time`      | Horario del turno (**nullable**: un turno puede no tener horario). La API la escribe y la lee como texto `"HH:mm"`. |
+| `Turno.diasSemana`           | `Varchar`   | Días de la semana del turno como números ISO `1-7` separados por comas (1=lunes); **nullable**. |
 | `RegistroAsistencia.fechaHora` | `DateTime` | Momento exacto de la marcación.     |
 
 ## 6. Reglas de integridad de la base
@@ -280,6 +282,11 @@ añade:
   stock, mínimo o estado; no hay endpoint para abrirlas/cerrarlas manualmente.
 - **Equipos**: no tienen borrado, cambian de estado sobre un conjunto cerrado y
   mantienen historial de cambios de estado y observaciones.
+- **Turnos y asignaciones**: un turno no se borra (editar sus horas/días no puede
+  dejar solapadas asignaciones vigentes del mismo empleado); una asignación se
+  **retira** fijando su `fecha_fin`, nunca se borra, y el solapamiento se valida
+  por empleado bloqueando su fila (`SELECT ... FOR UPDATE`) dentro de una
+  transacción, de modo que dos altas simultáneas conflictivas solo dejan pasar una.
 
 ## 8. Relación con el DBML
 

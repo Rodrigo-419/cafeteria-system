@@ -55,18 +55,19 @@ El backend vive en `backend/` y expone los siguientes módulos en
 Los siguientes puntos no pudieron confirmarse contra código, esquema o pruebas en
 el momento de redactar esta documentación. No se afirmaron como ciertos:
 
-- **Módulos `employees`, `shifts`, `attendance` y `reports`**: el esquema, el seed
-  y una migración ya contienen tablas, enumeraciones, permisos y un trigger para
-  estos dominios, pero su lógica de aplicación no está implementada. La
-  documentación describe solo lo que existe en la base o en el seed, no un
-  comportamiento de API que aún no existe.
-- **Flujo operativo de asistencia y turnos**: los comportamientos de estos
-  dominios (marcar entradas y salidas, corregir registros, asignar turnos,
-  consultar horarios) no se pudieron contrastar con el código de aplicación, porque
-  los módulos `attendance`, `shifts` y `employees` no tienen lógica implementada.
-  Solo es verificable lo que ya existe en el esquema (entidades y enums de
-  personal, el trigger de inmutabilidad de `registro_asistencia`) y en el seed
-  (los permisos `asistencia.*` y `turnos.editar`).
+- **Módulos `attendance` y `reports`**: el esquema, el seed y una migración ya
+  contienen tablas, enumeraciones, permisos y un trigger para estos dominios, pero
+  su lógica de aplicación no está implementada. La documentación describe solo lo
+  que existe en la base o en el seed, no un comportamiento de API que aún no
+  existe. (Los módulos `employees` y `shifts` **sí** tienen lógica implementada.)
+- **Flujo operativo de asistencia**: el comportamiento de este dominio (marcar
+  entradas y salidas, corregir registros) no se pudo contrastar con el código de
+  aplicación, porque el módulo `attendance` no tiene lógica implementada. Solo es
+  verificable lo que ya existe en el esquema (entidades y enums de personal, el
+  trigger de inmutabilidad de `registro_asistencia`) y en el seed (los permisos
+  `asistencia.*`). Los turnos y las asignaciones ya están implementados (ver
+  [Referencia de la API](referencia-api.md) y
+  [Decisiones de diseño](architecture/decisiones-de-diseno.md)).
 
 ### Supuestos a confirmar
 

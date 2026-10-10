@@ -147,7 +147,21 @@ Los nombres de archivo son relativos a la raíz del repositorio. Salvo que se in
 | La **justificación de falta es inmutable** en la base: el trigger `fn_justificacion_falta_es_inmutable` (disparado `BEFORE UPDATE OR DELETE`) rechaza **UPDATE y DELETE** con excepción `P0001`; solo se puede insertar (no editar ni borrar lo ya justificado). | Supuesto de implementación | Migración `20261010120000_personal_etapa1_pin_hash_turnos_justificacion_falta` (función + trigger `trg_justificacion_falta_inmutable`); modelo `justificacion_falta` en `schema.prisma` | `backend/test/employees.e2e-spec.ts`: "rechaza UPDATE y DELETE sobre una justificacion ya creada" | Confirmada |
 | **Listar empleados**: paginado (`page`, `limit` ≤ 100) y filtros `sucursalId`, `estado` (`activo`/`inactivo`) y `q` (cargo, nombre o correo del usuario). El alcance del actor se **combina con `AND`** con los filtros pedidos: un filtro contrario al alcance no lo amplía (devuelve lista vacía). | Supuesto de implementación | `listar-empleados.use-case.ts`; `EmployeesRepository.listar/contar` (where con `AND`) | `backend/test/employees.e2e-spec.ts`: "lista solo los empleados a los que alcanza" | Confirmada |
 
-## 11. Inventario de supuestos clave (resumen)
+## 11. Módulo Turnos (`shifts`)
+
+| Regla de negocio | Origen | Dónde se implementa | Prueba que la cubre | Estado |
+| --- | --- | --- | --- | --- |
+| Todas las rutas de `/shifts` y `/assignments` exigen el permiso **`turnos.editar`** (Admin y Gerente; no existe `turnos.ver`). Un Empleado sin el permiso recibe **403**; sin token, **401**. | Supuesto de implementación | `backend/src/modules/shifts/presentation/shifts.controller.ts` y `assignments.controller.ts` (`@RequirePermission('turnos.editar')` en la clase); seed | `backend/test/shifts.e2e-spec.ts`: "un Empleado sin permiso no toca turnos ni asignaciones: 403"; "todas las rutas responden 401 sin token" | Confirmada |
+| **Alcance**: el **Admin** gestiona los turnos y asignaciones de cualquier sucursal; el **Gerente** solo los **turnos de su sucursal** y las asignaciones de empleados cuyo usuario es rol **Empleado de su sucursal**. Fuera de alcance responde **404**. Al crear un turno el **Admin elige la sucursal** (400 si falta, 404 si no existe) y el **Gerente la tiene forzada** aunque envíe otra. | Requisito original | `backend/src/modules/shifts/domain/rules/alcance.ts` (`puedeGestionarTurnos`, `filtroAlcanceTurnos`, `alcanceEmpleadosParaAsignaciones`); `crear-turno.use-case.ts` | `backend/test/shifts.e2e-spec.ts`: "fuerza su propia sucursal aunque envie otra"; "no ve un turno de otra sucursal: 404"; "lista solo los turnos de su sucursal"; `backend/src/modules/shifts/domain/rules/alcance.spec.ts` | Confirmada |
+| **Turno fijo vs. variable**: un turno `fijo` exige `horaInicio` y `horaFin` (`horaFin` **posterior** a `horaInicio`, sin cruzar medianoche) y un `diasSemana` valido; un turno `variable` no tiene horario. Si se envia una de las horas, deben venir las dos. `diasSemana` son numeros **ISO 1-7 separados por comas**, sin repetir y en orden ascendente. | Requisito original | `backend/src/modules/shifts/domain/rules/horario.ts` (`problemasHorarioTurno`); `domain/rules/dias-semana.ts` (`problemasDiasSemana`); `crear-turno.use-case.ts` | `backend/test/shifts.e2e-spec.ts`: "crea un turno fijo con horas y dias: 201"; "crea un turno variable sin horas: 201"; "rechaza un turno fijo sin horas: 400"; "rechaza una hora de fin anterior a la de inicio: 400"; "rechaza diasSemana mal formado: 400" | Confirmada |
+| **Edicion y borrado**: `PATCH /shifts/:id` solo cambia horas y `diasSemana` (nunca el tipo ni la sucursal). **No hay DELETE de turnos** ni de asignaciones. Editar un turno cuyas horas o dias dejarian **solapadas asignaciones vigentes del mismo empleado** responde **409**. | Requisito original | `actualizar-turno.use-case.ts` (compara contra las asignaciones del turno); `backend/src/modules/shifts/domain/rules/solapamiento.ts` | `backend/test/shifts.e2e-spec.ts`: "rechaza un cambio de horas que dejaria un solape: 409"; "acepta un cambio de horas sin solape: 200" | Confirmada |
+| **Asignacion**: empleado y turno deben ser de la **misma sucursal** (si no, **404**); el empleado debe estar **activo** (cesado → **409**); `fechaInicio` no anterior a la **fecha de contratacion** (**400**); `fechaFin` opcional y no anterior a `fechaInicio` (**400**). | Requisito original | `crear-asignacion.use-case.ts`; reglas de fecha en `domain/fechas.ts` (`diaUtc`) | `backend/test/shifts.e2e-spec.ts`: "asigna un turno al empleado: 201"; "rechaza un empleado de otra sucursal: 404"; "rechaza asignar a un empleado cesado: 409" | Confirmada |
+| **Solapamiento**: el mismo empleado no puede tener dos asignaciones cuyos **rangos de fechas se solapen** y cuyos turnos a su vez se crucen (ambos fijos con dias y horas que se cruzan, **o** cualquiera de los dos variable) → **409**. Varios empleados **pueden compartir el mismo turno sin limite**. | Requisito original | `backend/src/modules/shifts/domain/rules/solapamiento.ts` (`rangosDeFechasSeCruzan`, `horasSeCruzan`, `haySolapamiento`); `crear-asignacion.use-case.ts` | `backend/test/shifts.e2e-spec.ts`: "rechaza un solapamiento fijo-fijo: 409"; "acepta fijo-fijo sin cruce de dias: 201"; "rechaza un turno variable que se solape con cualquier otro: 409"; `backend/src/modules/shifts/domain/rules/solapamiento.spec.ts` | Confirmada |
+| La comprobacion de solapamiento corre dentro de una **transaccion que bloquea la fila del empleado** (`SELECT ... FOR UPDATE`), de modo que dos altas **simultaneas** conflictivas se serializan y **solo una** pasa (la segunda ve la recien creada y responde 409). | Supuesto de implementacion | `ShiftsRepository.bloquearEmpleado` + `enTransaccion`; `crear-asignacion.use-case.ts` | `backend/test/shifts.e2e-spec.ts`: "dos asignaciones simultaneas conflictivas: solo una pasa" (verifica status `[201, 409]` y una sola fila en la base) | Confirmada |
+| **Retirar** una asignacion (`PATCH /assignments/:id`) solo fija su `fechaFin`; esta no puede quedar **antes de la fecha de inicio** ni **antes de hoy** (America/Lima) → **400**. | Requisito original | `retirar-asignacion.use-case.ts` (`fechaLocalDe`) | `backend/test/shifts.e2e-spec.ts`: "retira una asignacion fijando su fecha de fin"; "rechaza una fecha de fin anterior a la de inicio: 400"; "rechaza una fecha de fin anterior a hoy: 400" | Confirmada |
+| **Listados**: `GET /shifts` (filtros `sucursalId`, `tipo`) y `GET /assignments` (filtros `empleadoId`, `turnoId`, `vigente=true`), paginados (`page`, `limit` ≤ 100). El alcance del actor se **combina con `AND`** con los filtros pedidos. | Supuesto de implementacion | `listar-turnos.use-case.ts`; `listar-asignaciones.use-case.ts`; `ShiftsRepository.construirWhere*` | `backend/test/shifts.e2e-spec.ts`: "lista solo los turnos de su sucursal"; "lista solo las asignaciones vigentes con vigente=true" | Confirmada |
+
+## 12. Inventario de supuestos clave (resumen)
 
 Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. Las dos únicas reglas que quedan **POR CONFIRMAR** están en las tablas de sus módulos: el **motivo por defecto de la entrada de stock** (inventario) y que **cambiar la contraseña no invalida los tokens emitidos** (autenticación).
 
@@ -164,20 +178,13 @@ Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. L
 | **5 intentos/minuto/IP** en el login. | `auth.controller.ts` | Confirmada |
 | **Permisos efectivos recalculados por petición** (bloqueo/permisos surten efecto inmediato). | `jwt.strategy.ts` | Confirmada |
 
-## 12. Pendiente de implementar
+## 13. Pendiente de implementar
 
 Estos módulos tienen **esqueletos en el repositorio** (sin lógica ni rutas) y **permisos ya sembrados** en el seed para cuando se desarrollen. Las reglas de negocio de cada uno están **por definir y confirmar**.
 
-### 12.1 Turnos
+> El módulo **Turnos** ya no figura aquí: se implementó en la sección 11. El esqueleto de `shifts` se eliminó y `ShiftsModule` quedó registrado en `app.module.ts`.
 
-| Punto | Estado |
-| --- | --- |
-| Módulo `shifts` (esqueleto): controller, service, repository, dto y reglas vacíos. | Esqueleto sin rutas registradas en `app.module.ts` |
-| Permiso sembrado: `turnos.editar` (Admin, Gerente). | Sembrado, sin rutas que lo consuman |
-| La migración `20261010120000_personal_etapa1_pin_hash_turnos_justificacion_falta` dejó `turno.hora_inicio` y `turno.hora_fin` **nullable** (un turno —por ejemplo día libre— no tiene horario). | Aplicado en la base |
-| Reglas de negocio (definir): asignación de turnos a sucursal, solapamiento de asignaciones, `dias_semana` (números ISO separados por comas, 1=lunes), turno variable vs. fijo, sin DELETE si hay asignaciones. | Por definir |
-
-### 12.2 Asistencia
+### 13.1 Asistencia
 
 | Punto | Estado |
 | --- | --- |
@@ -186,7 +193,7 @@ Estos módulos tienen **esqueletos en el repositorio** (sin lógica ni rutas) y 
 | La **tabla `registro_asistencia` ya es inmutable** en la base: el trigger `fn_registro_asistencia_es_inmutable` (disparado `BEFORE UPDATE OR DELETE`) rechaza **UPDATE y DELETE** lanzando una excepción de tipo `P0001` (`raise_exception`); el `INSERT` está permitido, la tabla es de **solo inserción**. Las correcciones se modelan insertando un registro nuevo con `es_correccion = true`, nunca con UPDATE. Ver `backend/prisma/migrations/20261004235135_db_integrity_rules/migration.sql`. | Implementado en la base |
 | Reglas de negocio (definir): marcación por turno activo, ventana de tolerancia, corrección de registros, quién marca por quién. | Por definir |
 
-### 12.3 Reportes
+### 13.2 Reportes
 
 | Punto | Estado |
 | --- | --- |
@@ -194,8 +201,9 @@ Estos módulos tienen **esqueletos en el repositorio** (sin lógica ni rutas) y 
 | Permiso sembrado: `reportes.comparativos.ver` (Admin). | Sembrado, sin rutas que lo consumen |
 | Reglas de negocio (definir): definición de "reporte comparativo entre sucursales", fuentes de datos (ventas, inventario, asistencia) y período. | Por definir |
 
-## 13. Limitaciones y observaciones
+## 14. Limitaciones y observaciones
 
+- **Cobertura minima por turno y cargo** (turnos): hoy varios empleados pueden compartir un turno **sin limite** y no se valida un minimo de personal por turno ni por cargo. Es una **mejora futura**, no una regla vigente.
 - **Tokens vigentes tras cambiar la contraseña**: no se invalidan; siguen válidos hasta expirar.
 - **`cafeteria_test` como base e2e**: las pruebas end-to-end abortan si el nombre de la base no termina en `_test` (ver `backend/test/setup-e2e.ts` o `http-pruebas.ts`).
 - **Persistencia de decimales**: todo importe y cantidad se serializa a texto antes de tocar la base para que Prisma no arrastre errores de representación binaria (ver `precioATextoDecimal`, `cantidadATexto`, `centimosATexto`).
