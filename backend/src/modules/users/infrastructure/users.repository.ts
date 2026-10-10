@@ -73,6 +73,13 @@ export type FiltrosListadoUsuarios = {
   busqueda?: string;
 };
 
+/**
+ * Cliente con el que se puede trabajar tanto fuera como dentro de una
+ * transaccion. `PrismaService` hereda de `PrismaClient`, asi que satisface el
+ * mismo contrato que el cliente transaccional.
+ */
+export type ClienteUsuarios = PrismaService | Prisma.TransactionClient;
+
 const SELECT_USUARIO_RESPUESTA = {
   id: true,
   nombre: true,
@@ -89,13 +96,29 @@ const SELECT_USUARIO_RESPUESTA = {
  * Datos de alcance y de ultimo Admin. Deliberadamente SIN `passwordHash`: casi
  * ningun caso de uso necesita comparar contrasenas y arrastrarla aqui hacia el
  * caso de uso amplia el riesgo de que acabe en una respuesta.
+ *
+ * Tampoco pide la relacion `rol`: el nombre del rol se resuelve con una segunda
+ * consulta secuencial. Es lo que permite usar este metodo dentro de una
+ * transaccion (ver `buscarPorIdEnAlcance`), porque el cliente de pg que hay
+ * debajo no admite varias consultas en vuelo sobre la misma conexion.
  */
 const SELECT_USUARIO_ALCANCE = {
   id: true,
   rolId: true,
   sucursalId: true,
   estado: true,
-  rol: { select: { id: true, nombre: true } },
+} satisfies Prisma.UsuarioSelect;
+
+/** Igual que el select de respuesta, pero sin la relacion `rol`. */
+const SELECT_USUARIO_RESPUESTA_ESCALAR = {
+  id: true,
+  nombre: true,
+  email: true,
+  rolId: true,
+  sucursalId: true,
+  estado: true,
+  createdAt: true,
+  updatedAt: true,
 } satisfies Prisma.UsuarioSelect;
 
 const SELECT_PERMISOS_INDIVIDUALES = {
@@ -127,8 +150,10 @@ export class UsersRepository {
   async buscarPorIdEnAlcance(
     id: string,
     alcance: { sucursalId?: string; rol?: string } | undefined,
+    cliente?: ClienteUsuarios,
   ): Promise<UsuarioAlcance | null> {
-    const usuario = await this.prisma.usuario.findFirst({
+    const db = this.db(cliente);
+    const usuario = await db.usuario.findFirst({
       where: {
         id,
         ...(alcance?.sucursalId !== undefined ? { sucursalId: alcance.sucursalId } : {}),
@@ -141,9 +166,14 @@ export class UsersRepository {
       return null;
     }
 
+    const rol = await db.rol.findUnique({
+      where: { id: usuario.rolId },
+      select: { nombre: true },
+    });
+
     return {
       id: usuario.id,
-      rol: usuario.rol.nombre,
+      rol: rol?.nombre ?? '',
       rolId: usuario.rolId,
       sucursalId: usuario.sucursalId,
       estado: usuario.estado,
@@ -267,8 +297,11 @@ export class UsersRepository {
   }
 
   /** Numero de Admins activos. Si se pasa id, lo excluye del conteo. */
-  async contarAdminsActivos(exceptoUsuarioId?: string): Promise<number> {
-    return this.prisma.usuario.count({
+  async contarAdminsActivos(
+    exceptoUsuarioId?: string,
+    cliente?: ClienteUsuarios,
+  ): Promise<number> {
+    return this.db(cliente).usuario.count({
       where: {
         rol: { nombre: 'Admin' },
         estado: 'activo',
@@ -314,13 +347,16 @@ export class UsersRepository {
   async actualizarEstado(
     id: string,
     estado: $Enums.UsuarioEstado,
+    cliente?: ClienteUsuarios,
   ): Promise<UsuarioRespuesta> {
-    const usuario = await this.prisma.usuario.update({
+    const db = this.db(cliente);
+    const usuario = await db.usuario.update({
       where: { id },
       data: { estado },
-      select: SELECT_USUARIO_RESPUESTA,
+      select: SELECT_USUARIO_RESPUESTA_ESCALAR,
     });
-    return this.aUsuarioRespuesta(usuario);
+
+    return this.conRolRespuesta(usuario, db);
   }
 
   async actualizarPassword(id: string, passwordHash: string): Promise<void> {
@@ -422,6 +458,48 @@ export class UsersRepository {
   }
 
   // ------------------------------------------------------------------ privado
+
+  /** Cliente con el que trabajar: el de la transaccion o `PrismaService`. */
+  private db(cliente?: ClienteUsuarios): ClienteUsuarios {
+    return cliente ?? this.prisma;
+  }
+
+  /**
+   * Resuelve el nombre del rol de un usuario ya leido sin la relacion.
+   *
+   * Se hace en un segundo paso, ya terminada la primera consulta, para que
+   * dentro de una transaccion ninguna consulta se solape con otra.
+   */
+  private async conRolRespuesta(
+    usuario: {
+      id: string;
+      nombre: string;
+      email: string;
+      rolId: string;
+      sucursalId: string | null;
+      estado: $Enums.UsuarioEstado;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    db: ClienteUsuarios,
+  ): Promise<UsuarioRespuesta> {
+    const rol = await db.rol.findUnique({
+      where: { id: usuario.rolId },
+      select: { nombre: true },
+    });
+
+    return {
+      id: usuario.id,
+      nombre: usuario.nombre,
+      email: usuario.email,
+      rol: rol?.nombre ?? '',
+      rolId: usuario.rolId,
+      sucursalId: usuario.sucursalId,
+      estado: usuario.estado,
+      createdAt: usuario.createdAt,
+      updatedAt: usuario.updatedAt,
+    };
+  }
 
   /**
    * Combina el alcance del actor con los filtros solicitados usando `AND`.

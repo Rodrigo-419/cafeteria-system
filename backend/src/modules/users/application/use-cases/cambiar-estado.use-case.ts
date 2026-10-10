@@ -14,6 +14,7 @@ import {
   puedeModificarSuPropioEstado,
 } from '../../domain/rules/reglas-rol-sucursal';
 import {
+  ClienteUsuarios,
   UsuarioRespuesta,
   UsersRepository,
 } from '../../infrastructure/users.repository';
@@ -22,13 +23,25 @@ import {
 export class CambiarEstadoUseCase {
   constructor(private readonly usersRepository: UsersRepository) {}
 
+  /**
+   * `cliente` es opcional: sin el se usa `PrismaService`. Cuando se pasa un
+   * cliente transaccional, todo el cambio de estado (lectura del objetivo,
+   * conteo de Admins y escritura) ocurre dentro de esa transaccion, para que
+   * otro caso de uso pueda encadenar el cambio de estado con sus propias
+   * escrituras y que todas confirmen o fallen juntas.
+   */
   async ejecutar(
     actor: Actor,
     id: string,
     estado: 'activo' | 'bloqueado',
+    cliente?: ClienteUsuarios,
   ): Promise<UsuarioRespuesta> {
     const alcance = filtroAlcanceListado(actor);
-    const objetivo = await this.usersRepository.buscarPorIdEnAlcance(id, alcance);
+    const objetivo = await this.usersRepository.buscarPorIdEnAlcance(
+      id,
+      alcance,
+      cliente,
+    );
 
     if (!objetivo) {
       throw new NotFoundException('Usuario no encontrado');
@@ -40,7 +53,10 @@ export class CambiarEstadoUseCase {
 
     const quedaSinAdmin = dejaSinAdminActivo({
       objetivoEsAdminActivo: objetivo.rol === 'Admin' && objetivo.estado === 'activo',
-      adminsActivosTotales: await this.usersRepository.contarAdminsActivos(),
+      adminsActivosTotales: await this.usersRepository.contarAdminsActivos(
+        undefined,
+        cliente,
+      ),
       cambiaEstadoABloqueado: estado === 'bloqueado',
       dejaDeSerAdmin: false,
     });
@@ -51,6 +67,6 @@ export class CambiarEstadoUseCase {
       );
     }
 
-    return this.usersRepository.actualizarEstado(id, estado);
+    return this.usersRepository.actualizarEstado(id, estado, cliente);
   }
 }

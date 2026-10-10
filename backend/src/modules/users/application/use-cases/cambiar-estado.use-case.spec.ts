@@ -59,6 +59,7 @@ describe('CambiarEstadoUseCase', () => {
     expect(repository.actualizarEstado).toHaveBeenCalledWith(
       'objetivo-1',
       'bloqueado',
+      undefined,
     );
   });
 
@@ -137,6 +138,7 @@ describe('CambiarEstadoUseCase', () => {
     expect(repository.actualizarEstado).toHaveBeenCalledWith(
       'admin-2',
       'activo',
+      undefined,
     );
   });
 });

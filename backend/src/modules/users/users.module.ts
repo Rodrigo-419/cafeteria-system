@@ -27,6 +27,9 @@ import { RestablecerPasswordUseCase } from './application/use-cases/restablecer-
     AsignarPermisoUseCase,
     EliminarPermisoUseCase,
   ],
-  exports: [UsersRepository],
+  // `CambiarEstadoUseCase` se exporta para que el modulo de empleados pueda
+  // bloquear la cuenta vinculada al cesar, reutilizando sus invariantes (p. ej.
+  // no dejar el sistema sin Admin activo) dentro de su propia transaccion.
+  exports: [UsersRepository, CambiarEstadoUseCase],
 })
 export class UsersModule {}
