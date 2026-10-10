@@ -132,7 +132,22 @@ Los nombres de archivo son relativos a la raíz del repositorio. Salvo que se in
 | El **historial del equipo** se registra **solo cuando cambia el estado o las observaciones** (no al cambiar nombre o tipo), guardando usuario y valores anteriores. | Requisito original | `equipment.rules.ts` (`requiereHistorial`, `hayCambioNombre`, `hayCambioTexto`); `equipment.service.ts` (`actualizar`, `crearHistorial`) | `backend/test/equipment.e2e-spec.ts`: "cambiar el estado crea un historial con el usuario y los valores anteriores"; "cambiar solo el nombre no genera historial"; "cambiar observaciones registra el historial"; "PATCH sin cambios devuelve el mismo equipo sin historial" | Confirmada |
 | Registrar y editar equipos: `equipo.registrar_editar` (Admin y Gerente). **Ver** equipos e historial: `equipo.ver` (Admin y Gerente), permiso que **puede concederse a un Empleado** para que vea sin editar. | Requisito original | Matriz de permisos del seed; `reglas-permisos.ts` (`PERMISOS_CONCEDIBLES_A_EMPLEADO`) | `backend/test/equipment.e2e-spec.ts`: "empleado sin equipo.registrar_editar no puede crear -> 403"; "un Empleado con equipo.ver concedido puede ver pero no editar" | Confirmada |
 
-## 10. Inventario de supuestos clave (resumen)
+## 10. Módulo Employees
+
+| Regla de negocio | Origen | Dónde se implementa | Prueba que la cubre | Estado |
+| --- | --- | --- | --- | --- |
+| **Un empleado es el vínculo de un usuario existente**: solo se pueden vincular usuarios con rol **Empleado o Gerente**; un **Admin nunca puede ser empleado** (400). El usuario vinculado debe tener **sucursal** asignada, porque el empleado la **hereda**. | Requisito original | `backend/src/modules/employees/domain/rules/vinculo-usuario.ts` (`problemasVinculoEmpleado`, `ROLES_VINCULABLES`); `crear-empleado.use-case.ts` | `backend/test/employees.e2e-spec.ts`: "registra un empleado a partir de un usuario Empleado"; "acepta vincular a un usuario Gerente"; "rechaza con 400 vincular al Admin de la cafeteria"; `backend/src/modules/employees/domain/rules/vinculo-usuario.spec.ts` | Confirmada |
+| **Alcance**: el **Admin** gestiona a cualquier empleado; el **Gerente** solo a los empleados cuyo usuario tiene rol **Empleado** **de su propia sucursal** (un empleado vinculado a un usuario Gerente queda, aunque comparta sucursal, fuera del alcance de cualquier Gerente). Fuera de alcance responde **404**, como en los demás módulos. | Requisito original | `backend/src/modules/employees/domain/rules/alcance.ts` (`puedeGestionarEmpleado`, `filtroAlcanceEmpleados`) | `backend/test/employees.e2e-spec.ts`: "no ve un empleado vinculado a un usuario Gerente: 404"; "lista solo los empleados a los que alcanza"; `backend/src/modules/employees/domain/rules/alcance.spec.ts` | Confirmada |
+| El empleado **no elige sucursal**: toma la del usuario vinculado. Si el alta pide una distinta, el vínculo es inválido (**400**). La **fecha de contratación** viaja en el cuerpo (`YYYY-MM-DD`, validada contra el calendario real) y se guarda como fecha. | Requisito original | `crear-empleado.use-case.ts`; `backend/src/modules/employees/domain/fechas.ts` (`diaUtc`); DTO `CrearEmpleadoDto` (`@EsFechaLocal`) | `backend/test/employees.e2e-spec.ts`: "registra un empleado de usuario Empleado de su sucursal: 201" (la sucursal sale del usuario, no del cuerpo); `backend/src/modules/sales/domain/rules/fechas.spec.ts` (regla de fecha reutilizada) | Confirmada |
+| **Tras el alta solo se edita el cargo**; la fecha de contratación, la sucursal y la fecha de cese no se reescriben (son datos históricos). | Supuesto de implementación | `actualizar-empleado.use-case.ts`; `EmployeesRepository.actualizarCargo` | `backend/test/employees.e2e-spec.ts`: "actualiza el cargo tras el alta" | Confirmada |
+| El **cese es una baja, no un borrado**: el empleado queda `inactivo` (conserva su histórico) y **la cuenta del usuario vinculado se bloquea en la misma transacción**. Un empleado cesado no puede volver a cesarse (**409**) y una **fecha de cese anterior a la de contratación** es inválida (**400**). | Requisito original | `cesar-empleado.use-case.ts` (transacción que encadena `CambiarEstadoUseCase` + `marcarCese`); `backend/src/modules/employees/domain/rules/cese.ts` (`empleadoYaCesado`, `problemasFechaCese`); `marcarCese` usa `updateMany where { estado: 'activo' }` para que dos ceses simultáneos no ganen los dos | `backend/test/employees.e2e-spec.ts`: "cesa al empleado y bloquea su cuenta en la misma operacion"; "rechaza cesar dos veces: 409"; "rechaza una fecha de cese anterior a la contratacion: 400"; `backend/src/modules/employees/domain/rules/cese.spec.ts` | Confirmada |
+| El bloqueo del cese **pasa por el caso de uso de users** (y no por una escritura directa) para reutilizar sus invariantes (por ejemplo, no dejar el sistema sin ningún Admin activo) dentro de la misma transacción. | Supuesto de implementación | `cesar-empleado.use-case.ts`; el caso de uso de cambio de estado de `users` ahora acepta un **cliente transaccional opcional** (`CambiarEstadoUseCase.ejecutar(actor, id, estado, cliente?)`, `UsersRepository.buscarPorIdEnAlcance`/`contarAdminsActivos`/`actualizarEstado` con `cliente?` y resolución de rol siempre en consulta secuencial) | `backend/src/modules/users/application/use-cases/cambiar-estado.use-case.spec.ts` (expectativas actualizadas con el cliente `undefined`); `backend/test/employees.e2e-spec.ts` (cese completo) | Confirmada |
+| El **PIN de marcación** lo genera el sistema: **exactamente 6 dígitos**, se muestra **una sola vez** en la respuesta de la regeneración y en la base solo queda su **hash bcrypt (12 rondas)** en `empleado.pin_hash`. Ninguna lectura posterior lo devuelve. | Requisito original | `backend/src/modules/employees/domain/rules/pin.ts` (`generarPin`, `esPinValido`, `LONGITUD_PIN`); `regenerar-pin.use-case.ts` (bcrypt 12); `EmployeesRepository.guardarPinHash`; el `select` de empleados nunca incluye `pin_hash` | `backend/test/employees.e2e-spec.ts`: "regenera el PIN, lo guarda como hash y nunca vuelve a aparecer"; "la regeneracion produce un hash distinto del anterior"; `backend/src/modules/employees/domain/rules/pin.spec.ts` | Confirmada |
+| Todas las rutas de `/employees` exigen el permiso **`empleados.crear_editar`** (Admin y Gerente; no existe `empleados.ver`). Un Empleado sin el permiso recibe **403**; sin token, **401**. | Supuesto de implementación | `backend/src/modules/employees/presentation/employees.controller.ts` (`@RequirePermission('empleados.crear_editar')` en toda la ruta); matriz de permisos del seed | `backend/test/employees.e2e-spec.ts`: "un Empleado sin permisos no toca /employees: 403"; "todas las rutas responden 401 sin token" | Confirmada |
+| La **justificación de falta es inmutable** en la base: el trigger `fn_justificacion_falta_es_inmutable` (disparado `BEFORE UPDATE OR DELETE`) rechaza **UPDATE y DELETE** con excepción `P0001`; solo se puede insertar (no editar ni borrar lo ya justificado). | Supuesto de implementación | Migración `20261010120000_personal_etapa1_pin_hash_turnos_justificacion_falta` (función + trigger `trg_justificacion_falta_inmutable`); modelo `justificacion_falta` en `schema.prisma` | `backend/test/employees.e2e-spec.ts`: "rechaza UPDATE y DELETE sobre una justificacion ya creada" | Confirmada |
+| **Listar empleados**: paginado (`page`, `limit` ≤ 100) y filtros `sucursalId`, `estado` (`activo`/`inactivo`) y `q` (cargo, nombre o correo del usuario). El alcance del actor se **combina con `AND`** con los filtros pedidos: un filtro contrario al alcance no lo amplía (devuelve lista vacía). | Supuesto de implementación | `listar-empleados.use-case.ts`; `EmployeesRepository.listar/contar` (where con `AND`) | `backend/test/employees.e2e-spec.ts`: "lista solo los empleados a los que alcanza" | Confirmada |
+
+## 11. Inventario de supuestos clave (resumen)
 
 Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. Las dos únicas reglas que quedan **POR CONFIRMAR** están en las tablas de sus módulos: el **motivo por defecto de la entrada de stock** (inventario) y que **cambiar la contraseña no invalida los tokens emitidos** (autenticación).
 
@@ -149,19 +164,20 @@ Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. L
 | **5 intentos/minuto/IP** en el login. | `auth.controller.ts` | Confirmada |
 | **Permisos efectivos recalculados por petición** (bloqueo/permisos surten efecto inmediato). | `jwt.strategy.ts` | Confirmada |
 
-## 11. Pendiente de implementar
+## 12. Pendiente de implementar
 
 Estos módulos tienen **esqueletos en el repositorio** (sin lógica ni rutas) y **permisos ya sembrados** en el seed para cuando se desarrollen. Las reglas de negocio de cada uno están **por definir y confirmar**.
 
-### 11.1 Empleados y turnos
+### 12.1 Turnos
 
 | Punto | Estado |
 | --- | --- |
-| Módulo `employees` (esqueleto) y `shifts` (esqueleto): controller, service, repository, dto y reglas vacíos. | Esqueleto sin rutas registradas en `app.module.ts` |
-| Permisos sembrados: `empleados.crear_editar` (Admin, Gerente) y `turnos.editar` (Admin, Gerente). | Sembrados, sin rutas que los consuman |
-| Reglas de negocio (definir): vínculo empleado ↔ usuario, asignación de turnos a sucursal, solapamiento de turnos, etc. | Por definir |
+| Módulo `shifts` (esqueleto): controller, service, repository, dto y reglas vacíos. | Esqueleto sin rutas registradas en `app.module.ts` |
+| Permiso sembrado: `turnos.editar` (Admin, Gerente). | Sembrado, sin rutas que lo consuman |
+| La migración `20261010120000_personal_etapa1_pin_hash_turnos_justificacion_falta` dejó `turno.hora_inicio` y `turno.hora_fin` **nullable** (un turno —por ejemplo día libre— no tiene horario). | Aplicado en la base |
+| Reglas de negocio (definir): asignación de turnos a sucursal, solapamiento de asignaciones, `dias_semana` (números ISO separados por comas, 1=lunes), turno variable vs. fijo, sin DELETE si hay asignaciones. | Por definir |
 
-### 11.2 Asistencia
+### 12.2 Asistencia
 
 | Punto | Estado |
 | --- | --- |
@@ -170,7 +186,7 @@ Estos módulos tienen **esqueletos en el repositorio** (sin lógica ni rutas) y 
 | La **tabla `registro_asistencia` ya es inmutable** en la base: el trigger `fn_registro_asistencia_es_inmutable` (disparado `BEFORE UPDATE OR DELETE`) rechaza **UPDATE y DELETE** lanzando una excepción de tipo `P0001` (`raise_exception`); el `INSERT` está permitido, la tabla es de **solo inserción**. Las correcciones se modelan insertando un registro nuevo con `es_correccion = true`, nunca con UPDATE. Ver `backend/prisma/migrations/20261004235135_db_integrity_rules/migration.sql`. | Implementado en la base |
 | Reglas de negocio (definir): marcación por turno activo, ventana de tolerancia, corrección de registros, quién marca por quién. | Por definir |
 
-### 11.3 Reportes
+### 12.3 Reportes
 
 | Punto | Estado |
 | --- | --- |
@@ -178,7 +194,7 @@ Estos módulos tienen **esqueletos en el repositorio** (sin lógica ni rutas) y 
 | Permiso sembrado: `reportes.comparativos.ver` (Admin). | Sembrado, sin rutas que lo consumen |
 | Reglas de negocio (definir): definición de "reporte comparativo entre sucursales", fuentes de datos (ventas, inventario, asistencia) y período. | Por definir |
 
-## 12. Limitaciones y observaciones
+## 13. Limitaciones y observaciones
 
 - **Tokens vigentes tras cambiar la contraseña**: no se invalidan; siguen válidos hasta expirar.
 - **`cafeteria_test` como base e2e**: las pruebas end-to-end abortan si el nombre de la base no termina en `_test` (ver `backend/test/setup-e2e.ts` o `http-pruebas.ts`).

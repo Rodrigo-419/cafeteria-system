@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Referencia de las **55 rutas implementadas** por el backend. Todas se solicitan
+Referencia de las **61 rutas implementadas** por el backend. Todas se solicitan
 bajo el prefijo global `/api`.
 
 ## Convenciones
@@ -205,6 +205,32 @@ Estados válidos: `funcionando`, `danado`, `en_mantenimiento`, `retirado`. El
 historial solo se escribe al cambiar estado u observaciones. Alcance: el Admin ve
 todos; un Gerente solo los de su sucursal (forzada por servidor); un Empleado solo
 con `equipo.ver` concedido individualmente. No existen borrados de equipos.
+
+### Empleados (`/api/employees`)
+
+| Método | Ruta                     | Permiso | Códigos |
+| ------ | ------------------------ | ------- | ------- |
+| POST   | `/api/employees`         | `empleados.crear_editar` | 201, 400, 403, 404, 409 |
+| GET    | `/api/employees`         | `empleados.crear_editar` | 200, 400, 403 |
+| GET    | `/api/employees/:id`     | `empleados.crear_editar` | 200, 403, 404 |
+| PATCH  | `/api/employees/:id`     | `empleados.crear_editar` | 200, 400, 403, 404 |
+| POST   | `/api/employees/:id/cese` | `empleados.crear_editar` | 200, 400, 403, 404, 409 |
+| POST   | `/api/employees/:id/pin` | `empleados.crear_editar` | 200, 403, 404 |
+
+- `POST /api/employees` vincula a un **usuario existente** (`usuarioId`) con un
+  `cargo` y una `fechaContratacion` (`YYYY-MM-DD`). El empleado **hereda la
+  sucursal del usuario**, que debe tener rol **Empleado o Gerente** (un Admin
+  responde `400`; un usuario ya vinculado responde `409`). Alcance: Admin gestiona
+  todos; Gerente solo empleados de usuarios **Empleado** de su sucursal (fuera,
+  `404`).
+- `PATCH /api/employees/:id` actualiza solo el `cargo`.
+- `POST /api/employees/:id/cese` cesa al empleado (queda `inactivo`, conserva el
+  histórico) y **bloquea la cuenta del usuario vinculado en la misma
+  transacción**. `fechaCese` opcional (por defecto hoy, América/Lima) y nunca
+  anterior a la de contratación (`400`); un empleado ya cesado responde `409`.
+- `POST /api/employees/:id/pin` regenera el **PIN de marcación**: 6 dígitos
+  generados por el sistema, devuelto **una sola vez**; en la base solo queda su
+  hash bcrypt. El listado/detalle de empleados nunca incluye el PIN ni su hash.
 
 ## Códigos de error más comunes
 

@@ -22,15 +22,17 @@ en [modelo.dbml](database/modelo.dbml) y de él se genera
 | -------------- | -------------------------------------------------------------- |
 | Organización   | `Sucursal`                                                     |
 | Seguridad      | `Rol`, `Permiso`, `RolPermiso`, `Usuario`, `UsuarioPermiso`, `HistorialPermisos` |
-| Personal       | `Empleado`, `Turno`, `AsignacionTurno`, `RegistroAsistencia`   |
+| Personal       | `Empleado`, `Turno`, `AsignacionTurno`, `RegistroAsistencia`, `JustificacionFalta` |
 | Catálogo       | `CategoriaProducto`, `Producto`, `Variante`, `ProductoSucursalVariante` |
 | Inventario     | `Insumo`, `InsumoSucursal`, `MovimientoInventario`, `RecuentoInventario`, `RecuentoInventarioDetalle`, `AlertaStock` |
 | Ventas         | `Venta`, `VentaDetalle`                                        |
 | Equipamiento   | `Equipo`, `HistorialEquipo`                                    |
 
-Los modelos del dominio **Personal** existen en el esquema y los módulos
-`employees`/`shifts`/`attendance` aún no tienen lógica: son tablas preparadas por
-la migración, no operadas por la API de hoy.
+Los modelos del dominio **Personal** existen en el esquema. El módulo `employees`
+ya opera `Empleado` (alta, edición, cese y PIN) y `JustificacionFalta`
+(actualmente solo su tabla inmutable); los módulos `shifts`/`attendance` aún no
+tienen lógica operativa (las tablas de turnos y asistencia están preparadas por
+la migración, no operadas por la API de hoy).
 
 ## 3. Relevancia por dominio
 
@@ -219,7 +221,8 @@ leen de `backend/prisma/schema.prisma`:
 | `stockActual`, `stockMinimo`, cantidades de movimiento/recuento | `Decimal(12, 2)` | Stock con 2 decimales (por presentaciones no enteras). |
 | `VentaDetalle.cantidad`      | `Int`       | Cantidad entera positiva por línea.  |
 | Fechas de empleado y asignaciones | `Date`  | Día calendario.                      |
-| `Turno.horaInicio`/`horaFin` | `Time`      | Horario del turno.                   |
+| `Empleado.pinHash` | `Varchar` | Hash bcrypt (12 rondas) del PIN de marcación; `null` hasta que se genera. El PIN en claro (6 dígitos) no se guarda. |
+| `Turno.horaInicio`/`horaFin`      | `Time`      | Horario del turno (**nullable**: un turno puede no tener horario). |
 | `RegistroAsistencia.fechaHora` | `DateTime` | Momento exacto de la marcación.     |
 
 ## 6. Reglas de integridad de la base
@@ -249,6 +252,18 @@ La migración **`20261009120000_chk_insumo_sucursal_stock_actual_no_negativo`** 
 el `CHECK` `chk_insumo_sucursal_stock_actual_no_negativo` (`stock_actual >= 0`), que
 completa el punto 6: el stock **nunca puede quedar negativo**, aunque se escriba
 por fuera de la aplicación.
+
+La migración **`20261010120000_personal_etapa1_pin_hash_turnos_justificacion_falta`**
+añade:
+
+8. **`justificacion_falta` es inmutable** (solo insert). Un trigger
+   (`fn_justificacion_falta_es_inmutable`, disparado `BEFORE UPDATE OR DELETE`) rechaza
+   `UPDATE` y `DELETE` con una excepción de tipo `P0001`, igual que
+   `registro_asistencia`: lo ya justificado no se edita ni se borra.
+9. **`empleado.pin_hash`** (`varchar`, nullable): solo guarda el hash bcrypt del PIN
+   de marcación.
+10. **`turno.hora_inicio` y `turno.hora_fin` nullable**: un turno puede no tener
+    horario.
 
 ## 7. Comportamientos notables del dominio
 
