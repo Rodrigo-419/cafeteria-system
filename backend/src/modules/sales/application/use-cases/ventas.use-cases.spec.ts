@@ -24,7 +24,7 @@ import type {
   VentaCompleta,
   VentaFila,
 } from '../../infrastructure/sales.repository';
-import { ROL_ADMIN, ROL_GERENTE } from '../../../users/domain/roles';
+import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../../../users/domain/roles';
 import type { ActorVentas } from '../../domain/rules/alcance-ventas';
 
 const SUCURSAL = 'suc-norte';
@@ -32,6 +32,7 @@ const SUCURSAL_AJENA = 'suc-sur';
 
 const GERENTE: ActorVentas = { id: 'ger-1', rol: ROL_GERENTE, sucursalId: SUCURSAL };
 const ADMIN: ActorVentas = { id: 'adm-1', rol: ROL_ADMIN, sucursalId: null };
+const EMPLEADO: ActorVentas = { id: 'emp-1', rol: ROL_EMPLEADO, sucursalId: SUCURSAL };
 
 const OFERTA_A = 'of-a';
 const OFERTA_B = 'of-b';
@@ -320,6 +321,52 @@ describe('AnularVentaUseCase', () => {
       'Solo se pueden anular ventas del mismo dia',
     );
     expect(repository.anularVenta).not.toHaveBeenCalled();
+  });
+
+  it('responde 403 si un Empleado intenta anular una venta que no registro', async () => {
+    const repository = repo({
+      buscarVentaCompleta: jest
+        .fn()
+        .mockResolvedValue(ventaCompleta({ usuarioId: GERENTE.id })),
+    });
+    const useCase = new AnularVentaUseCase(comoRepositorio(repository));
+
+    await expect(
+      useCase.ejecutar(EMPLEADO, 'venta-1', 'Motivo', AHORA),
+    ).rejects.toThrow('No puedes anular una venta que no registraste');
+    expect(repository.anularVenta).not.toHaveBeenCalled();
+  });
+
+  it('un Empleado anula la venta que el mismo registro', async () => {
+    const anulada = venta({
+      usuarioId: EMPLEADO.id,
+      estado: 'anulada',
+      fechaAnulacion: AHORA,
+      usuarioAnuladorId: EMPLEADO.id,
+      motivoAnulacion: 'Motivo',
+    });
+
+    const repository = repo({
+      buscarVentaCompleta: jest
+        .fn()
+        .mockResolvedValue(ventaCompleta({ usuarioId: EMPLEADO.id })),
+      anularVenta: jest.fn().mockResolvedValue(anulada),
+    });
+    const useCase = new AnularVentaUseCase(comoRepositorio(repository));
+
+    const resultado = await useCase.ejecutar(EMPLEADO, 'venta-1', 'Motivo', AHORA);
+
+    expect(repository.anularVenta).toHaveBeenCalledWith(
+      'venta-1',
+      {
+        fechaAnulacion: AHORA,
+        usuarioAnuladorId: EMPLEADO.id,
+        motivoAnulacion: 'Motivo',
+      },
+      TRANSACCION,
+    );
+    expect(resultado.estado).toBe('anulada');
+    expect(resultado.motivoAnulacion).toBe('Motivo');
   });
 
   it('anula dejando motivo, autor y hora, y devuelve la venta', async () => {

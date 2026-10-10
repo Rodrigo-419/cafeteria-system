@@ -1,9 +1,11 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { esEmpleado } from '../../../users/domain/roles';
 import {
   exigirAccesoSucursal,
   type ActorVentas,
@@ -26,8 +28,10 @@ import {
  * Tres condiciones, en este orden:
  *
  *   1. La venta existe y esta en el alcance del actor (404).
- *   2. Esta completada (409): una venta ya anulada no se anula dos veces.
- *   3. Fue del mismo dia local (409). La caja de ayer ya esta cerrada; corregir
+ *   2. Un Empleado solo anula las ventas que el mismo registro (403); el
+ *      Gerente anula cualquier venta de su sucursal.
+ *   3. Esta completada (409): una venta ya anulada no se anula dos veces.
+ *   4. Fue del mismo dia local (409). La caja de ayer ya esta cerrada; corregir
  *      esa venta deberia ser otra operacion, con otro control, no un boton.
  *
  * `ahora` se recibe por parametro para que la regla del mismo dia sea
@@ -62,6 +66,12 @@ export class AnularVentaUseCase {
       }
 
       exigirAccesoSucursal(actor, completa.venta.sucursalId, 'La venta no existe');
+
+      if (esEmpleado(actor.rol) && completa.venta.usuarioId !== actor.id) {
+        throw new ForbiddenException(
+          'No puedes anular una venta que no registraste',
+        );
+      }
 
       if (completa.venta.estado !== 'completada') {
         throw new ConflictException('La venta ya esta anulada');

@@ -404,17 +404,63 @@ describe('ventas (e2e)', () => {
       expect(registro.status).toBe(403);
     });
 
-    it('el Empleado si puede anular: es permiso por defecto de su rol', async () => {
+    it('un Empleado anula la venta que el registro: 200', async () => {
+      const empleado = await crearEmpleado(
+        app,
+        admin,
+        sucursales.centro,
+        'Empleado Registrador',
+      );
+      const tokenRegistrador = (
+        await iniciarSesion(
+          app,
+          'empleado.registrador@cafeteria.test',
+          PASSWORD_VALIDA_PRUEBAS,
+        ).expect(200)
+      ).body.accessToken as string;
+
+      const permisoId = await idDePermiso('ventas.registrar');
+      await request(app.getHttpServer())
+        .put(`/api/users/${empleado.id}/permisos/${permisoId}`)
+        .set(...como(tokenCentro))
+        .send({ tipo: 'concedido' })
+        .expect(204);
+
+      const venta = (
+        await registrar(tokenRegistrador, [
+          { productoSucursalVarianteId: ofertaTarta, cantidad: 1 },
+        ]).expect(201)
+      ).body as VentaE2E;
+
+      const respuesta = await request(app.getHttpServer())
+        .post(`/api/sales/${venta.id}/anular`)
+        .set(...como(tokenRegistrador))
+        .send({ motivo: 'Venta duplicada por error' })
+        .expect(200);
+
+      expect((respuesta.body as VentaE2E).estado).toBe('anulada');
+      expect((respuesta.body as VentaE2E).usuarioAnuladorId).toBe(empleado.id);
+    });
+
+    it('un Empleado no anula una venta registrada por el Gerente: 403 y queda intacta', async () => {
       const venta = await ventaDeCentro();
 
       const respuesta = await request(app.getHttpServer())
         .post(`/api/sales/${venta.id}/anular`)
         .set(...como(tokenEmpleado))
         .send({ motivo: 'Teclado mal calibrado' })
-        .expect(200);
+        .expect(403);
 
-      expect((respuesta.body as VentaE2E).estado).toBe('anulada');
-      expect((respuesta.body as VentaE2E).usuarioAnuladorId).not.toBe(idGerenteCentro);
+      expect(mensajesDe(respuesta.body)).toEqual([
+        'No puedes anular una venta que no registraste',
+      ]);
+
+      const lectura = await request(app.getHttpServer())
+        .get(`/api/sales/${venta.id}`)
+        .set(...como(tokenCentro))
+        .expect(200);
+      expect((lectura.body as VentaE2E).estado).toBe('completada');
+      expect((lectura.body as VentaE2E).usuarioAnuladorId).toBeNull();
     });
 
     it('conceder ventas.registrar a un Empleado le deja registrar, pero no leer', async () => {
@@ -1020,6 +1066,28 @@ describe('ventas (e2e)', () => {
         .expect(200);
       expect((releida.body as VentaE2E).total).toBe('7.00');
       expect((releida.body as VentaE2E).detalles?.[0].precioUnitario).toBe('7.00');
+    });
+
+    it('registrar una venta no descuenta inventario ni crea movimientos de stock', async () => {
+      const resumenStock = async () => {
+        const filas = await clientePrueba().insumoSucursal.findMany({
+          select: { id: true, stockActual: true },
+        });
+        return {
+          filas: filas.length,
+          total: filas.reduce((suma, fila) => suma + Number(fila.stockActual), 0),
+        };
+      };
+
+      const stockAntes = await resumenStock();
+      const movimientosAntes = await clientePrueba().movimientoInventario.count();
+
+      await registrar(tokenCentro, [
+        { productoSucursalVarianteId: ofertaCafe, cantidad: 2 },
+      ]).expect(201);
+
+      expect(await resumenStock()).toEqual(stockAntes);
+      expect(await clientePrueba().movimientoInventario.count()).toBe(movimientosAntes);
     });
   });
 });
