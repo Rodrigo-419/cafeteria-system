@@ -8,10 +8,9 @@ usa, cómo se relacionan los módulos y qué ocurre en una petición autenticada
 El backend es una **API REST** construida como un **monolito modular** con NestJS.
 Gestiona la operación de una cadena de cafeterías con varias sucursales: usuarios
 y permisos, sucursales, catálogo de productos con precios por sucursal, inventario
-con alertas y recuentos, ventas con anulación, equipos por sucursal, y personal
-(empleados, turnos, asignaciones y asistencia). En este momento solo el módulo de
-**reportes** sigue siendo un **esqueleto** (archivos base sin lógica): su permiso
-ya existe en el seed, pero no está importado en `AppModule`.
+con alertas y recuentos, ventas con anulación, equipos por sucursal, personal
+(empleados, turnos, asignaciones y asistencia) y reportes comparativos entre
+sucursales. Todos los módulos están implementados y registrados en `AppModule`.
 
 Características centrales:
 
@@ -57,10 +56,11 @@ Se eligió un **monolito modular** en lugar de microservicios:
 | Lint            | oxlint (`npm run lint`).                                            |
 | CI              | GitHub Actions (ver `backend/.github/workflows/ci.yml`).            |
 
-## 4. Organización en capas: completas vs. livianas
+## 4. Organización en capas
 
 Los módulos con lógica real (auth, users, branches, products, inventory, sales,
-equipment, employees, shifts, attendance) implementan las **capas completas**:
+equipment, employees, shifts, attendance, reports) implementan las **capas
+completas**:
 
 - **presentation**: controllers HTTP, DTOs y guards específicos del módulo.
 - **application**: casos de uso que orquestan la operación (y, cuando hace falta,
@@ -69,9 +69,8 @@ equipment, employees, shifts, attendance) implementan las **capas completas**:
   cantidad, dinero, estados). Son funciones sin dependencias de Nest ni Prisma.
 - **infrastructure**: adaptadores externos (estrategia JWT, repositorios Prisma).
 
-El único módulo esqueleto hoy (`reports`) usa la estructura **liviana**: archivos
-de `controller`/`service`/`repository`/`dto`/`module` en su raíz, sin capas y sin
-lógica, para marcar la forma que tendrá cuando se implemente.
+Todos los módulos usan esta estructura; ya no queda ninguno con la organización
+liviana de esqueleto.
 
 Elementos comunes en `backend/src/common/`: decoradores `Public`,
 `RequirePermission`, `User` y el manejo global de excepciones.
@@ -108,12 +107,12 @@ Todo el código está en `backend/src/modules/`. Estado real de cada paquete:
 | `employees` | Implementado | Empleados vinculados a usuario, cargo, cese y PIN.       |
 | `shifts`    | Implementado | Turnos fijos/variables y asignaciones.                   |
 | `attendance`| Implementado | Marcación con PIN, correcciones, faltas y lecturas.      |
-| `reports`   | Esqueleto   | Sin controlador registrado; no está importado en `AppModule`. |
+| `reports`   | Implementado | `GET /api/reports/comparativo` (comparativo entre sucursales). |
 
-El módulo de reportes es un esqueleto: existen las carpetas y algunos archivos
-base, pero **no se importa en `AppModule`**, por lo que no expone rutas. Su
-presencia en la base de datos es otra cosa: el seed ya cubre su permiso (ver
-[Modelo de datos](../modelo-de-datos.md)).
+El módulo de reportes quedó **implementado** y registrado en `AppModule`: expone
+`GET /api/reports/comparativo` bajo el permiso `reportes.comparativos.ver`. No
+tiene esqueleto pendiente (sus archivos base se eliminaron). El seed ya cubría su
+permiso (ver [Modelo de datos](../modelo-de-datos.md)).
 
 ## 6. Ciclo de una petición autenticada
 

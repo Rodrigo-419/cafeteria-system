@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Referencia de las **61 rutas implementadas** por el backend. Todas se solicitan
+Referencia de las **76 rutas implementadas** por el backend. Todas se solicitan
 bajo el prefijo global `/api`.
 
 ## Convenciones
@@ -325,6 +325,30 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
 - **Registro efectivo**: las correcciones no son marcaciones nuevas; sustituyen la
   hora del original. "Abierta" significa entrada efectiva **sin salida efectiva
   posterior**.
+
+### Reportes (`/api/reports`)
+
+| Método | Ruta                     | Permiso                   | Códigos       |
+| ------ | ------------------------ | ------------------------- | ------------- |
+| GET    | `/api/reports/comparativo` | `reportes.comparativos.ver` | 200, 400, 403, 404 |
+
+- Solo **lectura** y solo para el **Admin** (permiso `reportes.comparativos.ver`):
+  un Gerente o Empleado recibe **403**; sin token, **401**.
+- **Query obligatoria** `desde` y `hasta` (`YYYY-MM-DD`, día local America/Lima),
+  con `hasta >= desde` (**400** si no) y un máximo de **92 días** (**400** si se
+  supera). `sucursalId` opcional filtra el reporte a una sucursal; una
+  inexistente responde **404**.
+- La respuesta trae `{ desde, hasta, generadoEn, sucursales: [...] }`, **una fila
+  por sucursal** (todas, incluso sin datos, con ceros) ordenadas por **nombre**:
+  - `ventas` (del período): `total`, `cantidad`, `ticketPromedio` (`null` si no
+    hubo ventas), `porMetodoPago.efectivo`/`.tarjeta` (`total` y `cantidad`) y
+    `anuladas.cantidad`. Importes como string con 2 decimales.
+  - `inventario.movimientos` (del período): `total` y, por tipo
+    (`entradas`/`ajustes`), `cantidad` y `cantidadNeta` (variación ±).
+  - `asistencia` (del período): `faltas` (misma regla que
+    `GET /attendance/absences`) y `faltasJustificadas`.
+  - `estadoActual`: `insumosConAlertaAbierta` y `entradasAbiertas`, **al momento
+    de generar** el reporte (no son cifras del período).
 
 ## Códigos de error más comunes
 

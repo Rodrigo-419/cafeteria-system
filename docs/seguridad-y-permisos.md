@@ -80,11 +80,11 @@ completa sembrada es:
 | `asistencia.corregir`       | Corregir registros de asistencia         |       |    ✓    |          |
 | `asistencia.ver`            | Ver registros de asistencia              |   ✓   |    ✓    |    ✓     |
 
-Son **24 permisos**. Todos tienen rutas implementadas salvo
-`reportes.comparativos.ver`, sembrado pero **sin controlador**: pertenece al módulo
-`reports`, que sigue siendo un esqueleto (ver
+Son **24 permisos**, y **todos tienen rutas implementadas** que los consumen,
+incluido `reportes.comparativos.ver` (módulo `reports`, con la ruta
+`GET /api/reports/comparativo`; ver
 [Decisiones de diseño](architecture/decisiones-de-diseno.md)). Los permisos de
-`employees`, `shifts` y `attendance` ya se consumen desde sus rutas.
+`employees`, `shifts`, `attendance` y `reports` ya se consumen desde sus rutas.
 
 ## 4. Permisos individuales
 
@@ -131,6 +131,10 @@ se registra en `historial_permisos` en la misma transacción.
 | Inventario  | Insumos y stock: `insumos.ver`; movimientos: `inventario.registrar`; recuentos/alertas: `inventario.recuento` y `alertas.ver_resolver`. | Catálogo de insumos: `insumos.catalogo.editar` (Admin). Alta/stock mínimo/estado: `inventario.minimo.editar`. Entradas: `inventario.registrar`. Recuentos: `inventario.recuento`. |
 | Ventas      | `ventas.ver` (Admin y Gerente)             | `ventas.registrar` (Gerente, o Empleado con concesión individual). Anulación: `ventas.anular`. |
 | Equipos     | `equipo.ver`                               | `equipo.registrar_editar` (Admin y Gerente). |
+| Empleados   | `empleados.crear_editar` (crear, listar, editar, cese y regenerar PIN; no existe `empleados.ver`). | Ídem (Admin y Gerente). |
+| Turnos      | `turnos.editar` (turnos y asignaciones; no existe `turnos.ver`). | Ídem (Admin y Gerente). |
+| Asistencia  | `asistencia.ver` (Admin, Gerente y Empleado). | Marcar: `asistencia.marcar` (Admin, Gerente y Empleado). Corregir y justificar: `asistencia.corregir` (solo Gerente). |
+| Reportes    | `reportes.comparativos.ver` (solo Admin). | No aplica: el reporte es de solo lectura. |
 
 ## 7. Notas de verificación
 

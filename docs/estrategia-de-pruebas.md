@@ -83,6 +83,7 @@ Cada módulo tiene su suite en `backend/test/`:
 | `employees`           | `employees.e2e-spec.ts`    | Vínculo con usuario, cargo, cese, PIN e inmutabilidad de justificaciones. |
 | `shifts`              | `shifts.e2e-spec.ts`       | Turnos fijos/variables, asignaciones, solapamiento y retiro. |
 | `attendance`          | `attendance.e2e-spec.ts`   | Marcación con PIN, doble marcaje, correcciones, cierre administrativo, justificación de faltas, lecturas y terminal. |
+| `reports`             | `reports.e2e-spec.ts`      | Reporte comparativo entre sucursales: contrato, ventas, inventario, asistencia, estado actual, validaciones y autorización. |
 
 Helpers compartidos en `backend/test/utils/`:
 
@@ -107,8 +108,8 @@ ejecutando los comandos de la sección 2.
 
 | Nivel     | Suites | Casos |
 | --------- | ------ | ----- |
-| Unitarias | 50     | 735   |
-| E2E       | 11     | 377   |
+| Unitarias | 53     | 757   |
+| E2E       | 12     | 396   |
 
 > La tabla no incluye un % de cobertura de código: el repo no define el comando
 > `coverage` como parte del flujo estándar.

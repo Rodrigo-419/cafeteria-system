@@ -28,12 +28,13 @@ en [modelo.dbml](database/modelo.dbml) y de él se genera
 | Ventas         | `Venta`, `VentaDetalle`                                        |
 | Equipamiento   | `Equipo`, `HistorialEquipo`                                    |
 
-Los modelos del dominio **Personal** existen en el esquema. El módulo `employees`
-ya opera `Empleado` (alta, edición, cese y PIN) y `JustificacionFalta`
-(actualmente solo su tabla inmutable). El módulo `shifts` ya opera `Turno` y
-`AsignacionTurno` (alta, edición de horario y asignación/retiro); el módulo
-`attendance` aún no tiene lógica operativa (la tabla de asistencia está
-preparada por la migración, no operada por la API de hoy).
+Los modelos del dominio **Personal** existen en el esquema y los opera la API:
+`employees` opera `Empleado` (alta, edición, cese y PIN) y `JustificacionFalta`
+(justificación de faltas, además de su tabla inmutable); `shifts` opera `Turno` y
+`AsignacionTurno` (alta, edición de horario y asignación/retiro); y `attendance`
+opera `RegistroAsistencia` (marcación con PIN, correcciones, lecturas y cálculo de
+faltas). El módulo `reports` **no escribe**: lee ventas, inventario y asistencia
+para el reporte comparativo entre sucursales.
 
 ## 3. Relevancia por dominio
 
@@ -346,6 +347,13 @@ añade:
     `justificacion_falta_empleado_id_fecha_key` sobre `(empleado_id, fecha)`; un
     empleado solo puede tener una justificación por día.
 
+La migración **`20261010130000_reports_indices_comparativo`** añade **solo
+índices** de apoyo al reporte comparativo, sin tocar datos ni columnas:
+`venta(estado, created_at)` (filtrar por estado y por fecha cuando el reporte
+pide todas las sucursales, caso que el índice `venta(sucursal_id, created_at)` no
+cubre porque no empieza por sucursal) y `justificacion_falta(fecha)` (contar las
+justificaciones del período, cuya única unicidad empieza por `empleado_id`).
+
 > La regla "**una corrección por (registro original, tipo)**" **no** vive en la
 > base (no hay índice único para el par): la valida la aplicación en
 > `corregir-registro.use-case.ts` (`existeParCorreccion`), que responde `409`.
@@ -379,6 +387,10 @@ añade:
   incluye ese día, sin entrada efectiva ni justificación; los turnos **variables no
   generan faltas**. Marcar no exige turno activo (ver limitaciones en
   [Decisiones de diseño](architecture/decisiones-de-diseno.md)).
+- **Reportes**: el reporte comparativo entre sucursales es de **solo lectura** y
+  **no persiste** nada: cruza ventas, movimientos de inventario y asistencia de un
+  período con el estado actual (alertas abiertas y entradas sin cerrar) y se
+  resuelve con consultas agregadas, sin escrituras.
 
 ## 8. Relación con el DBML
 

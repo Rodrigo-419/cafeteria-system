@@ -13,7 +13,7 @@ de documentos.
 | [Seguridad y permisos](seguridad-y-permisos.md) | `docs/seguridad-y-permisos.md` | Autenticación, roles, tabla de permisos sembrados y reglas de alcance por módulo. |
 | [Modelo de datos](modelo-de-datos.md) | `docs/modelo-de-datos.md` | Entidades por dominio, enums, precisiones y reglas de integridad en la base. |
 | [Referencia de la API](referencia-api.md) | `docs/referencia-api.md` | Todas las rutas, su permiso, su alcance y los códigos de respuesta más comunes. |
-| [Decisiones de diseño](architecture/decisiones-de-diseno.md) | `docs/architecture/decisiones-de-diseno.md` | Documento vivo con las reglas de negocio por módulo (tablas), supuestos a confirmar y pendientes. |
+| [Decisiones de diseño](architecture/decisiones-de-diseno.md) | `docs/architecture/decisiones-de-diseno.md` | Documento vivo con las reglas de negocio por módulo (tablas), supuestos a confirmar y mejoras futuras. |
 | [Estrategia de pruebas](estrategia-de-pruebas.md) | `docs/estrategia-de-pruebas.md` | Estrategia de pruebas, cifras actuales, cómo ejecutarlas y qué cubre cada suite. |
 | [Modelo de datos (DBML)](database/modelo.dbml) | `docs/database/modelo.dbml` | Esquema fuente en lenguaje DBML, del que se genera `backend/prisma/schema.prisma`. |
 
@@ -48,27 +48,23 @@ El backend vive en `backend/` y expone los siguientes módulos en
 | `employees` | Implementado | Empleados vinculados a un usuario, cargo, cese y PIN de marcación. |
 | `shifts`    | Implementado | Turnos fijos/variables y asignaciones con control de solapamiento. |
 | `attendance`| Implementado | Marcación con PIN, correcciones, faltas justificadas y lecturas. |
-| `reports`   | Esqueleto   | Archivos base sin lógica. |
+| `reports`   | Implementado | Reporte comparativo entre sucursales (ventas, inventario y asistencia). |
 
 ## Pendientes de verificar
 
-Los siguientes puntos no pudieron confirmarse contra código, esquema o pruebas en
-el momento de redactar esta documentación. No se afirmaron como ciertos:
-
-- **Módulo `reports`**: el seed ya siembra su permiso
-  (`reportes.comparativos.ver`) y el esquema puede contener tablas afines, pero la
-  lógica de aplicación **no está implementada**. La documentación describe solo lo
-  que existe en la base o en el seed, no un comportamiento de API que aún no
-  existe. Los módulos `employees`, `shifts` y `attendance` **sí** están
-  implementados (ver [Referencia de la API](referencia-api.md) y
-  [Decisiones de diseño](architecture/decisiones-de-diseno.md)).
+Todos los módulos del backend están implementados y verificados contra código,
+esquema y pruebas; **no queda ningún módulo esqueleto**. Aquello que se asumió
+durante el diseño y no tiene requisito escrito ni prueba dedicada está marcado
+como **POR CONFIRMAR** en las tablas de
+[Decisiones de diseño](architecture/decisiones-de-diseno.md) (por ejemplo, reglas
+del reporte comparativo como `faltasJustificadas` y el estado actual).
 
 ### Supuestos a confirmar
 
 Las reglas que se asumieron durante el diseño y que hoy no tienen requisito
 escrito, ni constraint en la base ni prueba dedicada están listadas —con su
 estado **Confirmada / POR CONFIRMAR**— en la sección [inventario de supuestos
-clave](architecture/decisiones-de-diseno.md#13-inventario-de-supuestos-clave-resumen)
+clave](architecture/decisiones-de-diseno.md#14-inventario-de-supuestos-clave-resumen)
 de Decisiones de diseño.
 
 ### Discrepancias conocidas (código vs. especificación inicial)
