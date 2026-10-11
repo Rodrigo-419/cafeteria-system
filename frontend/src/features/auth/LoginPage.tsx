@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Navigate, useLocation } from 'react-router-dom'
+import { CoffeeIcon, EyeIcon, EyeOffIcon } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -45,6 +47,7 @@ export function LoginPage() {
     useAuth()
   const location = useLocation()
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
+  const [mostrarContrasena, setMostrarContrasena] = useState(false)
 
   const form = useForm<ValoresLogin>({
     resolver: zodResolver(esquemaLogin),
@@ -69,11 +72,25 @@ export function LoginPage() {
   })
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Iniciar sesión</CardTitle>
-          <CardDescription>Sistema de cafetería</CardDescription>
+    <div className="flex min-h-svh items-center justify-center bg-neutral-900 p-4">
+      <Card className="relative w-full max-w-sm overflow-hidden pt-0">
+        <div
+          aria-hidden
+          className="h-1.5 w-full bg-linear-to-r from-primary via-primary-400 to-secondary"
+        />
+        <CardHeader className="gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <CoffeeIcon className="size-5" />
+            </span>
+            <div className="space-y-1">
+              <Badge variant="secondary">Portal administrativo interno</Badge>
+              <CardTitle className="text-xl">Iniciar sesión</CardTitle>
+            </div>
+          </div>
+          <CardDescription>
+            Accede al sistema de cafetería con tu usuario y contraseña.
+          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           {motivoSalida === 'expirada' && (
@@ -118,13 +135,30 @@ export function LoginPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Contraseña</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        autoComplete="current-password"
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          type={mostrarContrasena ? 'text' : 'password'}
+                          autoComplete="current-password"
+                          className="pr-10"
+                          {...field}
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        className="absolute top-0.5 right-0.5"
+                        aria-label={
+                          mostrarContrasena
+                            ? 'Ocultar contraseña'
+                            : 'Mostrar contraseña'
+                        }
+                        onClick={() => setMostrarContrasena((valor) => !valor)}
+                      >
+                        {mostrarContrasena ? <EyeOffIcon /> : <EyeIcon />}
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -134,6 +168,10 @@ export function LoginPage() {
               </Button>
             </form>
           </Form>
+
+          <p className="text-center text-xs text-muted-foreground">
+            Acceso restringido al personal autorizado.
+          </p>
         </CardContent>
       </Card>
     </div>

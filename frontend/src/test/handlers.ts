@@ -1,6 +1,10 @@
 import { http, HttpResponse } from 'msw'
 import type {
+  AlertaStockApi,
   CartaOferta,
+  EquipoApi,
+  RegistroAsistenciaApi,
+  ReporteComparativoApi,
   RespuestaLogin,
   SucursalApi,
   UsuarioApi,
@@ -8,6 +12,61 @@ import type {
 } from '@/types/api'
 
 export const BASE_API = 'http://localhost/api'
+
+// Permisos efectivos por rol segun `docs/seguridad-y-permisos.md`.
+export const PERMISOS_ADMIN: string[] = [
+  'sucursales.crear_editar',
+  'sucursales.ver',
+  'usuarios.crear_editar',
+  'permisos.asignar',
+  'productos.catalogo.editar',
+  'productos.ver',
+  'insumos.catalogo.editar',
+  'insumos.ver',
+  'inventario.registrar',
+  'inventario.minimo.editar',
+  'inventario.recuento',
+  'alertas.ver_resolver',
+  'ventas.ver',
+  'reportes.comparativos.ver',
+  'empleados.crear_editar',
+  'turnos.editar',
+  'asistencia.marcar',
+  'asistencia.ver',
+  'equipo.registrar_editar',
+  'equipo.ver',
+]
+
+export const PERMISOS_GERENTE: string[] = [
+  'sucursales.ver',
+  'usuarios.crear_editar',
+  'permisos.asignar',
+  'productos.precio.editar',
+  'productos.ver',
+  'insumos.ver',
+  'inventario.registrar',
+  'inventario.minimo.editar',
+  'inventario.recuento',
+  'alertas.ver_resolver',
+  'ventas.registrar',
+  'ventas.anular',
+  'ventas.ver',
+  'empleados.crear_editar',
+  'turnos.editar',
+  'asistencia.marcar',
+  'asistencia.corregir',
+  'asistencia.ver',
+  'equipo.registrar_editar',
+  'equipo.ver',
+]
+
+export const PERMISOS_EMPLEADO: string[] = [
+  'sucursales.ver',
+  'productos.ver',
+  'ventas.anular',
+  'asistencia.marcar',
+  'asistencia.ver',
+]
 
 export const USUARIO_PRUEBA: UsuarioApi = {
   id: 'usuario-1',
@@ -136,6 +195,104 @@ export function usuarioDePrueba(
   }
 }
 
+export const ALERTAS_PRUEBA: AlertaStockApi[] = [
+  {
+    id: 'alerta-1',
+    insumoSucursalId: 'is-1',
+    estado: 'abierta',
+    fechaResuelta: null,
+    createdAt: '2026-10-11T13:00:00.000Z',
+    updatedAt: '2026-10-11T13:00:00.000Z',
+    insumoSucursal: {
+      id: 'is-1',
+      insumoId: 'i-1',
+      sucursalId: 'sucursal-1',
+      stockActual: '2.00',
+      stockMinimo: '5.00',
+      estado: 'activo',
+      insumo: { id: 'i-1', nombre: 'Café en grano', presentacion: 'kg' },
+    },
+  },
+]
+
+export const REGISTROS_PRUEBA: RegistroAsistenciaApi[] = [
+  {
+    id: 'registro-1',
+    empleadoId: 'usuario-2',
+    sucursalId: 'sucursal-1',
+    tipo: 'entrada',
+    fechaHora: '2026-10-11T13:05:00.000Z',
+    metodo: 'pin',
+    abierta: true,
+    corregido: false,
+    empleado: { id: 'usuario-2', nombre: 'Beto Turno' },
+  },
+]
+
+export const EQUIPOS_PRUEBA: EquipoApi[] = [
+  {
+    id: 'equipo-1',
+    sucursalId: 'sucursal-1',
+    nombre: 'Máquina de espresso',
+    tipo: 'cafetera',
+    estado: 'funcionando',
+    observaciones: null,
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'equipo-2',
+    sucursalId: 'sucursal-1',
+    nombre: 'Molino',
+    tipo: 'molino',
+    estado: 'en_mantenimiento',
+    observaciones: 'Revisión programada',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-10T10:00:00.000Z',
+  },
+  {
+    id: 'equipo-3',
+    sucursalId: 'sucursal-1',
+    nombre: 'Refrigeradora',
+    tipo: 'refrigeradora',
+    estado: 'danado',
+    observaciones: null,
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-10T10:00:00.000Z',
+  },
+]
+
+export const REPORTE_COMPARATIVO_PRUEBA: ReporteComparativoApi = {
+  desde: '2026-10-11',
+  hasta: '2026-10-11',
+  generadoEn: '2026-10-11T20:00:00.000Z',
+  sucursales: [
+    {
+      sucursalId: 'sucursal-1',
+      sucursalNombre: 'Sucursal Centro',
+      ventas: {
+        total: '100.00',
+        cantidad: 10,
+        ticketPromedio: '10.00',
+        porMetodoPago: {
+          efectivo: { total: '60.00', cantidad: 6 },
+          tarjeta: { total: '40.00', cantidad: 4 },
+        },
+        anuladas: { cantidad: 1 },
+      },
+      inventario: {
+        movimientos: {
+          total: 3,
+          entradas: { cantidad: 2, cantidadNeta: '10.00' },
+          ajustes: { cantidad: 1, cantidadNeta: '-1.00' },
+        },
+      },
+      asistencia: { faltas: 1, faltasJustificadas: 0 },
+      estadoActual: { insumosConAlertaAbierta: 1, entradasAbiertas: 1 },
+    },
+  ],
+}
+
 export const handlers = [
   http.post(`${BASE_API}/auth/login`, async ({ request }) => {
     const cuerpo = (await request.json()) as {
@@ -261,4 +418,51 @@ export const handlers = [
       anulador: { id: 'usuario-1', nombre: 'Ada Pruebas' },
     })
   }),
+
+  http.get(`${BASE_API}/inventario/alertas`, ({ request }) => {
+    const url = new URL(request.url)
+    const estado = url.searchParams.get('estado')
+    let alertas = ALERTAS_PRUEBA
+    if (estado) alertas = alertas.filter((a) => a.estado === estado)
+    return HttpResponse.json({
+      data: alertas,
+      total: alertas.length,
+      page: 1,
+      limit: 20,
+      totalPaginas: 1,
+    })
+  }),
+
+  http.get(`${BASE_API}/attendance/records`, ({ request }) => {
+    const url = new URL(request.url)
+    const abierta = url.searchParams.get('abierta')
+    let registros = REGISTROS_PRUEBA
+    if (abierta !== null) {
+      registros = registros.filter((r) => String(r.abierta) === abierta)
+    }
+    return HttpResponse.json({
+      items: registros,
+      total: registros.length,
+      page: 1,
+      limit: 20,
+    })
+  }),
+
+  http.get(`${BASE_API}/equipment`, ({ request }) => {
+    const url = new URL(request.url)
+    const estado = url.searchParams.get('estado')
+    let equipos = EQUIPOS_PRUEBA
+    if (estado) equipos = equipos.filter((e) => e.estado === estado)
+    return HttpResponse.json({
+      data: equipos,
+      total: equipos.length,
+      page: 1,
+      limit: 20,
+      totalPaginas: 1,
+    })
+  }),
+
+  http.get(`${BASE_API}/reports/comparativo`, () =>
+    HttpResponse.json(REPORTE_COMPARATIVO_PRUEBA),
+  ),
 ]

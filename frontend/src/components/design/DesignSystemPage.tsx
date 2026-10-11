@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { SearchIcon } from 'lucide-react'
+import { BanknoteIcon, SearchIcon, WrenchIcon } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { MoneyText } from '@/components/shared/MoneyText'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { DataTable, type Column } from '@/components/shared/DataTable'
+import { StatCard } from '@/components/shared/StatCard'
+import { StatusPill } from '@/components/shared/StatusPill'
 import {
   Card,
   CardContent,
@@ -544,6 +546,38 @@ export function DesignSystemPage() {
               <Skeleton className="h-8 w-48" />
               <Skeleton className="h-8 w-32" />
               <Skeleton className="h-8 w-24" />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Métricas y estados</CardTitle>
+              <CardDescription>
+                StatCard para KPIs y StatusPill para estados con punto de color.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <StatCard
+                  title="Ventas de hoy"
+                  icon={BanknoteIcon}
+                  value={<MoneyText amountCents={125000} />}
+                  hint="18 ventas completadas"
+                />
+                <StatCard
+                  title="Anuladas hoy"
+                  icon={WrenchIcon}
+                  value={2}
+                  tone="warning"
+                  hint="Ventas anuladas del día"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill tono="success">Funcionando</StatusPill>
+                <StatusPill tono="warning">En mantenimiento</StatusPill>
+                <StatusPill tono="error">Dañado</StatusPill>
+                <StatusPill tono="info">Nuevo</StatusPill>
+                <StatusPill>Retirado</StatusPill>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

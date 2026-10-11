@@ -18,7 +18,10 @@ function abrirLogin() {
 async function completarYEnviar(nombreUsuario: string, password: string) {
   const user = userEvent.setup()
   await user.type(screen.getByLabelText(/usuario/i), nombreUsuario)
-  await user.type(screen.getByLabelText(/contraseña/i), password)
+  await user.type(
+    screen.getByLabelText(/contraseña/i, { selector: 'input' }),
+    password,
+  )
   await user.click(screen.getByRole('button', { name: /ingresar/i }))
 }
 
@@ -100,7 +103,9 @@ describe('LoginPage', () => {
       CREDENCIALES_VALIDAS.password,
     )
 
-    expect(screen.getByRole('button')).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: /ingresando/i }),
+    ).toBeDisabled()
 
     expect(await screen.findByText(/Hola, Ada Pruebas/)).toBeInTheDocument()
   })

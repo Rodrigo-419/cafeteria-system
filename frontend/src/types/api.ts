@@ -105,3 +105,117 @@ export interface SucursalApi {
   direccion: string
   telefono: string | null
 }
+
+/** Estado de una alerta de stock (`GET /inventario/alertas`). */
+export type EstadoAlertaStock = 'abierta' | 'resuelta'
+
+/**
+ * Alerta de stock con el insumo y el stock en el momento de la consulta
+ * (`GET /inventario/alertas`).
+ */
+export interface AlertaStockApi {
+  id: string
+  insumoSucursalId: string
+  estado: EstadoAlertaStock
+  fechaResuelta: string | null
+  createdAt: string
+  updatedAt: string
+  insumoSucursal: {
+    id: string
+    insumoId: string
+    sucursalId: string
+    /** Stock actual decimal como texto ("12.50"). */
+    stockActual: string
+    /** Stock mínimo decimal como texto ("5.00"). */
+    stockMinimo: string
+    estado: string
+    insumo: { id: string; nombre: string; presentacion: string }
+  }
+}
+
+/** Registro efectivo de asistencia (`GET /attendance/records`). */
+export interface RegistroAsistenciaApi {
+  id: string
+  empleadoId: string
+  sucursalId: string
+  /** "entrada" o "salida". */
+  tipo: string
+  fechaHora: string
+  metodo: string
+  /** `true` si la entrada sigue sin cerrar (sin salida emparejada). */
+  abierta: boolean
+  corregido: boolean
+  empleado: { id: string; nombre: string }
+}
+
+/** Sobre de paginado propio de asistencia (`items` en vez de `data`). */
+export interface PaginadoAsistenciaApi<T> {
+  items: T[]
+  total: number
+  page: number
+  limit: number
+}
+
+/** Estados posibles de un equipo (`GET /equipment`). */
+export type EstadoEquipo =
+  | 'funcionando'
+  | 'danado'
+  | 'en_mantenimiento'
+  | 'retirado'
+
+/** Un equipo de una sucursal (`GET /equipment`). */
+export interface EquipoApi {
+  id: string
+  sucursalId: string
+  nombre: string
+  tipo: string
+  estado: EstadoEquipo
+  observaciones: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** Importes por método de pago del reporte comparativo. */
+export interface ReporteVentasMetodoApi {
+  /** Importe en texto con dos decimales. */
+  total: string
+  cantidad: number
+}
+
+/** Ventas de una sucursal en el periodo del reporte comparativo. */
+export interface ReporteVentasApi {
+  total: string
+  cantidad: number
+  /** `null` cuando no hubo ventas en el periodo. */
+  ticketPromedio: string | null
+  porMetodoPago: {
+    efectivo: ReporteVentasMetodoApi
+    tarjeta: ReporteVentasMetodoApi
+  }
+  anuladas: { cantidad: number }
+}
+
+/** Una fila del reporte comparativo entre sucursales. */
+export interface ReporteSucursalApi {
+  sucursalId: string
+  sucursalNombre: string
+  ventas: ReporteVentasApi
+  inventario: {
+    movimientos: {
+      total: number
+      entradas: { cantidad: number; cantidadNeta: string }
+      ajustes: { cantidad: number; cantidadNeta: string }
+    }
+  }
+  asistencia: { faltas: number; faltasJustificadas: number }
+  estadoActual: { insumosConAlertaAbierta: number; entradasAbiertas: number }
+}
+
+/** Respuesta de `GET /reports/comparativo`. */
+export interface ReporteComparativoApi {
+  desde: string
+  hasta: string
+  /** Instante ISO en el que se generó el reporte. */
+  generadoEn: string
+  sucursales: ReporteSucursalApi[]
+}
