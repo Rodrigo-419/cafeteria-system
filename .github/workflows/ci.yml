@@ -22,6 +22,31 @@ jobs:
     defaults:
       run:
         working-directory: backend
+
+    # Misma major que docker-compose.yml para que las pruebas corran contra la
+    # version real. La base termina en _test, como exige el harness.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: cafeteria
+          POSTGRES_PASSWORD: cafeteria
+          POSTGRES_DB: cafeteria_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cafeteria -d cafeteria_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    # Valores solo para CI: el secreto JWT es ficticio y nunca el real.
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://cafeteria:cafeteria@localhost:5432/cafeteria_test?schema=public
+      JWT_SECRET: secreto-de-integracion-continua-con-mas-de-32-caracteres
+      JWT_EXPIRES_IN: 8h
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -37,12 +62,9 @@ jobs:
         run: npm ci
 
       # src/generated/ esta en .gitignore, asi que el cliente se genera en CI.
-      # prisma.config.ts lee DATABASE_URL de process.env y en CI no hay .env,
-      # por eso se pasa una URL ficticia: `generate` no abre conexion a la DB.
+      # prisma.config.ts lee DATABASE_URL de process.env; la del job sirve.
       - name: Generar cliente de Prisma
         run: npx prisma generate
-        env:
-          DATABASE_URL: postgresql://user:pass@localhost:5432/db
 
       - name: Compilar
         run: npm run build
@@ -50,5 +72,17 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Tests
+      - name: Pruebas unitarias
         run: npm test
+
+      # El harness e2e deriva la URL de backend/.env (no de process.env) y le
+      # sustituye el nombre de la base por cafeteria_test. Se crea ese archivo
+      # (gitignored) con la URL del servicio.
+      - name: Preparar backend/.env para las pruebas e2e
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL" > .env
+          echo "JWT_SECRET=$JWT_SECRET" >> .env
+          echo "JWT_EXPIRES_IN=$JWT_EXPIRES_IN" >> .env
+
+      - name: Pruebas end-to-end
+        run: npm run test:e2e
