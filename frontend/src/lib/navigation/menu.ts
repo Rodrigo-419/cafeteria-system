@@ -51,6 +51,7 @@ export const MENU_ITEMS: readonly MenuItemConfig[] = [
       'inventario.registrar',
       'inventario.minimo.editar',
       'inventario.recuento',
+      'insumos.ver',
     ],
   },
   { label: 'Alertas', to: '/alerts', permisos: ['alertas.ver_resolver'] },
@@ -102,4 +103,39 @@ export function puedeVerItem(
 /** Filtra el menu segun los permisos efectivos del usuario. */
 export function filtrarMenu(permisos: readonly string[]): MenuItemConfig[] {
   return MENU_ITEMS.filter((item) => puedeVerItem(item, permisos))
+}
+
+/**
+ * `true` si el usuario (por sus PERMISOS EFECTIVOS) puede abrir `ruta`. Se apoya
+ * en la misma definición del menú lateral para no duplicar reglas; el panel
+ * (`/`) siempre está permitido para cualquier usuario autenticado y una ruta
+ * desconocida (fuera del menú) se considera no permitida.
+ */
+export function puedeAccederRuta(
+  permisos: readonly string[],
+  ruta: string | null | undefined,
+): boolean {
+  if (!ruta || ruta === '/') return true
+  const item = MENU_ITEMS.find(
+    (config) =>
+      config.to !== '/' &&
+      (ruta === config.to || ruta.startsWith(`${config.to}/`)),
+  )
+  return item ? puedeVerItem(item, permisos) : false
+}
+
+/**
+ * Ruta de inicio derivada de los PERMISOS EFECTIVOS (nunca del rol). Si el
+ * usuario pidió una ruta concreta (`solicitada`, p. ej. al ser redirigido a
+ * iniciar sesión) y puede verla, se respeta; en cualquier otro caso se devuelve
+ * el panel (`/`), que es la ruta de inicio por defecto.
+ */
+export function rutaInicio(
+  permisos: readonly string[],
+  solicitada?: string | null,
+): string {
+  if (solicitada && puedeAccederRuta(permisos, solicitada)) {
+    return solicitada
+  }
+  return '/'
 }

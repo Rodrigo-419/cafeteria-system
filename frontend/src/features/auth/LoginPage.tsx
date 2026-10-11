@@ -24,7 +24,22 @@ import {
 import { Input } from '@/components/ui/input'
 import { ApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/useAuth'
+import { rutaInicio } from '@/lib/navigation/menu'
 import { esquemaLogin, type ValoresLogin } from './login.schema'
+
+/**
+ * Ruta a la que volver tras iniciar sesión, normalizando el `state.from` que
+ * pueden fijar tanto `ProtectedRoute` (string) como `RequirePermission`
+ * (objeto `Location`). Devuelve `null` si no se pidió ninguna.
+ */
+function rutaSolicitada(state: unknown): string | null {
+  const from = (state as { from?: unknown } | null)?.from
+  if (typeof from === 'string') return from
+  if (from && typeof from === 'object' && 'pathname' in from) {
+    return String((from as { pathname: unknown }).pathname)
+  }
+  return null
+}
 
 function mensajeDeError(error: unknown): string {
   if (error instanceof ApiError) {
@@ -43,8 +58,13 @@ function mensajeDeError(error: unknown): string {
 }
 
 export function LoginPage() {
-  const { autenticado, iniciarSesion, motivoSalida, limpiarMotivoSalida } =
-    useAuth()
+  const {
+    autenticado,
+    permisos,
+    iniciarSesion,
+    motivoSalida,
+    limpiarMotivoSalida,
+  } = useAuth()
   const location = useLocation()
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
   const [mostrarContrasena, setMostrarContrasena] = useState(false)
@@ -55,7 +75,7 @@ export function LoginPage() {
   })
 
   const enviando = form.formState.isSubmitting
-  const destino = (location.state as { from?: string } | null)?.from ?? '/'
+  const destino = rutaInicio(permisos, rutaSolicitada(location.state))
 
   if (autenticado) {
     return <Navigate to={destino} replace />

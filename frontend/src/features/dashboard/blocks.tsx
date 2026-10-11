@@ -38,6 +38,7 @@ import { StatusPill } from '@/components/shared/StatusPill'
 import { ApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/useAuth'
 import { formatearHora } from '@/lib/format/dates'
+import { filtrarMenu } from '@/lib/navigation/menu'
 import { tienePermiso } from '@/lib/permissions/permissions'
 import { SaleStatusBadge } from '@/features/sales/SaleStatusBadge'
 import { precioEnCentimos } from '@/features/sales/presentacion'
@@ -483,5 +484,50 @@ export function SinResumen() {
       title="No hay información para tu perfil"
       description="Tu cuenta no tiene permisos para ver resúmenes. Contacta a un administrador si necesitas acceso."
     />
+  )
+}
+
+/** Estado vacío del panel cuando el usuario no tiene ninguna sección asignada. */
+export function SinModulos() {
+  return (
+    <EmptyState
+      title="No tienes módulos asignados"
+      description="Tu cuenta no tiene acceso a ninguna sección. Contacta a tu gerente para que te asigne permisos."
+    />
+  )
+}
+
+/**
+ * Tarjetas con las secciones que el usuario puede usar, reutilizando la misma
+ * definición del menú lateral (`filtrarMenu`) para no duplicar reglas. Así el
+ * panel nunca queda vacío para un usuario con pocos permisos.
+ */
+export function AccesosDisponibles() {
+  const { permisos } = useAuth()
+  const secciones = filtrarMenu(permisos).filter((item) => item.to !== '/')
+
+  if (secciones.length === 0) {
+    return null
+  }
+
+  return (
+    <TarjetaBloque
+      titulo="Accesos disponibles"
+      descripcion="Secciones habilitadas para tu perfil"
+    >
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {secciones.map((seccion) => (
+          <li key={seccion.to}>
+            <Link
+              to={seccion.to}
+              className="flex items-center justify-between gap-2 rounded-lg border border-border px-4 py-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              {seccion.label}
+              <ArrowRightIcon className="size-4 text-muted-foreground" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </TarjetaBloque>
   )
 }

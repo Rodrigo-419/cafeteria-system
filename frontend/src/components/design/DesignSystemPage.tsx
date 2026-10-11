@@ -8,6 +8,8 @@ import { DataTable, type Column } from '@/components/shared/DataTable'
 import { StatCard } from '@/components/shared/StatCard'
 import { StatusPill } from '@/components/shared/StatusPill'
 import { EstadoOfertaBadge } from '@/features/products/EstadoOfertaBadge'
+import { EstadoStockBadge } from '@/features/inventory/EstadoStockBadge'
+import { NivelStock } from '@/features/inventory/NivelStock'
 import {
   Card,
   CardContent,
@@ -580,6 +582,27 @@ export function DesignSystemPage() {
                 <StatusPill>Retirado</StatusPill>
                 <EstadoOfertaBadge estado="activo" />
                 <EstadoOfertaBadge estado="inactivo" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Nivel de stock</CardTitle>
+              <CardDescription>
+                Estado del insumo en la sucursal y barra proporcional al mínimo
+                (cuantizada a pasos de 5%).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <EstadoStockBadge estado="activo" />
+                <EstadoStockBadge estado="descontinuado" />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <NivelStock stock="12.50" minimo="5.00" estado="activo" />
+                <NivelStock stock="4.00" minimo="5.00" estado="activo" />
+                <NivelStock stock="5.00" minimo="5.00" estado="activo" />
+                <NivelStock stock="0.00" minimo="5.00" estado="descontinuado" />
               </div>
             </CardContent>
           </Card>

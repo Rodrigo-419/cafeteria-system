@@ -1,13 +1,16 @@
 import { PageHeader } from '@/components/shared/PageHeader'
 import { useAuth } from '@/lib/auth/useAuth'
+import { filtrarMenu } from '@/lib/navigation/menu'
 import { tienePermiso } from '@/lib/permissions/permissions'
 import {
+  AccesosDisponibles,
   AccesosRapidos,
   AlertasStock,
   AsistenciaAbierta,
   EquiposResumen,
   ReporteComparativoSucursales,
   ResumenVentasHoy,
+  SinModulos,
   SinResumen,
   UltimasVentas,
 } from '@/features/dashboard/blocks'
@@ -26,6 +29,7 @@ export function DashboardPage() {
 
   const hayResumen =
     puedeVentas || puedeAlertas || puedeAsistencia || puedeEquipos || puedeReporte
+  const hayAccesos = filtrarMenu(permisos).some((item) => item.to !== '/')
 
   return (
     <div className="space-y-6">
@@ -46,7 +50,9 @@ export function DashboardPage() {
 
       {puedeReporte && <ReporteComparativoSucursales />}
 
-      {!hayResumen && <SinResumen />}
+      <AccesosDisponibles />
+
+      {!hayResumen && (hayAccesos ? <SinResumen /> : <SinModulos />)}
     </div>
   )
 }

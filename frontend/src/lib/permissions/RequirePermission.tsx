@@ -23,7 +23,7 @@ export function RequirePermission({
   const location = useLocation()
 
   if (!autenticado) {
-    return <Navigate to="/login" state={{ from: location }} replace />
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
   const requerido = Array.isArray(permiso) ? permiso : [permiso]

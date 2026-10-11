@@ -17,6 +17,9 @@ import { SalesHome } from '@/features/sales/SalesHome'
 import { NewSalePage } from '@/features/sales/NewSalePage'
 import { SaleDetailPage } from '@/features/sales/SaleDetailPage'
 import { ProductsPage } from '@/features/products/ProductsPage'
+import { InsumosPage } from '@/features/inventory/InsumosPage'
+import { InventarioPage } from '@/features/inventory/InventarioPage'
+import { AlertasPage } from '@/features/inventory/AlertasPage'
 
 function crearQueryClient() {
   return new QueryClient({
@@ -33,7 +36,13 @@ export function App() {
   const [queryClient] = useState(crearQueryClient)
 
   const rutasModulo = MENU_ITEMS.filter(
-    (item) => item.to !== '/' && item.to !== '/sales' && item.to !== '/products',
+    (item) =>
+      item.to !== '/' &&
+      item.to !== '/sales' &&
+      item.to !== '/products' &&
+      item.to !== '/supplies' &&
+      item.to !== '/inventory' &&
+      item.to !== '/alerts',
   )
 
   return (
@@ -104,6 +113,41 @@ export function App() {
                     modo="any"
                   >
                     <ProductsPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="supplies"
+                element={
+                  <RequirePermission
+                    permiso={['insumos.ver', 'insumos.catalogo.editar']}
+                    modo="any"
+                  >
+                    <InsumosPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="inventory"
+                element={
+                  <RequirePermission
+                    permiso={[
+                      'inventario.registrar',
+                      'inventario.minimo.editar',
+                      'inventario.recuento',
+                      'insumos.ver',
+                    ]}
+                    modo="any"
+                  >
+                    <InventarioPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="alerts"
+                element={
+                  <RequirePermission permiso="alertas.ver_resolver">
+                    <AlertasPage />
                   </RequirePermission>
                 }
               />

@@ -100,7 +100,9 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Últimas ventas')).toBeInTheDocument()
     expect(screen.getByText('Alertas de stock')).toBeInTheDocument()
     expect(screen.getByText('Personal en turno')).toBeInTheDocument()
-    expect(screen.getByText('Equipos')).toBeInTheDocument()
+    expect(
+      screen.getByText('Equipos', { selector: '[data-slot="card-title"]' }),
+    ).toBeInTheDocument()
     expect(await screen.findByText('Comparativo entre sucursales')).toBeInTheDocument()
 
     expect(screen.getByRole('link', { name: /ver ventas/i })).toBeInTheDocument()

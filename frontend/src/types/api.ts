@@ -253,3 +253,63 @@ export interface OfertaRespuestaApi {
   precio: string
   estado: EstadoOferta
 }
+
+// ------------------------------------------------------------------ insumos
+
+/**
+ * Presentación cerrada de un insumo: es la lista que acepta el backend para
+ * `presentacion` (cualquier otro valor responde 400).
+ */
+export type PresentacionInsumo =
+  | 'paquete'
+  | 'bolsa'
+  | 'caja'
+  | 'unidad'
+  | 'paquete_varias_unidades'
+
+/** Estado de un insumo dentro de una sucursal. */
+export type EstadoStockInsumo = 'activo' | 'descontinuado'
+
+/** Un insumo del catálogo global (`GET /insumos`). */
+export interface InsumoApi {
+  id: string
+  nombre: string
+  presentacion: PresentacionInsumo
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Stock de un insumo en una sucursal
+ * (`GET /inventario/sucursales/:sucursalId/stock`). Las cantidades llegan como
+ * texto decimal ("12.50").
+ */
+export interface StockInsumoApi {
+  id: string
+  insumoId: string
+  sucursalId: string
+  stockActual: string
+  stockMinimo: string
+  estado: EstadoStockInsumo
+  createdAt: string
+  updatedAt: string
+  insumo: InsumoApi
+}
+
+/** Un movimiento de inventario: la cantidad es la variación, no el saldo. */
+export interface MovimientoInventarioApi {
+  id: string
+  insumoSucursalId: string
+  tipo: 'entrada' | 'ajuste'
+  /** Variación decimal como texto; puede ser negativa en ajustes. */
+  cantidad: string
+  usuarioId: string
+  motivo: string
+  createdAt: string
+}
+
+/** Respuesta de registrar una entrada: stock actualizado + movimiento. */
+export interface ResultadoEntradaApi {
+  stock: StockInsumoApi
+  movimiento: MovimientoInventarioApi
+}

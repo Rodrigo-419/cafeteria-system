@@ -4,10 +4,15 @@ import type {
   CartaOferta,
   CategoriaProductoApi,
   EquipoApi,
+  EstadoStockInsumo,
+  InsumoApi,
+  MovimientoInventarioApi,
+  PresentacionInsumo,
   ProductoApi,
   RegistroAsistenciaApi,
   ReporteComparativoApi,
   RespuestaLogin,
+  StockInsumoApi,
   SucursalApi,
   UsuarioApi,
   VarianteApi,
@@ -305,25 +310,169 @@ export function usuarioDePrueba(
   }
 }
 
-export const ALERTAS_PRUEBA: AlertaStockApi[] = [
+// Inventario: insumos, stock por sucursal y alertas.
+//
+// El estado es mutable y se reinicia entre pruebas con
+// `reiniciarInventarioPrueba`. Las alertas no se editan a mano: se
+// sincronizan a partir del stock (stock activo <= mínimo abre; reponer o
+// descontinuar cierra).
+export const INSUMOS_PRUEBA: InsumoApi[] = [
   {
-    id: 'alerta-1',
-    insumoSucursalId: 'is-1',
-    estado: 'abierta',
-    fechaResuelta: null,
-    createdAt: '2026-10-11T13:00:00.000Z',
-    updatedAt: '2026-10-11T13:00:00.000Z',
-    insumoSucursal: {
-      id: 'is-1',
-      insumoId: 'i-1',
-      sucursalId: 'sucursal-1',
-      stockActual: '2.00',
-      stockMinimo: '5.00',
-      estado: 'activo',
-      insumo: { id: 'i-1', nombre: 'Café en grano', presentacion: 'kg' },
-    },
+    id: 'i-1',
+    nombre: 'Café en grano',
+    presentacion: 'bolsa',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'i-2',
+    nombre: 'Leche entera',
+    presentacion: 'caja',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'i-3',
+    nombre: 'Vasos 12oz',
+    presentacion: 'paquete',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
   },
 ]
+
+export const PRESENTACIONES_INSUMO_PRUEBA: PresentacionInsumo[] = [
+  'paquete',
+  'bolsa',
+  'caja',
+  'unidad',
+  'paquete_varias_unidades',
+]
+
+interface EstadoInventario {
+  insumos: InsumoApi[]
+  stock: StockInsumoApi[]
+  alertas: AlertaStockApi[]
+}
+
+function crearFilaStock(
+  insumo: InsumoApi,
+  sucursalId: string,
+  sobre: Partial<
+    Pick<StockInsumoApi, 'id' | 'stockActual' | 'stockMinimo' | 'estado'>
+  > = {},
+): StockInsumoApi {
+  return {
+    id: sobre.id ?? `is-${insumo.id}-${sucursalId}`,
+    insumoId: insumo.id,
+    sucursalId,
+    stockActual: sobre.stockActual ?? '0.00',
+    stockMinimo: sobre.stockMinimo ?? '0.00',
+    estado: sobre.estado ?? 'activo',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+    insumo: { ...insumo },
+  }
+}
+
+function crearEstadoInventario(): EstadoInventario {
+  const insumos = INSUMOS_PRUEBA.map((insumo) => ({ ...insumo }))
+  const porId = new Map(insumos.map((insumo) => [insumo.id, insumo]))
+  const estado: EstadoInventario = {
+    insumos,
+    stock: [
+      crearFilaStock(porId.get('i-1')!, 'sucursal-1', {
+        id: 'is-1',
+        stockActual: '2.00',
+        stockMinimo: '5.00',
+      }),
+      crearFilaStock(porId.get('i-2')!, 'sucursal-1', {
+        id: 'is-2',
+        stockActual: '20.00',
+        stockMinimo: '10.00',
+      }),
+      crearFilaStock(porId.get('i-3')!, 'sucursal-1', {
+        id: 'is-3',
+        stockActual: '3.00',
+        stockMinimo: '0.00',
+        estado: 'descontinuado',
+      }),
+    ],
+    alertas: [],
+  }
+  sincronizarAlertas(estado)
+  return estado
+}
+
+function sincronizarAlertas(estado: EstadoInventario): void {
+  const ahora = '2026-10-11T13:00:00.000Z'
+  for (const fila of estado.stock) {
+    const abierta = estado.alertas.find(
+      (alerta) =>
+        alerta.insumoSucursalId === fila.id && alerta.estado === 'abierta',
+    )
+    const necesitaAlerta =
+      fila.estado === 'activo' &&
+      Number(fila.stockActual) <= Number(fila.stockMinimo)
+    if (necesitaAlerta && !abierta) {
+      estado.alertas.push({
+        id: `alerta-${fila.id}`,
+        insumoSucursalId: fila.id,
+        estado: 'abierta',
+        fechaResuelta: null,
+        createdAt: ahora,
+        updatedAt: ahora,
+        insumoSucursal: { ...fila, insumo: { ...fila.insumo } },
+      })
+    } else if (!necesitaAlerta && abierta) {
+      abierta.estado = 'resuelta'
+      abierta.fechaResuelta = ahora
+      abierta.updatedAt = ahora
+      abierta.insumoSucursal = { ...fila, insumo: { ...fila.insumo } }
+    } else if (abierta) {
+      abierta.insumoSucursal = { ...fila, insumo: { ...fila.insumo } }
+    }
+  }
+}
+
+let inventario: EstadoInventario = crearEstadoInventario()
+
+/** Restaura el inventario mockeado (insumos, stock y alertas) a su inicio. */
+export function reiniciarInventarioPrueba(): void {
+  inventario = crearEstadoInventario()
+}
+
+function paginar<T>(items: T[], page: number, limit: number) {
+  const total = items.length
+  const inicio = (page - 1) * limit
+  return {
+    data: items.slice(inicio, inicio + limit),
+    total,
+    page,
+    limit,
+    totalPaginas: Math.max(1, Math.ceil(total / limit)),
+  }
+}
+
+function sucursalValida(sucursalId: string): boolean {
+  return SUCURSALES_PRUEBA.some((sucursal) => sucursal.id === sucursalId)
+}
+
+function mensajeCantidadInvalida(
+  valor: unknown,
+  etiqueta: string,
+): string | null {
+  if (typeof valor !== 'number' || !Number.isFinite(valor)) {
+    return `La ${etiqueta} debe ser un numero`
+  }
+  if (valor < 0) {
+    return `La ${etiqueta} no puede ser negativa`
+  }
+  const decimales = (String(valor).split('.')[1] ?? '').length
+  if (decimales > 2) {
+    return `La ${etiqueta} no puede tener mas de 2 decimales`
+  }
+  return null
+}
 
 export const REGISTROS_PRUEBA: RegistroAsistenciaApi[] = [
   {
@@ -824,18 +973,320 @@ export const handlers = [
     })
   }),
 
+  // ------------------------------------------------------------- insumos
+
+  http.get(`${BASE_API}/insumos`, ({ request }) => {
+    const url = new URL(request.url)
+    const q = url.searchParams.get('q')?.trim().toLowerCase()
+    const presentacion = url.searchParams.get('presentacion')
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+    let items = inventario.insumos
+    if (presentacion) {
+      items = items.filter((insumo) => insumo.presentacion === presentacion)
+    }
+    if (q) {
+      items = items.filter((insumo) =>
+        insumo.nombre.toLowerCase().includes(q),
+      )
+    }
+    return HttpResponse.json(paginar(items, page, limit))
+  }),
+
+  http.post(`${BASE_API}/insumos`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      nombre?: string
+      presentacion?: string
+    }
+    const nombre = (cuerpo.nombre ?? '').trim()
+    if (nombre.length < 2 || nombre.length > 100) {
+      return errorApi(
+        400,
+        'El nombre debe tener entre 2 y 100 caracteres',
+        'Bad Request',
+      )
+    }
+    if (
+      !PRESENTACIONES_INSUMO_PRUEBA.includes(
+        cuerpo.presentacion as PresentacionInsumo,
+      )
+    ) {
+      return errorApi(400, 'La presentacion no es valida', 'Bad Request')
+    }
+    if (
+      inventario.insumos.some(
+        (insumo) => insumo.nombre.toLowerCase() === nombre.toLowerCase(),
+      )
+    ) {
+      return errorApi(
+        409,
+        'Ya existe un insumo con ese nombre',
+        'Conflict',
+      )
+    }
+    const ahora = new Date().toISOString()
+    const insumo: InsumoApi = {
+      id: `i-${inventario.insumos.length + 10}`,
+      nombre,
+      presentacion: cuerpo.presentacion as PresentacionInsumo,
+      createdAt: ahora,
+      updatedAt: ahora,
+    }
+    inventario.insumos = [...inventario.insumos, insumo]
+    return HttpResponse.json(insumo, { status: 201 })
+  }),
+
+  http.patch(`${BASE_API}/insumos/:id`, async ({ request, params }) => {
+    const insumo = inventario.insumos.find((item) => item.id === params.id)
+    if (!insumo) {
+      return errorApi(404, 'El insumo no existe', 'Not Found')
+    }
+    const cuerpo = (await request.json()) as {
+      nombre?: string
+      presentacion?: string
+    }
+    if (cuerpo.nombre !== undefined) {
+      const nombre = cuerpo.nombre.trim()
+      if (nombre.length < 2 || nombre.length > 100) {
+        return errorApi(
+          400,
+          'El nombre debe tener entre 2 y 100 caracteres',
+          'Bad Request',
+        )
+      }
+      if (
+        inventario.insumos.some(
+          (item) =>
+            item.id !== insumo.id &&
+            item.nombre.toLowerCase() === nombre.toLowerCase(),
+        )
+      ) {
+        return errorApi(
+          409,
+          'Ya existe un insumo con ese nombre',
+          'Conflict',
+        )
+      }
+      insumo.nombre = nombre
+    }
+    if (cuerpo.presentacion !== undefined) {
+      if (
+        !PRESENTACIONES_INSUMO_PRUEBA.includes(
+          cuerpo.presentacion as PresentacionInsumo,
+        )
+      ) {
+        return errorApi(400, 'La presentacion no es valida', 'Bad Request')
+      }
+      insumo.presentacion = cuerpo.presentacion as PresentacionInsumo
+    }
+    insumo.updatedAt = new Date().toISOString()
+    for (const fila of inventario.stock) {
+      if (fila.insumoId === insumo.id) fila.insumo = { ...insumo }
+    }
+    sincronizarAlertas(inventario)
+    return HttpResponse.json(insumo)
+  }),
+
+  http.delete(`${BASE_API}/insumos/:id`, ({ params }) => {
+    const insumo = inventario.insumos.find((item) => item.id === params.id)
+    if (!insumo) {
+      return errorApi(404, 'El insumo no existe', 'Not Found')
+    }
+    if (inventario.stock.some((fila) => fila.insumoId === insumo.id)) {
+      return errorApi(
+        409,
+        'No se puede eliminar un insumo con stock',
+        'Conflict',
+      )
+    }
+    inventario.insumos = inventario.insumos.filter(
+      (item) => item.id !== insumo.id,
+    )
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  // ----------------------------------------------------------- inventario
+
+  http.get(
+    `${BASE_API}/inventario/sucursales/:sucursalId/stock`,
+    ({ request, params }) => {
+      const sucursalId = String(params.sucursalId)
+      if (!sucursalValida(sucursalId)) {
+        return errorApi(404, 'La sucursal no existe', 'Not Found')
+      }
+      const url = new URL(request.url)
+      const q = url.searchParams.get('q')?.trim().toLowerCase()
+      const estado = url.searchParams.get('estado')
+      const soloBajoMinimo = url.searchParams.get('soloBajoMinimo')
+      const page = Number(url.searchParams.get('page') ?? '1')
+      const limit = Number(url.searchParams.get('limit') ?? '20')
+
+      let items = inventario.stock.filter(
+        (fila) => fila.sucursalId === sucursalId,
+      )
+      if (estado) items = items.filter((fila) => fila.estado === estado)
+      if (q) {
+        items = items.filter((fila) =>
+          fila.insumo.nombre.toLowerCase().includes(q),
+        )
+      }
+      if (soloBajoMinimo === 'true') {
+        items = items.filter(
+          (fila) =>
+            fila.estado === 'activo' &&
+            Number(fila.stockActual) <= Number(fila.stockMinimo),
+        )
+      }
+      return HttpResponse.json(paginar(items, page, limit))
+    },
+  ),
+
+  http.put(
+    `${BASE_API}/inventario/sucursales/:sucursalId/insumos/:insumoId`,
+    async ({ request, params }) => {
+      const sucursalId = String(params.sucursalId)
+      if (!sucursalValida(sucursalId)) {
+        return errorApi(404, 'La sucursal no existe', 'Not Found')
+      }
+      const insumoId = String(params.insumoId)
+      const insumo = inventario.insumos.find((item) => item.id === insumoId)
+      if (!insumo) {
+        return errorApi(404, 'El insumo no existe', 'Not Found')
+      }
+      const cuerpo = (await request.json()) as {
+        stockMinimo?: unknown
+        estado?: unknown
+      }
+      const tieneMinimo = cuerpo.stockMinimo !== undefined
+      const tieneEstado = cuerpo.estado !== undefined
+      if (!tieneMinimo && !tieneEstado) {
+        return errorApi(
+          400,
+          'Debe indicar stockMinimo o estado',
+          'Bad Request',
+        )
+      }
+      let stockMinimo = '0.00'
+      if (tieneMinimo) {
+        const problema = mensajeCantidadInvalida(
+          cuerpo.stockMinimo,
+          'cantidad',
+        )
+        if (problema) return errorApi(400, problema, 'Bad Request')
+        stockMinimo = (cuerpo.stockMinimo as number).toFixed(2)
+      }
+      if (
+        tieneEstado &&
+        cuerpo.estado !== 'activo' &&
+        cuerpo.estado !== 'descontinuado'
+      ) {
+        return errorApi(400, 'El estado no es valido', 'Bad Request')
+      }
+      let fila = inventario.stock.find(
+        (item) => item.sucursalId === sucursalId && item.insumoId === insumoId,
+      )
+      if (!fila) {
+        fila = crearFilaStock(insumo, sucursalId, {
+          id: `is-${insumoId}-${sucursalId}`,
+        })
+        inventario.stock = [...inventario.stock, fila]
+      }
+      if (tieneMinimo) fila.stockMinimo = stockMinimo
+      if (tieneEstado) fila.estado = cuerpo.estado as EstadoStockInsumo
+      fila.updatedAt = new Date().toISOString()
+      sincronizarAlertas(inventario)
+      return HttpResponse.json(fila)
+    },
+  ),
+
+  http.post(
+    `${BASE_API}/inventario/sucursales/:sucursalId/insumos/:insumoId/entradas`,
+    async ({ request, params }) => {
+      const sucursalId = String(params.sucursalId)
+      if (!sucursalValida(sucursalId)) {
+        return errorApi(404, 'La sucursal no existe', 'Not Found')
+      }
+      const fila = inventario.stock.find(
+        (item) =>
+          item.sucursalId === sucursalId &&
+          item.insumoId === String(params.insumoId),
+      )
+      if (!fila) {
+        return errorApi(
+          404,
+          'El insumo no esta dado de alta en la sucursal',
+          'Not Found',
+        )
+      }
+      if (fila.estado === 'descontinuado') {
+        return errorApi(
+          409,
+          'El insumo esta descontinuado en la sucursal',
+          'Conflict',
+        )
+      }
+      const cuerpo = (await request.json()) as {
+        cantidad?: unknown
+        motivo?: string
+      }
+      const cantidad = cuerpo.cantidad
+      if (typeof cantidad !== 'number' || !Number.isFinite(cantidad)) {
+        return errorApi(400, 'La cantidad debe ser un numero', 'Bad Request')
+      }
+      if (cantidad <= 0) {
+        return errorApi(
+          400,
+          'La cantidad debe ser mayor a 0',
+          'Bad Request',
+        )
+      }
+      const decimales = (String(cantidad).split('.')[1] ?? '').length
+      if (decimales > 2) {
+        return errorApi(
+          400,
+          'La cantidad no puede tener mas de 2 decimales',
+          'Bad Request',
+        )
+      }
+      const motivo = (cuerpo.motivo ?? '').trim()
+      if (motivo.length > 200) {
+        return errorApi(
+          400,
+          'El motivo no puede superar 200 caracteres',
+          'Bad Request',
+        )
+      }
+      const ahora = new Date().toISOString()
+      fila.stockActual = (Number(fila.stockActual) + cantidad).toFixed(2)
+      fila.updatedAt = ahora
+      sincronizarAlertas(inventario)
+      const movimiento: MovimientoInventarioApi = {
+        id: `mov-${fila.id}-${inventario.stock.length}`,
+        insumoSucursalId: fila.id,
+        tipo: 'entrada',
+        cantidad: cantidad.toFixed(2),
+        usuarioId: 'usuario-1',
+        motivo: motivo === '' ? 'Entrada de inventario' : motivo,
+        createdAt: ahora,
+      }
+      return HttpResponse.json({ stock: fila, movimiento }, { status: 201 })
+    },
+  ),
+
   http.get(`${BASE_API}/inventario/alertas`, ({ request }) => {
     const url = new URL(request.url)
     const estado = url.searchParams.get('estado')
-    let alertas = ALERTAS_PRUEBA
-    if (estado) alertas = alertas.filter((a) => a.estado === estado)
-    return HttpResponse.json({
-      data: alertas,
-      total: alertas.length,
-      page: 1,
-      limit: 20,
-      totalPaginas: 1,
-    })
+    const sucursalId = url.searchParams.get('sucursalId')
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+    let alertas = inventario.alertas
+    if (estado) alertas = alertas.filter((alerta) => alerta.estado === estado)
+    if (sucursalId) {
+      alertas = alertas.filter(
+        (alerta) => alerta.insumoSucursal.sucursalId === sucursalId,
+      )
+    }
+    return HttpResponse.json(paginar(alertas, page, limit))
   }),
 
   http.get(`${BASE_API}/attendance/records`, ({ request }) => {
