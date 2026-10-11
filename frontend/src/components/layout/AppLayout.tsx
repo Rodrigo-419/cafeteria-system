@@ -41,13 +41,24 @@ export function AppLayout() {
             to={item.to}
             className={({ isActive }) =>
               cn(
-                'flex items-center rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
-                isActive && 'bg-accent text-accent-foreground',
+                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
+                isActive && 'bg-primary/10 font-medium text-primary',
               )
             }
             onClick={() => setOpen(false)}
           >
-            {item.label}
+            {({ isActive }) => (
+              <>
+                <span
+                  aria-hidden
+                  className={cn(
+                    'size-2 shrink-0 rounded-full transition-colors',
+                    isActive ? 'bg-primary' : 'bg-muted-foreground/40',
+                  )}
+                />
+                {item.label}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

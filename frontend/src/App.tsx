@@ -5,6 +5,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { ProveedorAutenticacion } from '@/lib/auth/AuthContext'
 import { RequirePermission } from '@/lib/permissions/RequirePermission'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { Toaster } from '@/components/ui/sonner'
 import { ComingSoonPage } from '@/features/system/ComingSoonPage'
 import { DesignSystemPage } from '@/components/design/DesignSystemPage'
 import { DashboardPage } from '@/routes/DashboardPage'
@@ -66,6 +67,7 @@ export function App() {
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <Toaster />
         </ProveedorAutenticacion>
       </BrowserRouter>
     </QueryClientProvider>
