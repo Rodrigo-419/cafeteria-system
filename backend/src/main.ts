@@ -10,7 +10,9 @@ async function bootstrap() {
 
   // Prefijo global y ValidationPipe viven en `configureApp`, el mismo sitio que
   // usan las pruebas end-to-end, para no duplicar la configuracion.
-  configureApp(app);
+  configureApp(app, {
+    trustProxy: configService.get<string>('TRUST_PROXY'),
+  });
 
   // Necesario para que se ejecute onModuleDestroy y PrismaService cierre
   // el pool de conexiones al recibir SIGINT/SIGTERM.

@@ -16,6 +16,13 @@ export const envSchema = z.object({
   // Duracion de la validez del token. Acepta el formato de jsonwebtoken
   // ("8h", "30m", "45s") o un numero de segundos.
   JWT_EXPIRES_IN: z.string().min(1).default('8h'),
+  // Confianza en las cabeceras de un proxy inverso (X-Forwarded-For) para
+  // calcular la IP del cliente. Desactivada por defecto: activarla sin un
+  // proxy real delante permitiria falsear la IP y esquivar el limite de
+  // intentos de login. Acepta false/off/0 (desactivado), true/on, un numero
+  // de saltos, o una lista de subredes o palabras clave de Express
+  // ("loopback", "10.0.0.0/8").
+  TRUST_PROXY: z.string().default('false'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -34,6 +41,8 @@ const DESCRIPCIONES: Record<string, string> = {
     'es obligatoria y debe ser una cadena de al menos 32 caracteres usada para firmar los tokens de acceso',
   JWT_EXPIRES_IN:
     'debe ser una duracion como 8h, 30m, 45s o un numero de segundos (por defecto 8h)',
+  TRUST_PROXY:
+    'debe ser false/off/0 para desactivarlo, true/on, un numero de saltos o una lista de subredes (por defecto false)',
 };
 
 /**
