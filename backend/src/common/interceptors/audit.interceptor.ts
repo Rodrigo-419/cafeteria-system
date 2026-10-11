@@ -1,1 +1,0 @@
-// Interceptor que registra la auditoria de cada request en la base de datos.

@@ -73,7 +73,7 @@ Todos los módulos usan esta estructura; ya no queda ninguno con la organizació
 liviana de esqueleto.
 
 Elementos comunes en `backend/src/common/`: decoradores `Public`,
-`RequirePermission`, `User` y el manejo global de excepciones.
+`RequirePermission` y `User`.
 
 ```mermaid
 flowchart LR

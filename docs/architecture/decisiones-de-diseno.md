@@ -227,4 +227,5 @@ Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. L
 - **Tokens vigentes tras cambiar la contraseña**: no se invalidan; siguen válidos hasta expirar.
 - **`cafeteria_test` como base e2e**: las pruebas end-to-end abortan si el nombre de la base no termina en `_test` (ver `backend/test/setup-e2e.ts` o `http-pruebas.ts`).
 - **Persistencia de decimales**: todo importe y cantidad se serializa a texto antes de tocar la base para que Prisma no arrastre errores de representación binaria (ver `precioATextoDecimal`, `cantidadATexto`, `centimosATexto`).
+- **Filtro global de excepciones con formato de error uniforme**, a evaluar cuando el frontend lo requiera.
 - **Orden de guards** (registrados como `APP_GUARD` en este orden en `backend/src/app.module.ts`): autenticación (`JwtAuthGuard`) → permisos (`PermissionsGuard`) → throttling (`ThrottlerGuard`).
