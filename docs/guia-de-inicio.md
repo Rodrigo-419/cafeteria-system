@@ -52,6 +52,7 @@ El archivo `backend/.env` define, como mínimo:
 | `DATABASE_URL`        | Cadena de conexión a PostgreSQL (defecto: localhost:5432).  |
 | `SEED_ADMIN_USUARIO`  | Nombre de usuario del administrador inicial.                |
 | `SEED_ADMIN_PASSWORD` | Contraseña del administrador (mínimo 12 caracteres).        |
+| `SEED_DEMO_PASSWORD`  | Contraseña de los usuarios demo (mínimo 12; solo desarrollo).|
 | `JWT_SECRET`          | Secreto para firmar tokens (mínimo 32 caracteres).          |
 | `JWT_EXPIRES_IN`      | Vigencia del token; el valor por defecto es `8h`.           |
 | `TRUST_PROXY`         | Confianza en `X-Forwarded-For`; desactivado por defecto.    |
@@ -112,6 +113,34 @@ El administrador se crea con el nombre de usuario y la contraseña de `SEED_ADMI
 `SEED_ADMIN_PASSWORD`. El seed aborta si no están definidas **sin imprimir sus
 valores**.
 
+### Seed de demostración (solo desarrollo)
+
+Si quieres datos de ejemplo para desarrollar (catálogo con ofertas, inventario con
+alertas de stock, personal con turnos y asignaciones, ventas de los últimos días,
+asistencia y equipos), ejecuta:
+
+```bash
+npm run db:seed:demo
+```
+
+El seed de demostración **reutiliza los casos de uso de la API**, es idempotente
+y **exige haber ejecutado antes `npm run db:seed`** (reutiliza sus sucursales, las
+variantes base y el usuario administrador). Crea dos sucursales con un usuario por
+rol:
+
+| Nombre de usuario | Rol      | Sucursal        |
+| ----------------- | -------- | --------------- |
+| `gerente.centro`  | Gerente  | Sucursal Centro |
+| `empleado.centro` | Empleado | Sucursal Centro |
+| `gerente.norte`   | Gerente  | Sucursal Norte  |
+| `empleado.norte`  | Empleado | Sucursal Norte  |
+
+Los cuatro usuarios comparten la contraseña de `SEED_DEMO_PASSWORD` (mínimo 12
+caracteres). Los empleados usan el PIN fijo de demostración `246810`.
+
+> Es **solo para desarrollo local**: usa una contraseña compartida y el script se
+> **niega a ejecutarse con `NODE_ENV=production`**.
+
 ## 5. Arrancar el servidor de desarrollo
 
 ```bash
@@ -155,6 +184,7 @@ Ejecutar desde `backend/`:
 | `npm test`        | Pruebas unitarias (sin base de datos).                  |
 | `npm run test:e2e` | Pruebas end-to-end (requiere la base `cafeteria_test`).|
 | `npm run db:seed` | Aplica el seed sobre la base de `DATABASE_URL`.         |
+| `npm run db:seed:demo` | Siembra datos de demostración (solo desarrollo).    |
 
 ## Resolución de problemas
 
