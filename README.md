@@ -9,7 +9,7 @@ Monorepo con backend NestJS, frontend y documentación técnica.
 | Ruta                | Contenido                                                      |
 | ------------------- | -------------------------------------------------------------- |
 | `backend/`          | API REST con NestJS, Prisma y PostgreSQL (módulos y pruebas).  |
-| `frontend/`         | Aplicación cliente (por implementar; solo esqueleto del monorepo). |
+| `frontend/`         | Aplicación cliente React + Vite + TypeScript (SPA) independiente, con proxy /api al backend en desarrollo. |
 | `docs/`             | Documentación técnica del sistema.                             |
 | `docker-compose.yml`| Base de datos PostgreSQL para desarrollo.                      |
 

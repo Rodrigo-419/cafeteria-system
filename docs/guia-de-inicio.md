@@ -55,6 +55,7 @@ El archivo `backend/.env` define, como mínimo:
 | `JWT_SECRET`          | Secreto para firmar tokens (mínimo 32 caracteres).          |
 | `JWT_EXPIRES_IN`      | Vigencia del token; el valor por defecto es `8h`.           |
 | `TRUST_PROXY`         | Confianza en `X-Forwarded-For`; desactivado por defecto.    |
+| `CORS_ORIGIN`         | Orígenes permitidos (lista por comas); vacío por defecto.   |
 
 > El `.env` del backend **no está versionado** (ver `backend/.gitignore`). Nunca
 > se suben secretos al repositorio.
@@ -64,6 +65,14 @@ se toma de la cabecera `X-Forwarded-For`. Por defecto vale `false`: **solo debe
 activarse cuando la aplicación está detrás de un proxy inverso propio** (por
 ejemplo con `TRUST_PROXY=true`, un número de saltos o una lista de subredes como
 `loopback`). Activarlo sin proxy permite falsear la IP y esquivar el límite.
+
+`CORS_ORIGIN` es la lista de orígenes autorizados a consumir la API desde un
+navegador, separados por comas (por ejemplo
+`CORS_ORIGIN=http://localhost:5173,http://localhost:4173`). Por defecto está
+**vacía y no se permite ningún origen**; como la autenticación viaja en la
+cabecera `Authorization` (Bearer), no se habilitan credenciales de CORS. El
+frontend de desarrollo usa el proxy de Vite hacia `http://localhost:3000`, de
+modo que en desarrollo no hace falta definirla.
 
 Para generar un secreto seguro, la plantilla sugiere algo como:
 
@@ -164,3 +173,61 @@ Ejecutar desde `backend/`:
   ```bash
   docker exec cafeteria-db psql -U cafeteria -d cafeteria_db -c 'CREATE DATABASE cafeteria_test;'
   ```
+## Frontend (Vite + React + TypeScript)
+
+El frontend vive en rontend/, es independiente (sin workspaces) y se comunica con el backend mediante el proxy de Vite en desarrollo.
+
+### 1. Variables de entorno del frontend
+
+Copia la plantilla:
+
+`powershell
+cd frontend
+Copy-Item .env.example .env
+`
+
+`ash
+cd frontend
+cp .env.example .env
+`
+
+Variables:
+
+| Variable              | Descripción                                                |
+| --------------------- | ----------------------------------------------------------- |
+| VITE_API_BASE_URL  | URL base de la API. En desarrollo usar /api (proxy).     |
+
+Por defecto: VITE_API_BASE_URL=/api. En desarrollo, el proxy de Vite redirige /api a http://localhost:3000, por lo que **no es necesario definir CORS_ORIGIN en el backend para que funcione en localhost:5173**. Solo necesitarás CORS_ORIGIN si el frontend se sirve desde un origen distinto al proxy (por ejemplo, http://localhost:4173 al usar 
+pm run preview contra backend directo, o un dominio de producción).
+
+### 2. Instalar dependencias e iniciar desarrollo
+
+Desde rontend/:
+
+`ash
+npm ci
+npm run dev
+`
+
+El servidor de desarrollo escucha en http://localhost:5173 (puerto por defecto de Vite). Abre http://localhost:5173/login para iniciar sesión.
+
+### 3. Comandos útiles del frontend
+
+| Comando           | Qué hace                                                |
+| ----------------- | ------------------------------------------------------- |
+| 
+pm run dev     | Servidor de desarrollo Vite.                            |
+| 
+pm run build   | 	sc -b && vite build (comprueba tipos + genera dist). |
+| 
+pm run preview | Sirve dist/ localmente.                               |
+| 
+pm run lint    | ESLint sobre el proyecto.                               |
+| 
+pm run format  | Prettier formatea archivos.                             |
+| 
+pm test        | Vitest en modo single-run (itest run).               |
+| 
+pm run test:watch | Vitest en modo watch.                               |
+
+**Notas:** El token se guarda en **memoria + sessionStorage** (nunca localStorage); riesgo de XSS documentado. El menú y guards se derivan de permisosEfectivos. Zod solo para formularios/parseo crítico (login, /auth/me). El botón de envío de mutaciones críticas se deshabilita mientras la petición está en curso (sin idempotencia en backend).

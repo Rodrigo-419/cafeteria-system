@@ -81,7 +81,7 @@ Cada módulo tiene su suite en `backend/test/`:
 | `inventory`           | `inventory.e2e-spec.ts`    | Insumos, stock, entradas, recuentos, movimientos y alertas. |
 | `sales`               | `sales.e2e-spec.ts`        | Registrar, listar, obtener y anular ventas; validaciones y anulación. |
 | `users`               | `users.e2e-spec.ts`        | Gestión de usuarios, estado, contraseñas y permisos individuales. |
-| `equipment`           | `equipment.e2e-spec.ts`    | CRUD de equipos, cambio de estado e historial. |
+| `equinpment`           | `equinpment.e2e-spec.ts`    | CRUD de equipos, cambio de estado e historial. |
 | `employees`           | `employees.e2e-spec.ts`    | Vínculo con usuario, cargo, cese, PIN e inmutabilidad de justificaciones. |
 | `shifts`              | `shifts.e2e-spec.ts`       | Turnos fijos/variables, asignaciones, solapamiento y retiro. |
 | `attendance`          | `attendance.e2e-spec.ts`   | Marcación con PIN, doble marcaje, correcciones, cierre administrativo, justificación de faltas, lecturas y terminal. |
@@ -143,14 +143,90 @@ Consideraciones:
 ## 7. Integración continua
 
 El flujo de GitHub Actions (`.github/workflows/ci.yml`, en la raíz del
-repositorio) valida en cada push/PR a `main`, dentro de `backend/`: `npm ci`,
+  El workflow de CI (.github/workflows/ci.yml) incluye un **job `frontend`** (paralelo al de backend) que, desde `frontend/`, ejecuta: 
+pm ci, 
+pm run lint, 
+pm run build (	sc -b && vite build, con comprobación de tipos) y 
+pm test (itest run), usando caché de npm con `frontend/`package-lock.json. El job de backend mantiene sus pasos existentes (build, lint, unit, e2e con PostgreSQL).
+pm ci, 
+pm run lint, 
+pm run build (	sc -b && vite build, con comprobación de tipos) y 
+pm test (itest run), usando caché de npm con frontend/package-lock.json.
 `prisma generate`, `npm run build`, `npm run lint`, `npm test` (unitarias) y
 `npm run test:e2e`.
 
 El job levanta un **servicio PostgreSQL 17** (misma major que
+  
+npm ci, 
+npm run lint, 
+npm run build (	sc -b && vite build, con comprobación de tipos) y 
+npm test (itest run), usando caché de npm con frontend/package-lock.json.
 `docker-compose.yml`) con una base `cafeteria_test` y un usuario `cafeteria`,
 espera a que el contenedor esté sano (`pg_isready`) y define el entorno con un
 `JWT_SECRET` **ficticio** (nunca el real). Antes de las pruebas e2e se crea
 `backend/.env` (gitignored) con la URL del servicio, porque el harness deriva de
+
+npm ci, 
+npm run lint, 
+npm run build (	sc -b && vite build, con comprobación de tipos) y 
+npm test (itest run), usando caché de npm con frontend/package-lock.json.
 ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
 `globalSetup` de e2e aplica `prisma migrate deploy` sobre la base de pruebas.
+
+## Frontend
+
+### Alcance
+
+- **Unitarias y componentes**: utilidades (money, dates, permissions, session), componente <Can>, página LoginPage, ruta protegida ProtectedRoute y render helpers.
+- **Integración ligera con MSW**: se mockea POST /api/auth/login y GET /api/auth/me para cubrir flujos de autenticación y expiración de sesión.
+
+### Herramientas
+
+- Vitest 5.0.3 (jsdom)
+- Testing Library: @testing-library/react, @testing-library/user-event, @testing-library/jest-dom
+- MSW 3.0.3 para interceptar peticiones HTTP en pruebas
+- React Router DOM + TanStack Query en entorno de test
+
+### Ejecución
+
+Desde frontend/:
+
+`bash
+npm test        # modo single-run (vitest run)
+npm run test:watch
+`
+
+### Cobertura (estado actual)
+
+- **Archivos de prueba**: 8 (money.spec.ts, dates.spec.ts, permissions.spec.ts, session.spec.ts, rrors.spec.ts, Can.test.tsx, LoginPage.test.tsx, ProtectedRoute.test.tsx)
+- **Total de tests**: **32 passed**
+
+### Detalles relevantes
+
+- 
+enderConProveedores envuelve con QueryClientProvider, MemoryRouter y ProveedorAutenticacion.
+- iniciarSesionDePrueba(usuario, token?) guarda sesión válida y fuerza GET /auth/me a devolver ese usuario (evita efectos no deterministas del refresco al arranque).
+- setup.ts: server.listen({ onUnhandledFrame: 'error' }), limpieza de handlers/storage/URL tras cada test.
+- Pruebas cubren: 401/403/429 en login, deshabilitado del botón mientras la petición está en curso, redirección por ausencia de sesión, limpieza de sesión ante 401 de /auth/me, sesión vencida al arranque.
+
+### Integración continua
+
+npm ci, 
+npm run lint, 
+npm run build (	sc -b && vite build, con comprobación de tipos) y 
+npm test (itest run), usando caché de npm con frontend/package-lock.json.
+npm ci, 
+npm run lint, 
+npm run build (	sc -b && vite build, con comprobación de tipos) y 
+npm test (itest run), usando caché de npm con frontend/package-lock.json.
+  El job de backend mantiene sus pasos existentes (build, lint, unit, e2e con PostgreSQL).
+1. 
+npm ci (con cache según frontend/package-lock.json)
+2. 
+npm run lint
+3. 
+npm run build (	sc -b && vite build, incluye comprobación de tipos)
+4. 
+npm test (vitest run)
+
+El job de backend mantiene sus pasos existentes (build, lint, unit, e2e con PostgreSQL).
