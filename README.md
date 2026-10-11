@@ -106,7 +106,7 @@ La configuración vive en `backend/test/jest-e2e.json` y:
 Las pruebas nunca tocan la base de desarrollo. El nombre se deriva de `DATABASE_URL` y debe terminar en `_test`; si no, la ejecución se aborta antes de migrar o borrar nada.
 
 ```bash
-docker exec cafeteria-db psql -U postgres -c 'CREATE DATABASE cafeteria_test;'
+docker exec cafeteria-db psql -U cafeteria -d cafeteria_db -c 'CREATE DATABASE cafeteria_test;'
 ```
 
 Ese es el único paso manual: la URL completa se calcula a partir de `backend/.env` sin imprimirla, `prisma migrate deploy` aplica las migraciones y cada prueba empieza truncando las tablas y volviendo a sembrar los datos mínimos (3 sucursales, 3 roles, permisos y un administrador).

@@ -54,7 +54,7 @@ Base de pruebas: crea `cafeteria_test` (o el nombre derivado que termine en
 `_test`) una sola vez:
 
 ```bash
-docker exec cafeteria-db psql -U postgres -c 'CREATE DATABASE cafeteria_test;'
+docker exec cafeteria-db psql -U cafeteria -d cafeteria_db -c 'CREATE DATABASE cafeteria_test;'
 ```
 
 Constantes del entorno (`test/utils/constantes-pruebas.ts`): correo y contraseña

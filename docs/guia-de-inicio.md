@@ -28,7 +28,7 @@ del contenedor se lee de las variables `POSTGRES_USER`, `POSTGRES_PASSWORD`,
 Puedes comprobar que la base responde con:
 
 ```bash
-docker exec cafeteria-db pg_isready -U <usuario> -d <base>
+docker exec cafeteria-db pg_isready -U cafeteria -d cafeteria_db
 ```
 
 ## 2. Variables de entorno del backend
@@ -162,5 +162,5 @@ Ejecutar desde `backend/`:
   `DATABASE_URL` y debe terminar en `_test`. Si no existe, créala una vez:
 
   ```bash
-  docker exec cafeteria-db psql -U <usuario> -c 'CREATE DATABASE cafeteria_test;'
+  docker exec cafeteria-db psql -U cafeteria -d cafeteria_db -c 'CREATE DATABASE cafeteria_test;'
   ```
