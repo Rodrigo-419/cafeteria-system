@@ -110,7 +110,7 @@ describe('equipment (e2e)', () => {
 
     const acceso = await iniciarSesion(
       app,
-      'empleado.eq@cafeteria.test',
+      empleadoCentro.nombreUsuario,
       PASSWORD_VALIDA_PRUEBAS,
     ).expect(200);
     empleadoCentroLogueado = acceso.body.accessToken as string;

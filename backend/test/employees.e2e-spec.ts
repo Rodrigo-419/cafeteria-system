@@ -15,7 +15,7 @@ import {
 } from './utils/reset-database';
 import { como, iniciarSesion, tokenDeAdmin } from './utils/http-pruebas';
 import {
-  ADMIN_EMAIL_PRUEBAS,
+  ADMIN_USUARIO_PRUEBAS,
   PASSWORD_VALIDA_PRUEBAS,
 } from './utils/constantes-pruebas';
 import {
@@ -33,7 +33,7 @@ type EmpleadoE2E = {
   fechaContratacion: string;
   fechaCese: string | null;
   estado: string;
-  usuario: { id: string; nombre: string; email: string; rol: string };
+  usuario: { id: string; nombre: string; nombreUsuario: string; rol: string };
 };
 
 describe('employees (e2e)', () => {
@@ -145,7 +145,7 @@ describe('employees (e2e)', () => {
 
     it('rechaza con 400 vincular al Admin de la cafeteria', async () => {
       const adminUsuario = await clientePrueba().usuario.findUniqueOrThrow({
-        where: { email: ADMIN_EMAIL_PRUEBAS },
+        where: { nombreUsuario: ADMIN_USUARIO_PRUEBAS },
         select: { id: true },
       });
 
@@ -379,7 +379,7 @@ describe('employees (e2e)', () => {
       // Y ya no puede volver a entrar.
       const intento = await iniciarSesion(
         app,
-        usuario.email,
+        usuario.nombreUsuario,
         PASSWORD_VALIDA_PRUEBAS,
       ).expect(403);
       expect(intento.body.message).toBe('Cuenta bloqueada');
@@ -564,7 +564,7 @@ describe('employees (e2e)', () => {
         'Empleado Sin Permiso',
       );
       const token = (
-        await iniciarSesion(app, empleado.email, PASSWORD_VALIDA_PRUEBAS).expect(200)
+        await iniciarSesion(app, empleado.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200)
       ).body.accessToken as string;
 
       await request(app.getHttpServer())

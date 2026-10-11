@@ -152,7 +152,7 @@ export class ProductosService {
    * El 404 esta reservado para "no existe el recurso que pediste" (un producto,
    * una sucursal). Aqui la peticion es correcta en su forma pero el cuerpo
    * apunta a una categoria que no esta en el catalogo: es un dato de entrada
-   * invalido, igual que un correo mal escrito. Coherente con
+   * invalido, igual que un nombre de usuario mal escrito. Coherente con
    * `CrearUsuarioUseCase`, que responde 400 cuando la sucursal no existe.
    */
   private async exigirCategoria(categoriaId: string): Promise<void> {

@@ -6,7 +6,7 @@ import { $Enums, Prisma } from '../../../generated/prisma/client';
 export type UsuarioConPermisosBrutos = {
   id: string;
   nombre: string;
-  email: string;
+  nombreUsuario: string;
   passwordHash: string;
   estado: $Enums.UsuarioEstado;
   rolId: string | null;
@@ -30,7 +30,7 @@ export type UsuarioConPermisosBrutos = {
 const SELECT_USUARIO_CON_PERMISOS = {
   id: true,
   nombre: true,
-  email: true,
+  nombreUsuario: true,
   passwordHash: true,
   estado: true,
   rolId: true,
@@ -66,12 +66,14 @@ export class AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Busca un usuario por email, incluyendo rol, permisos del rol y permisos
-   * individuales (usuario_permiso). Util para el caso de login.
+   * Busca un usuario por nombre de usuario, incluyendo rol, permisos del rol y
+   * permisos individuales (usuario_permiso). Util para el caso de login.
    */
-  async buscarUsuarioPorEmail(email: string): Promise<UsuarioConPermisosBrutos | null> {
+  async buscarUsuarioPorNombreUsuario(
+    nombreUsuario: string,
+  ): Promise<UsuarioConPermisosBrutos | null> {
     return this.prisma.usuario.findUnique({
-      where: { email },
+      where: { nombreUsuario },
       select: SELECT_USUARIO_CON_PERMISOS,
     });
   }

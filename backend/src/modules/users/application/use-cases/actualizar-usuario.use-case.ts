@@ -1,7 +1,9 @@
-// Caso de uso: actualizar nombre, email, rol y sucursal de un usuario.
+// Caso de uso: actualizar nombre, nombre de usuario, rol y sucursal de un
+// usuario.
 //
-// Nombre y email los puede cambiar cualquiera con alcance. Rol y sucursal solo
-// si quien edita es Admin. El ultimo Admin activo no puede dejar de serlo.
+// Nombre y nombre de usuario los puede cambiar cualquiera con alcance. Rol y
+// sucursal solo si quien edita es Admin. El ultimo Admin activo no puede dejar
+// de serlo.
 import {
   BadRequestException,
   ConflictException,
@@ -20,11 +22,14 @@ import {
   UsuarioRespuesta,
   UsersRepository,
 } from '../../infrastructure/users.repository';
-import { normalizarEmail } from './crear-usuario.use-case';
+import {
+  normalizarNombreUsuario,
+  validarNombreUsuario,
+} from '../../../auth/domain/rules/nombre-usuario';
 
 export type EntradaActualizarUsuario = {
   nombre?: string;
-  email?: string;
+  nombreUsuario?: string;
   rol?: NombreRol;
   sucursalId?: string | null;
 };
@@ -63,10 +68,22 @@ export class ActualizarUsuarioUseCase {
       throw new BadRequestException('No puedes cambiar tu propio rol');
     }
 
-    const email = entrada.email !== undefined ? normalizarEmail(entrada.email) : undefined;
+    const nombreUsuarioEntrada = entrada.nombreUsuario;
+    let nombreUsuario: string | undefined;
+    if (nombreUsuarioEntrada !== undefined) {
+      nombreUsuario = normalizarNombreUsuario(nombreUsuarioEntrada);
 
-    if (email !== undefined && (await this.usersRepository.emailEnUso(email, id))) {
-      throw new ConflictException('El correo electronico ya esta registrado');
+      const problemasNombreUsuario = validarNombreUsuario(nombreUsuarioEntrada);
+      if (problemasNombreUsuario.length > 0) {
+        throw new BadRequestException({
+          message: 'El nombre de usuario no es valido',
+          problemas: problemasNombreUsuario,
+        });
+      }
+
+      if (await this.usersRepository.nombreUsuarioEnUso(nombreUsuario, id)) {
+        throw new ConflictException('El nombre de usuario ya esta registrado');
+      }
     }
 
     const rolId = await this.resolverRolId(entrada.rol);
@@ -108,7 +125,7 @@ export class ActualizarUsuarioUseCase {
 
     return this.usersRepository.actualizarUsuario(id, {
       ...(entrada.nombre !== undefined ? { nombre: entrada.nombre } : {}),
-      ...(email !== undefined ? { email } : {}),
+      ...(nombreUsuario !== undefined ? { nombreUsuario } : {}),
       ...(rolId !== undefined ? { rolId } : {}),
       ...(sucursalId !== undefined ? { sucursalId } : {}),
     });

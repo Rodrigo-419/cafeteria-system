@@ -25,7 +25,7 @@ import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../../domain/roles';
 type Repo = {
   buscarPorIdEnAlcance: jest.Mock;
   actualizarUsuario: jest.Mock;
-  emailEnUso: jest.Mock;
+  nombreUsuarioEnUso: jest.Mock;
   existeSucursal: jest.Mock;
   obtenerRolPorNombre: jest.Mock;
   contarAdminsActivos: jest.Mock;
@@ -81,12 +81,12 @@ describe('ActualizarUsuarioUseCase', () => {
       actualizarUsuario: jest.fn().mockImplementation(async (id: string) => ({
         id,
         nombre: 'Nombre',
-        email: 'a@b.test',
+        nombreUsuario: 'a.b',
         estado: 'activo' as const,
         rol: { nombre: ROL_EMPLEADO },
         sucursalId: SUC_CENTRO,
       })),
-      emailEnUso: jest.fn().mockResolvedValue(false),
+      nombreUsuarioEnUso: jest.fn().mockResolvedValue(false),
       existeSucursal: jest.fn().mockResolvedValue(true),
       obtenerRolPorNombre: jest
         .fn()
@@ -140,17 +140,17 @@ describe('ActualizarUsuarioUseCase', () => {
       expect(repository.actualizarUsuario).not.toHaveBeenCalled();
     });
 
-    it('permite cambiar nombre y email de un empleado de su alcance', async () => {
+    it('permite cambiar nombre y nombre de usuario de un empleado de su alcance', async () => {
       await expect(
         useCase.ejecutar(gerente, empleadoEnAlcance.id, {
           nombre: 'Nuevo Nombre',
-          email: 'nuevo@cafeteria.test',
+          nombreUsuario: 'nuevo.usuario',
         }),
       ).resolves.toBeDefined();
 
       expect(repository.actualizarUsuario).toHaveBeenCalledWith(empleadoEnAlcance.id, {
         nombre: 'Nuevo Nombre',
-        email: 'nuevo@cafeteria.test',
+        nombreUsuario: 'nuevo.usuario',
       });
     });
   });

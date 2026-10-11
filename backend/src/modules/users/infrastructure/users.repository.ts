@@ -21,7 +21,7 @@ export type RolBasico = {
 export type UsuarioRespuesta = {
   id: string;
   nombre: string;
-  email: string;
+  nombreUsuario: string;
   rol: string;
   rolId: string;
   sucursalId: string | null;
@@ -83,7 +83,7 @@ export type ClienteUsuarios = PrismaService | Prisma.TransactionClient;
 const SELECT_USUARIO_RESPUESTA = {
   id: true,
   nombre: true,
-  email: true,
+  nombreUsuario: true,
   rolId: true,
   sucursalId: true,
   estado: true,
@@ -113,7 +113,7 @@ const SELECT_USUARIO_ALCANCE = {
 const SELECT_USUARIO_RESPUESTA_ESCALAR = {
   id: true,
   nombre: true,
-  email: true,
+  nombreUsuario: true,
   rolId: true,
   sucursalId: true,
   estado: true,
@@ -234,9 +234,12 @@ export class UsersRepository {
     });
   }
 
-  async emailEnUso(email: string, exceptoUsuarioId?: string): Promise<boolean> {
+  async nombreUsuarioEnUso(
+    nombreUsuario: string,
+    exceptoUsuarioId?: string,
+  ): Promise<boolean> {
     const usuario = await this.prisma.usuario.findUnique({
-      where: { email },
+      where: { nombreUsuario },
       select: { id: true },
     });
 
@@ -314,7 +317,7 @@ export class UsersRepository {
 
   async crearUsuario(data: {
     nombre: string;
-    email: string;
+    nombreUsuario: string;
     passwordHash: string;
     rolId: string;
     sucursalId: string | null;
@@ -322,7 +325,7 @@ export class UsersRepository {
     const usuario = await this.prisma.usuario.create({
       data: {
         nombre: data.nombre,
-        email: data.email,
+        nombreUsuario: data.nombreUsuario,
         passwordHash: data.passwordHash,
         rolId: data.rolId,
         sucursalId: data.sucursalId,
@@ -334,7 +337,12 @@ export class UsersRepository {
 
   async actualizarUsuario(
     id: string,
-    data: { nombre?: string; email?: string; rolId?: string; sucursalId?: string | null },
+    data: {
+      nombre?: string;
+      nombreUsuario?: string;
+      rolId?: string;
+      sucursalId?: string | null;
+    },
   ): Promise<UsuarioRespuesta> {
     const usuario = await this.prisma.usuario.update({
       where: { id },
@@ -474,7 +482,7 @@ export class UsersRepository {
     usuario: {
       id: string;
       nombre: string;
-      email: string;
+      nombreUsuario: string;
       rolId: string;
       sucursalId: string | null;
       estado: $Enums.UsuarioEstado;
@@ -491,7 +499,7 @@ export class UsersRepository {
     return {
       id: usuario.id,
       nombre: usuario.nombre,
-      email: usuario.email,
+      nombreUsuario: usuario.nombreUsuario,
       rol: rol?.nombre ?? '',
       rolId: usuario.rolId,
       sucursalId: usuario.sucursalId,
@@ -527,7 +535,7 @@ export class UsersRepository {
         ? {
             OR: [
               { nombre: { contains: filtros.busqueda, mode: 'insensitive' } },
-              { email: { contains: filtros.busqueda, mode: 'insensitive' } },
+              { nombreUsuario: { contains: filtros.busqueda, mode: 'insensitive' } },
             ],
           }
         : {}),
@@ -539,7 +547,7 @@ export class UsersRepository {
   private aUsuarioRespuesta(usuario: {
     id: string;
     nombre: string;
-    email: string;
+    nombreUsuario: string;
     rolId: string;
     sucursalId: string | null;
     estado: $Enums.UsuarioEstado;
@@ -550,7 +558,7 @@ export class UsersRepository {
     return {
       id: usuario.id,
       nombre: usuario.nombre,
-      email: usuario.email,
+      nombreUsuario: usuario.nombreUsuario,
       rol: usuario.rol.nombre,
       rolId: usuario.rolId,
       sucursalId: usuario.sucursalId,

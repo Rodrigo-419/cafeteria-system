@@ -90,7 +90,7 @@ export class UsersController {
   ) {
     return this.crearUsuarioUseCase.ejecutar(aActor(usuario), {
       nombre: dto.nombre,
-      email: dto.email,
+      nombreUsuario: dto.nombreUsuario,
       password: dto.password,
       rol: dto.rol as NombreRol,
       sucursalId: dto.sucursalId ?? null,
@@ -120,7 +120,7 @@ export class UsersController {
 
   @Patch(':id')
   @RequirePermission('usuarios.crear_editar')
-  @ApiOperation({ summary: 'Actualiza nombre, email, rol y sucursal' })
+  @ApiOperation({ summary: 'Actualiza nombre, nombre de usuario, rol y sucursal' })
   actualizar(
     @User() usuario: UsuarioAutenticado,
     @Param('id', UUID_PIPE) id: string,
@@ -128,7 +128,7 @@ export class UsersController {
   ) {
     return this.actualizarUsuarioUseCase.ejecutar(aActor(usuario), id, {
       nombre: dto.nombre,
-      email: dto.email,
+      nombreUsuario: dto.nombreUsuario,
       rol: dto.rol as NombreRol | undefined,
       sucursalId: dto.sucursalId,
     });

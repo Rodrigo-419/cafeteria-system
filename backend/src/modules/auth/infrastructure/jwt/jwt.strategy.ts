@@ -14,7 +14,7 @@ export interface JwtPayload {
 export interface UsuarioAutenticado {
   id: string;
   nombre: string;
-  email: string;
+  nombreUsuario: string;
   rol: string | null;
   sucursalId: string | null;
   permisos: string[];
@@ -55,7 +55,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       id: usuario.id,
       nombre: usuario.nombre,
-      email: usuario.email,
+      nombreUsuario: usuario.nombreUsuario,
       rol: usuario.rol?.nombre ?? null,
       sucursalId: usuario.sucursalId,
       permisos: permisosEfectivos,

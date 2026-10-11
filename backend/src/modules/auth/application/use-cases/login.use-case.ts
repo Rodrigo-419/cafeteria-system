@@ -8,13 +8,14 @@ import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
 import { AuthRepository } from '../../infrastructure/auth.repository';
 import { calcularPermisosEfectivos } from '../../domain/calcular-permisos-efectivos';
+import { normalizarNombreUsuario } from '../../domain/rules/nombre-usuario';
 import { ConfigService } from '@nestjs/config';
 
-const MENSAJE_CREDENCIALES_INVALIDAS = 'Correo electronico o contrasena incorrectos';
+const MENSAJE_CREDENCIALES_INVALIDAS = 'Usuario o contraseña incorrectos';
 
 // Hash bcrypt valido (60 chars) de una contrasena aleatoria, usado cuando el
-// correo no existe. Debe tener largo valido para que bcrypt ejecute el trabajo
-// completo y no revele por tiempo si el correo existe.
+// usuario no existe. Debe tener largo valido para que bcrypt ejecute el trabajo
+// completo y no revele por tiempo si el usuario existe.
 const HASH_FALSO = '$2b$12$.ab0wgAeuCGnpvHMDXfhhepL.uK5u/6NX2GBCyLPOmKxlMfrd0JdC';
 
 @Injectable()
@@ -25,14 +26,16 @@ export class LoginUseCase {
     private readonly configService: ConfigService,
   ) {}
 
-  async ejecutar(email: string, password: string) {
-    const emailNormalizado = email.trim().toLowerCase();
+  async ejecutar(nombreUsuario: string, password: string) {
+    const nombreUsuarioNormalizado = normalizarNombreUsuario(nombreUsuario);
 
-    // Buscamos al usuario por correo.
-    const usuario = await this.authRepository.buscarUsuarioPorEmail(emailNormalizado);
+    // Buscamos al usuario por nombre de usuario.
+    const usuario = await this.authRepository.buscarUsuarioPorNombreUsuario(
+      nombreUsuarioNormalizado,
+    );
 
     // Si el usuario no existe, comparamos con un hash falso fijo para evitar
-    // revelar por tiempo si el correo existe.
+    // revelar por tiempo si el usuario existe.
     const passwordHashAComparar = usuario?.passwordHash ?? HASH_FALSO;
 
     const esPasswordValida = await bcrypt.compare(password, passwordHashAComparar);
@@ -65,7 +68,7 @@ export class LoginUseCase {
       user: {
         id: usuario.id,
         nombre: usuario.nombre,
-        email: usuario.email,
+        nombreUsuario: usuario.nombreUsuario,
         rol: usuario.rol?.nombre ?? null,
         sucursalId: usuario.sucursalId,
         permisos: permisosEfectivos,

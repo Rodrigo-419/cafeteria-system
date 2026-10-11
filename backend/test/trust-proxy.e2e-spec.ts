@@ -16,7 +16,7 @@ import { configureApp } from '../src/app.setup';
 import { PASSWORD_DEBIL_PRUEBAS } from './utils/constantes-pruebas';
 
 const RUTA_LOGIN = '/api/auth/login';
-const EMAIL_INEXISTENTE = 'nadie@cafeteria.test';
+const USUARIO_INEXISTENTE = 'nadie';
 
 /**
  * Levanta la app real conservando el throttler (sin el override de las demas
@@ -44,7 +44,7 @@ function intentoLogin(app: INestApplication, ip: string): request.Test {
   return request(app.getHttpServer())
     .post(RUTA_LOGIN)
     .set('X-Forwarded-For', ip)
-    .send({ email: EMAIL_INEXISTENTE, password: PASSWORD_DEBIL_PRUEBAS });
+    .send({ nombreUsuario: USUARIO_INEXISTENTE, password: PASSWORD_DEBIL_PRUEBAS });
 }
 
 /** Ejecuta `cantidad` intentos, con la IP que devuelve `ipDe(intento)`. */

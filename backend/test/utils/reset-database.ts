@@ -12,8 +12,8 @@ import { PrismaClient } from '../../src/generated/prisma/client';
 import { ejecutarSeed } from '../../src/database/seed';
 import { exigirBaseDePruebas, urlBaseDePruebas } from './url-base-pruebas';
 import {
-  ADMIN_EMAIL_PRUEBAS,
   ADMIN_PASSWORD_PRUEBAS,
+  ADMIN_USUARIO_PRUEBAS,
 } from './constantes-pruebas';
 
 /** Tablas de infraestructura de Prisma que NO se vacian. */
@@ -72,7 +72,7 @@ export async function resetDatabase(prisma: ClientePrueba): Promise<void> {
   );
 
   await ejecutarSeed(prisma, {
-    email: ADMIN_EMAIL_PRUEBAS,
+    nombreUsuario: ADMIN_USUARIO_PRUEBAS,
     password: ADMIN_PASSWORD_PRUEBAS,
   });
 }

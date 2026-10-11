@@ -15,7 +15,7 @@ import {
 } from './utils/reset-database';
 import { como, iniciarSesion, tokenDeAdmin } from './utils/http-pruebas';
 import {
-  ADMIN_EMAIL_PRUEBAS,
+  ADMIN_USUARIO_PRUEBAS,
   PASSWORD_DEBIL_PRUEBAS,
   PASSWORD_VALIDA_PRUEBAS,
 } from './utils/constantes-pruebas';
@@ -66,7 +66,7 @@ describe('users (e2e)', () => {
         .set(...como(admin))
         .send({
           nombre: 'Gerente Centro',
-          email: 'gerente.centro@cafeteria.test',
+          nombreUsuario: 'gerente.centro',
           password: PASSWORD_VALIDA_PRUEBAS,
           rol: 'Gerente',
           sucursalId: sucursales.centro,
@@ -90,7 +90,7 @@ describe('users (e2e)', () => {
         .set(...como(admin))
         .send({
           nombre: 'Empleado Uno',
-          email: 'empleado.uno@cafeteria.test',
+          nombreUsuario: 'empleado.uno',
           password: PASSWORD_VALIDA_PRUEBAS,
           rol: 'Empleado',
           sucursalId: sucursales.norte,
@@ -111,7 +111,7 @@ describe('users (e2e)', () => {
         .set(...como(admin))
         .send({
           nombre: 'Empleado Debil',
-          email: 'empleado.debil@cafeteria.test',
+          nombreUsuario: 'empleado.debil',
           password: PASSWORD_DEBIL_PRUEBAS,
           rol: 'Empleado',
           sucursalId: sucursales.centro,
@@ -121,7 +121,7 @@ describe('users (e2e)', () => {
       expect(JSON.stringify(respuesta.body)).toContain('12 caracteres');
     });
 
-    it('rechaza un email duplicado con 409', async () => {
+    it('rechaza un nombre de usuario duplicado con 409', async () => {
       await crearEmpleado(app, admin, sucursales.centro, 'Empleado Duplicado');
 
       await request(app.getHttpServer())
@@ -129,7 +129,7 @@ describe('users (e2e)', () => {
         .set(...como(admin))
         .send({
           nombre: 'Otro Nombre',
-          email: 'empleado.duplicado@cafeteria.test',
+          nombreUsuario: 'empleado.duplicado',
           password: PASSWORD_VALIDA_PRUEBAS,
           rol: 'Empleado',
           sucursalId: sucursales.centro,
@@ -145,7 +145,7 @@ describe('users (e2e)', () => {
         .set(...como(admin))
         .send({
           nombre: 'Otro Case',
-          email: 'EMPLEADO.CASE@CAFETERIA.TEST',
+          nombreUsuario: 'EMPLEADO.CASE',
           password: PASSWORD_VALIDA_PRUEBAS,
           rol: 'Empleado',
           sucursalId: sucursales.centro,
@@ -159,7 +159,7 @@ describe('users (e2e)', () => {
         .set(...como(admin))
         .send({
           nombre: 'Gerente Sin Sucursal',
-          email: 'gerente.sin.sucursal@cafeteria.test',
+          nombreUsuario: 'gerente.sin.sucursal',
           password: PASSWORD_VALIDA_PRUEBAS,
           rol: 'Gerente',
           sucursalId: null,
@@ -175,7 +175,7 @@ describe('users (e2e)', () => {
         .set(...como(admin))
         .send({
           nombre: 'Rol Inventado',
-          email: 'rol.inventado@cafeteria.test',
+          nombreUsuario: 'rol.inventado',
           password: PASSWORD_VALIDA_PRUEBAS,
           rol: 'Superusuario',
           sucursalId: sucursales.centro,
@@ -189,11 +189,83 @@ describe('users (e2e)', () => {
         .set(...como(admin))
         .send({
           nombre: 'Con Campo Extra',
-          email: 'campo.extra@cafeteria.test',
+          nombreUsuario: 'campo.extra',
           password: PASSWORD_VALIDA_PRUEBAS,
           rol: 'Empleado',
           sucursalId: sucursales.centro,
           passwordHash: 'inyectado$2b$12$fake',
+        })
+        .expect(400);
+    });
+
+    it('normaliza el nombre de usuario al crear (mayusculas y espacios)', async () => {
+      const respuesta = await request(app.getHttpServer())
+        .post('/api/users')
+        .set(...como(admin))
+        .send({
+          nombre: 'Usuario Normalizado',
+          nombreUsuario: '  Nuevo.Usuario  ',
+          password: PASSWORD_VALIDA_PRUEBAS,
+          rol: 'Empleado',
+          sucursalId: sucursales.centro,
+        })
+        .expect(201);
+
+      expect(respuesta.body.nombreUsuario).toBe('nuevo.usuario');
+    });
+
+    it('rechaza un nombre de usuario demasiado corto con 400', async () => {
+      await request(app.getHttpServer())
+        .post('/api/users')
+        .set(...como(admin))
+        .send({
+          nombre: 'Usuario Corto',
+          nombreUsuario: 'ab',
+          password: PASSWORD_VALIDA_PRUEBAS,
+          rol: 'Empleado',
+          sucursalId: sucursales.centro,
+        })
+        .expect(400);
+    });
+
+    it('rechaza un nombre de usuario demasiado largo con 400', async () => {
+      await request(app.getHttpServer())
+        .post('/api/users')
+        .set(...como(admin))
+        .send({
+          nombre: 'Usuario Largo',
+          nombreUsuario: 'a'.repeat(31),
+          password: PASSWORD_VALIDA_PRUEBAS,
+          rol: 'Empleado',
+          sucursalId: sucursales.centro,
+        })
+        .expect(400);
+    });
+
+    it('rechaza un nombre de usuario con caracteres invalidos con 400', async () => {
+      await request(app.getHttpServer())
+        .post('/api/users')
+        .set(...como(admin))
+        .send({
+          nombre: 'Usuario Invalido',
+          nombreUsuario: 'usuario con espacio',
+          password: PASSWORD_VALIDA_PRUEBAS,
+          rol: 'Empleado',
+          sucursalId: sucursales.centro,
+        })
+        .expect(400);
+    });
+
+    it('rechaza un nombre de usuario que empieza por simbolo con 400', async () => {
+      await request(app.getHttpServer())
+        .post('/api/users')
+        .set(...como(admin))
+        .send({
+          nombre: 'Usuario Simbolo',
+          nombreUsuario: '.usuario',
+          password: PASSWORD_VALIDA_PRUEBAS,
+          rol: 'Empleado',
+          sucursalId: sucursales.centro,
         })
         .expect(400);
     });
@@ -210,7 +282,7 @@ describe('users (e2e)', () => {
         .set(...como(token))
         .send({
           nombre: 'Gerente Dos',
-          email: 'gerente.dos@cafeteria.test',
+          nombreUsuario: 'gerente.dos',
           password: PASSWORD_VALIDA_PRUEBAS,
           rol: 'Gerente',
           sucursalId: sucursales.centro,
@@ -226,7 +298,7 @@ describe('users (e2e)', () => {
         .set(...como(token))
         .send({
           nombre: 'Empleado Forzado',
-          email: 'empleado.forzado@cafeteria.test',
+          nombreUsuario: 'empleado.forzado',
           password: PASSWORD_VALIDA_PRUEBAS,
           rol: 'Empleado',
           // Pide otra sucursal a proposito: la del Gerente debe ganar.
@@ -354,10 +426,10 @@ describe('users (e2e)', () => {
   describe('bloqueo', () => {
     it('bloquea a un Empleado: deja de entrar y su token anterior da 401', async () => {
       const empleado = await crearEmpleado(app, admin, sucursales.centro, 'Empleado Bloqueo');
-      const emailEmpleado = empleado.email;
+      const nombreUsuarioEmpleado = empleado.nombreUsuario;
 
       const tokenEmpleado = (
-        await iniciarSesion(app, emailEmpleado, PASSWORD_VALIDA_PRUEBAS).expect(200)
+        await iniciarSesion(app, nombreUsuarioEmpleado, PASSWORD_VALIDA_PRUEBAS).expect(200)
       ).body.accessToken as string;
 
       await request(app.getHttpServer())
@@ -373,7 +445,7 @@ describe('users (e2e)', () => {
         .expect(401);
 
       // Y tampoco se puede volver a iniciar sesion.
-      const intento = await iniciarSesion(app, emailEmpleado, PASSWORD_VALIDA_PRUEBAS).expect(
+      const intento = await iniciarSesion(app, nombreUsuarioEmpleado, PASSWORD_VALIDA_PRUEBAS).expect(
         403,
       );
       expect(intento.body.message).toBe('Cuenta bloqueada');
@@ -394,7 +466,7 @@ describe('users (e2e)', () => {
         .send({ estado: 'activo' })
         .expect(200);
 
-      await iniciarSesion(app, empleado.email, PASSWORD_VALIDA_PRUEBAS).expect(200);
+      await iniciarSesion(app, empleado.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200);
     });
 
     it('nadie se bloquea a si mismo: 400', async () => {
@@ -458,7 +530,7 @@ describe('users (e2e)', () => {
       // Con dos Admins activos, bloquear al otro si se permite: queda uno.
       const segundo = await crearUsuarioPorHttp(app, admin, {
         nombre: 'Admin Segundo',
-        email: 'admin.segundo@cafeteria.test',
+        nombreUsuario: 'admin.segundo',
         rol: 'Admin',
         sucursalId: null,
       });
@@ -504,10 +576,10 @@ describe('users (e2e)', () => {
         .send({ password: nueva })
         .expect(204);
 
-      await iniciarSesion(app, empleado.email, nueva).expect(200);
+      await iniciarSesion(app, empleado.nombreUsuario, nueva).expect(200);
 
       // La anterior deja de servir.
-      await iniciarSesion(app, empleado.email, PASSWORD_VALIDA_PRUEBAS).expect(401);
+      await iniciarSesion(app, empleado.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(401);
     });
 
     it('un Gerente restablece la de un Empleado de su alcance', async () => {
@@ -521,7 +593,7 @@ describe('users (e2e)', () => {
         .send({ password: nueva })
         .expect(204);
 
-      await iniciarSesion(app, empleado.email, nueva).expect(200);
+      await iniciarSesion(app, empleado.nombreUsuario, nueva).expect(200);
     });
 
     it('un Gerente NO restablece la de un Empleado de otra sucursal: 404', async () => {
@@ -566,8 +638,8 @@ describe('users (e2e)', () => {
         .send({ passwordActual: PASSWORD_VALIDA_PRUEBAS, passwordNueva: nueva })
         .expect(204);
 
-      await iniciarSesion(app, usuario.email, nueva).expect(200);
-      await iniciarSesion(app, usuario.email, PASSWORD_VALIDA_PRUEBAS).expect(401);
+      await iniciarSesion(app, usuario.nombreUsuario, nueva).expect(200);
+      await iniciarSesion(app, usuario.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(401);
     });
 
     it('rechaza cambiar la propia contrasena con la actual equivocada: 400', async () => {
@@ -587,7 +659,7 @@ describe('users (e2e)', () => {
       // La contrasena no cambio.
       await iniciarSesion(
         app,
-        'gerente.propia.mal@cafeteria.test',
+        'gerente.propia.mal',
         PASSWORD_VALIDA_PRUEBAS,
       ).expect(200);
     });
@@ -778,7 +850,7 @@ describe('users (e2e)', () => {
 
     it('un Gerente no toca los permisos de un Empleado de otra sucursal: 404', async () => {
       // Usa el Gerente del beforeEach de este bloque, no crea otro con el mismo
-      // nombre porque el correo repetiria y la creacion daria 409.
+      // nombre porque el nombre de usuario repetiria y la creacion daria 409.
       const empleadoNorte = await crearEmpleado(
         app,
         admin,
@@ -946,7 +1018,7 @@ describe('users (e2e)', () => {
   /** Id del administrador del seed. */
   async function idDeAdmin(): Promise<string> {
     const admin = await clientePrueba().usuario.findUniqueOrThrow({
-      where: { email: ADMIN_EMAIL_PRUEBAS },
+      where: { nombreUsuario: ADMIN_USUARIO_PRUEBAS },
       select: { id: true },
     });
     return admin.id;

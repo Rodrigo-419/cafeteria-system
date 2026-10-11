@@ -2,8 +2,8 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import {
-  ADMIN_EMAIL_PRUEBAS,
   ADMIN_PASSWORD_PRUEBAS,
+  ADMIN_USUARIO_PRUEBAS,
 } from './constantes-pruebas';
 
 export type RespuestaLogin = {
@@ -13,7 +13,7 @@ export type RespuestaLogin = {
   user: {
     id: string;
     nombre: string;
-    email: string;
+    nombreUsuario: string;
     rol: string | null;
     sucursalId: string | null;
     permisos: string[];
@@ -23,17 +23,19 @@ export type RespuestaLogin = {
 /** Inicia sesion y devuelve la respuesta completa, con su codigo HTTP. */
 export function iniciarSesion(
   app: INestApplication,
-  email: string,
+  nombreUsuario: string,
   password: string,
 ): request.Test {
-  return request(app.getHttpServer()).post('/api/auth/login').send({ email, password });
+  return request(app.getHttpServer())
+    .post('/api/auth/login')
+    .send({ nombreUsuario, password });
 }
 
 /** Token de acceso del administrador de pruebas. */
 export async function tokenDeAdmin(app: INestApplication): Promise<string> {
   const respuesta = await iniciarSesion(
     app,
-    ADMIN_EMAIL_PRUEBAS,
+    ADMIN_USUARIO_PRUEBAS,
     ADMIN_PASSWORD_PRUEBAS,
   ).expect(200);
 

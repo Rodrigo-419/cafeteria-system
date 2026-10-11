@@ -42,7 +42,7 @@ describe('App (e2e)', () => {
   it('aplica el ValidationPipe global: cuerpo sin validar da 400', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/login')
-      .send({ correo: 'no-es-el-campo-esperado' })
+      .send({ nombreUsuario: 'ab', password: 'x' })
       .expect(400);
   });
 

@@ -24,5 +24,5 @@ process.env.NODE_ENV = 'test';
 
 // El administrador de las pruebas lo crea el seed contra la base de pruebas, no
 // el .env de desarrollo. Se borran para que nada dependa de el por accidente.
-delete process.env.SEED_ADMIN_EMAIL;
+delete process.env.SEED_ADMIN_USUARIO;
 delete process.env.SEED_ADMIN_PASSWORD;

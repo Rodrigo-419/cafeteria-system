@@ -648,7 +648,7 @@ describe('shifts (e2e)', () => {
         'Empleado Sin Permiso Turnos',
       );
       const token = (
-        await iniciarSesion(app, empleado.email, PASSWORD_VALIDA_PRUEBAS).expect(200)
+        await iniciarSesion(app, empleado.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200)
       ).body.accessToken as string;
 
       await request(app.getHttpServer())

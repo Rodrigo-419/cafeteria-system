@@ -5,6 +5,10 @@ import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from '../generated/prisma/client';
+import {
+  normalizarNombreUsuario,
+  validarNombreUsuario,
+} from '../modules/auth/domain/rules/nombre-usuario';
 
 const RONDAS_BCRYPT = 12;
 const LONGITUD_MINIMA_PASSWORD = 12;
@@ -66,7 +70,7 @@ type Db = Prisma.TransactionClient;
 export type Contadores = Record<string, { creados: number; existentes: number }>;
 
 /** Credenciales del administrador inicial. Las pasa quien invoca el seed. */
-export type CredencialesAdmin = { email: string; password: string };
+export type CredencialesAdmin = { nombreUsuario: string; password: string };
 
 function anotar(contadores: Contadores, entidad: string, estado: 'creado' | 'existente'): void {
   const actual = contadores[entidad] ?? { creados: 0, existentes: 0 };
@@ -103,16 +107,21 @@ function redactar(mensaje: string): string {
  * Lee y valida las credenciales del administrador inicial.
  * Falla sin mostrar ningun valor: solo el nombre de la variable y el motivo.
  */
-function leerCredencialesAdmin(): { email: string; password: string } {
-  const email = (process.env.SEED_ADMIN_EMAIL ?? '').trim();
+function leerCredencialesAdmin(): { nombreUsuario: string; password: string } {
+  const nombreUsuario = normalizarNombreUsuario(process.env.SEED_ADMIN_USUARIO ?? '');
   // La contrasena no se recorta: es parte del valor real elegido por el usuario.
   const password = process.env.SEED_ADMIN_PASSWORD ?? '';
   const problemas: string[] = [];
 
-  if (!email) {
-    problemas.push('SEED_ADMIN_EMAIL no esta definida en backend/.env');
-  } else if (!email.includes('@')) {
-    problemas.push('SEED_ADMIN_EMAIL no tiene formato de correo electronico');
+  if (!nombreUsuario) {
+    problemas.push('SEED_ADMIN_USUARIO no esta definida en backend/.env');
+  } else {
+    const problemasNombreUsuario = validarNombreUsuario(nombreUsuario);
+    if (problemasNombreUsuario.length > 0) {
+      problemas.push(
+        `SEED_ADMIN_USUARIO no es valido: ${problemasNombreUsuario.join('; ')}`,
+      );
+    }
   }
 
   if (!password) {
@@ -131,7 +140,7 @@ function leerCredencialesAdmin(): { email: string; password: string } {
     );
   }
 
-  return { email, password };
+  return { nombreUsuario, password };
 }
 
 async function asegurarRoles(db: Db, contadores: Contadores): Promise<Map<NombreRol, string>> {
@@ -224,10 +233,13 @@ async function asegurarAdmin(
   db: Db,
   contadores: Contadores,
   idRolAdmin: string,
-  email: string,
+  nombreUsuario: string,
   password: string,
 ): Promise<void> {
-  const existente = await db.usuario.findUnique({ where: { email }, select: { id: true } });
+  const existente = await db.usuario.findUnique({
+    where: { nombreUsuario },
+    select: { id: true },
+  });
   if (existente) {
     anotar(contadores, 'usuarios', 'existente');
     return;
@@ -237,7 +249,7 @@ async function asegurarAdmin(
   await db.usuario.create({
     data: {
       nombre: 'Administrador',
-      email,
+      nombreUsuario,
       passwordHash,
       rolId: idRolAdmin,
       sucursalId: null,
@@ -275,8 +287,8 @@ async function ejecutar(): Promise<void> {
   const prisma = crearCliente();
 
   try {
-    const { email, password } = leerCredencialesAdmin();
-    const contadores = await ejecutarSeed(prisma, { email, password });
+    const { nombreUsuario, password } = leerCredencialesAdmin();
+    const contadores = await ejecutarSeed(prisma, { nombreUsuario, password });
 
     imprimirResumen(contadores);
   } catch (error) {
@@ -314,7 +326,7 @@ export async function ejecutarSeed(
       tx,
       resumen,
       idDe(idsRol, NOMBRE_ROL_ADMIN, 'roles'),
-      credenciales.email,
+      credenciales.nombreUsuario,
       credenciales.password,
     );
 

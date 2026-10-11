@@ -1,17 +1,23 @@
 // DTOs de la API de usuarios.
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
-  IsEmail,
   IsIn,
   IsInt,
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   Max,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
+import {
+  LONGITUD_MAXIMA_NOMBRE_USUARIO,
+  LONGITUD_MINIMA_NOMBRE_USUARIO,
+  normalizarNombreUsuario,
+  PATRON_NOMBRE_USUARIO,
+} from '../../../auth/domain/rules/nombre-usuario';
 import { NOMBRES_ROL } from '../../domain/roles';
 
 export const ESTADOS_USUARIO = ['activo', 'bloqueado'] as const;
@@ -23,9 +29,21 @@ export class CrearUsuarioDto {
   @MaxLength(120, { message: 'El nombre no puede exceder 120 caracteres' })
   nombre: string;
 
-  @IsEmail({}, { message: 'Debe proporcionar un correo electronico valido' })
-  @MaxLength(180, { message: 'El correo no puede exceder 180 caracteres' })
-  email: string;
+  @Transform(({ value }) =>
+    typeof value === 'string' ? normalizarNombreUsuario(value) : value,
+  )
+  @IsString({ message: 'El nombre de usuario es obligatorio' })
+  @MinLength(LONGITUD_MINIMA_NOMBRE_USUARIO, {
+    message: `El nombre de usuario debe tener al menos ${LONGITUD_MINIMA_NOMBRE_USUARIO} caracteres`,
+  })
+  @MaxLength(LONGITUD_MAXIMA_NOMBRE_USUARIO, {
+    message: `El nombre de usuario no puede exceder ${LONGITUD_MAXIMA_NOMBRE_USUARIO} caracteres`,
+  })
+  @Matches(PATRON_NOMBRE_USUARIO, {
+    message:
+      'El nombre de usuario solo admite letras minusculas, digitos, punto, guion y guion bajo, y debe empezar por letra o digito',
+  })
+  nombreUsuario: string;
 
   @IsString({ message: 'La contrasena es obligatoria' })
   @MinLength(1, { message: 'La contrasena es obligatoria' })
@@ -48,9 +66,21 @@ export class ActualizarUsuarioDto {
   nombre?: string;
 
   @IsOptional()
-  @IsEmail({}, { message: 'Debe proporcionar un correo electronico valido' })
-  @MaxLength(180, { message: 'El correo no puede exceder 180 caracteres' })
-  email?: string;
+  @Transform(({ value }) =>
+    typeof value === 'string' ? normalizarNombreUsuario(value) : value,
+  )
+  @IsString({ message: 'El nombre de usuario debe ser texto' })
+  @MinLength(LONGITUD_MINIMA_NOMBRE_USUARIO, {
+    message: `El nombre de usuario debe tener al menos ${LONGITUD_MINIMA_NOMBRE_USUARIO} caracteres`,
+  })
+  @MaxLength(LONGITUD_MAXIMA_NOMBRE_USUARIO, {
+    message: `El nombre de usuario no puede exceder ${LONGITUD_MAXIMA_NOMBRE_USUARIO} caracteres`,
+  })
+  @Matches(PATRON_NOMBRE_USUARIO, {
+    message:
+      'El nombre de usuario solo admite letras minusculas, digitos, punto, guion y guion bajo, y debe empezar por letra o digito',
+  })
+  nombreUsuario?: string;
 
   @IsOptional()
   @IsIn(NOMBRES_ROL, { message: `El rol debe ser uno de: ${NOMBRES_ROL.join(', ')}` })

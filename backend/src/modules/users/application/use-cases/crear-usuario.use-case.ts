@@ -5,6 +5,10 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { validarPassword } from '../../../auth/domain/rules/password-policy';
+import {
+  normalizarNombreUsuario,
+  validarNombreUsuario,
+} from '../../../auth/domain/rules/nombre-usuario';
 import { esGerente, NombreRol } from '../../domain/roles';
 import { forzarRolYSucursalAlCrear, validarRolYSucursal } from '../../domain/rules/reglas-rol-sucursal';
 import {
@@ -23,7 +27,7 @@ export type ActorCrearUsuario = {
 
 export type EntradaCrearUsuario = {
   nombre: string;
-  email: string;
+  nombreUsuario: string;
   password: string;
   rol: NombreRol;
   sucursalId?: string | null;
@@ -37,7 +41,17 @@ export class CrearUsuarioUseCase {
     actor: ActorCrearUsuario,
     entrada: EntradaCrearUsuario,
   ): Promise<UsuarioRespuesta> {
-    const email = normalizarEmail(entrada.email);
+    const nombreUsuario = normalizarNombreUsuario(entrada.nombreUsuario);
+
+    // Regla del identificador de acceso: misma funcion pura que usan el login y
+    // el resto de altas/ediciones. Devuelve la lista de problemas (400).
+    const problemasNombreUsuario = validarNombreUsuario(entrada.nombreUsuario);
+    if (problemasNombreUsuario.length > 0) {
+      throw new BadRequestException({
+        message: 'El nombre de usuario no es valido',
+        problemas: problemasNombreUsuario,
+      });
+    }
 
     // Politica de contrasena: devuelve la lista de problemas (400).
     const problemasPassword = validarPassword(entrada.password);
@@ -70,8 +84,8 @@ export class CrearUsuarioUseCase {
       });
     }
 
-    if (await this.usersRepository.emailEnUso(email)) {
-      throw new ConflictException('El correo electronico ya esta registrado');
+    if (await this.usersRepository.nombreUsuarioEnUso(nombreUsuario)) {
+      throw new ConflictException('El nombre de usuario ya esta registrado');
     }
 
     if (sucursalId !== null && !(await this.usersRepository.existeSucursal(sucursalId))) {
@@ -87,15 +101,10 @@ export class CrearUsuarioUseCase {
 
     return this.usersRepository.crearUsuario({
       nombre: entrada.nombre,
-      email,
+      nombreUsuario,
       passwordHash,
       rolId: rolRegistrado.id,
       sucursalId,
     });
   }
-}
-
-/** Normaliza el correo: recorta y pasa a minusculas. */
-export function normalizarEmail(email: string): string {
-  return email.trim().toLowerCase();
 }

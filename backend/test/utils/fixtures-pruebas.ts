@@ -56,7 +56,7 @@ export async function idDePermiso(codigo: string): Promise<string> {
 export type UsuarioCreado = {
   id: string;
   nombre: string;
-  email: string;
+  nombreUsuario: string;
   rol: string;
   sucursalId: string | null;
   estado: string;
@@ -64,11 +64,27 @@ export type UsuarioCreado = {
 
 export type DatosCrearUsuario = {
   nombre: string;
-  email: string;
+  nombreUsuario: string;
   rol: 'Admin' | 'Gerente' | 'Empleado';
   sucursalId?: string | null;
   password?: string;
 };
+
+/**
+ * Deriva un nombre de usuario valido y estable a partir de un nombre legible.
+ * Las pruebas usan nombres distintos, asi que no hay colisiones.
+ */
+export function nombreUsuarioDesdeNombre(nombre: string): string {
+  const base = nombre
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/gu, '.')
+    .replace(/[^a-z0-9._-]/g, '')
+    .replace(/^[^a-z0-9]+/u, '')
+    .slice(0, 30);
+
+  return base.length >= 3 ? base : base.padEnd(3, '0');
+}
 
 /** Crea un usuario por HTTP y devuelve el cuerpo de la respuesta. */
 export async function crearUsuarioPorHttp(
@@ -81,7 +97,7 @@ export async function crearUsuarioPorHttp(
     .set(...como(token))
     .send({
       nombre: datos.nombre,
-      email: datos.email,
+      nombreUsuario: datos.nombreUsuario,
       password: datos.password ?? PASSWORD_VALIDA_PRUEBAS,
       rol: datos.rol,
       ...(datos.sucursalId !== undefined ? { sucursalId: datos.sucursalId } : {}),
@@ -98,17 +114,17 @@ export async function crearGerente(
   sucursalId: string,
   nombre: string,
 ): Promise<{ usuario: UsuarioCreado; token: string }> {
-  const email = `${nombre.toLowerCase().replace(/\s+/gu, '.')}@cafeteria.test`;
+  const nombreUsuario = nombreUsuarioDesdeNombre(nombre);
 
   const usuario = await crearUsuarioPorHttp(app, tokenAdmin, {
     nombre,
-    email,
+    nombreUsuario,
     rol: 'Gerente',
     sucursalId,
   });
 
   const token = (
-    await iniciarSesion(app, email, PASSWORD_VALIDA_PRUEBAS).expect(200)
+    await iniciarSesion(app, nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200)
   ).body.accessToken as string;
 
   return { usuario, token };
@@ -123,7 +139,7 @@ export async function crearEmpleado(
 ): Promise<UsuarioCreado> {
   return crearUsuarioPorHttp(app, tokenAdmin, {
     nombre,
-    email: `${nombre.toLowerCase().replace(/\s+/gu, '.')}@cafeteria.test`,
+    nombreUsuario: nombreUsuarioDesdeNombre(nombre),
     rol: 'Empleado',
     sucursalId,
   });

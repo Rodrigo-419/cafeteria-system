@@ -20,7 +20,7 @@ import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../../domain/roles';
 const PASSWORD_VALIDA = 'contrasena-larga-123';
 
 type Repo = {
-  emailEnUso: jest.Mock;
+  nombreUsuarioEnUso: jest.Mock;
   existeSucursal: jest.Mock;
   obtenerRolPorNombre: jest.Mock;
   crearUsuario: jest.Mock;
@@ -28,7 +28,7 @@ type Repo = {
 
 function repo(): Repo {
   return {
-    emailEnUso: jest.fn().mockResolvedValue(false),
+    nombreUsuarioEnUso: jest.fn().mockResolvedValue(false),
     existeSucursal: jest.fn().mockResolvedValue(true),
     obtenerRolPorNombre: jest.fn().mockImplementation(async (nombre: string) => ({
       id: `rol-${nombre}`,
@@ -40,7 +40,7 @@ function repo(): Repo {
     crearUsuario: jest.fn().mockImplementation(async (data) => ({
       id: 'usr-nuevo',
       nombre: data.nombre,
-      email: data.email,
+      nombreUsuario: data.nombreUsuario,
       rol: 'Creado',
       rolId: data.rolId,
       sucursalId: data.sucursalId,
@@ -64,7 +64,7 @@ describe('CrearUsuarioUseCase', () => {
 
   const entrada: EntradaCrearUsuario = {
     nombre: 'Ana Perez',
-    email: 'ana@cafeteria.test',
+    nombreUsuario: 'ana.perez',
     password: PASSWORD_VALIDA,
     rol: ROL_EMPLEADO,
     sucursalId: 'suc-1',
@@ -98,12 +98,12 @@ describe('CrearUsuarioUseCase', () => {
       );
     });
 
-    it('normaliza el correo a minusculas y sin espacios', async () => {
-      await useCase.ejecutar(admin, { ...entrada, email: '  ANA@Cafeteria.TEST ' });
+    it('normaliza el nombre de usuario a minusculas y sin espacios', async () => {
+      await useCase.ejecutar(admin, { ...entrada, nombreUsuario: '  ANA.PEREZ ' });
 
-      expect(repository.emailEnUso).toHaveBeenCalledWith('ana@cafeteria.test');
+      expect(repository.nombreUsuarioEnUso).toHaveBeenCalledWith('ana.perez');
       expect(repository.crearUsuario).toHaveBeenCalledWith(
-        expect.objectContaining({ email: 'ana@cafeteria.test' }),
+        expect.objectContaining({ nombreUsuario: 'ana.perez' }),
       );
     });
 
@@ -150,12 +150,23 @@ describe('CrearUsuarioUseCase', () => {
   describe('validaciones', () => {
     const admin = { id: 'admin-1', rol: ROL_ADMIN, sucursalId: null };
 
-    it('rechaza con 400 un email duplicado (409)', async () => {
-      repository.emailEnUso.mockResolvedValue(true);
+    it('rechaza con 409 un nombre de usuario duplicado', async () => {
+      repository.nombreUsuarioEnUso.mockResolvedValue(true);
 
       await expect(useCase.ejecutar(admin, entrada)).rejects.toThrow(
         ConflictException,
       );
+      expect(repository.crearUsuario).not.toHaveBeenCalled();
+    });
+
+    it('rechaza con 400 un nombre de usuario invalido', async () => {
+      const error = (await useCase
+        .ejecutar(admin, { ...entrada, nombreUsuario: 'usuario invalido' })
+        .catch((e: unknown) => e)) as BadRequestException;
+
+      expect(error).toBeInstanceOf(BadRequestException);
+      const respuesta = error.getResponse() as { problemas: string[] };
+      expect(respuesta.problemas.length).toBeGreaterThan(0);
       expect(repository.crearUsuario).not.toHaveBeenCalled();
     });
 

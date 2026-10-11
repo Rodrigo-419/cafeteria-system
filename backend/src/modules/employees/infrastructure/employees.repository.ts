@@ -38,7 +38,7 @@ export type EmpleadoRespuesta = {
   estado: $Enums.EmpleadoEstado;
   createdAt: Date;
   updatedAt: Date;
-  usuario: { id: string; nombre: string; email: string; rol: string };
+  usuario: { id: string; nombre: string; nombreUsuario: string; rol: string };
 };
 
 /** Lo minimo para decidir alcance, cese y reglas de negocio. */
@@ -90,7 +90,7 @@ const SELECT_EMPLEADO_RESPUESTA = {
     select: {
       id: true,
       nombre: true,
-      email: true,
+      nombreUsuario: true,
       rol: { select: { nombre: true } },
     },
   },
@@ -347,7 +347,7 @@ export class EmployeesRepository {
               },
               {
                 usuario: {
-                  email: { contains: filtros.busqueda, mode: 'insensitive' },
+                  nombreUsuario: { contains: filtros.busqueda, mode: 'insensitive' },
                 },
               },
             ],
@@ -372,7 +372,7 @@ export class EmployeesRepository {
   ): Promise<EmpleadoRespuesta> {
     const usuario = await db.usuario.findUnique({
       where: { id: fila.usuarioId },
-      select: { id: true, nombre: true, email: true, rolId: true },
+      select: { id: true, nombre: true, nombreUsuario: true, rolId: true },
     });
 
     if (usuario === null) {
@@ -393,7 +393,7 @@ export class EmployeesRepository {
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
-        email: usuario.email,
+        nombreUsuario: usuario.nombreUsuario,
         rol: rol?.nombre ?? '',
       },
     };
@@ -410,7 +410,7 @@ function aEmpleadoRespuesta(fila: {
   estado: $Enums.EmpleadoEstado;
   createdAt: Date;
   updatedAt: Date;
-  usuario: { id: string; nombre: string; email: string; rol: { nombre: string } };
+  usuario: { id: string; nombre: string; nombreUsuario: string; rol: { nombre: string } };
 }): EmpleadoRespuesta {
   return {
     id: fila.id,
@@ -425,7 +425,7 @@ function aEmpleadoRespuesta(fila: {
     usuario: {
       id: fila.usuario.id,
       nombre: fila.usuario.nombre,
-      email: fila.usuario.email,
+      nombreUsuario: fila.usuario.nombreUsuario,
       rol: fila.usuario.rol.nombre,
     },
   };

@@ -8,7 +8,7 @@ function usuarioConPermisos(permisos: string[]): UsuarioAutenticado {
   return {
     id: 'usr-1',
     nombre: 'Ana Perez',
-    email: 'ana@cafeteria.test',
+    nombreUsuario: 'ana.perez',
     rol: 'ADMIN',
     sucursalId: 'suc-1',
     permisos,

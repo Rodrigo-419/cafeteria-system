@@ -421,7 +421,7 @@ describe('branches (e2e)', () => {
         'Empleado Listado',
       );
       const token = (
-        await iniciarSesion(app, empleado.email, PASSWORD_VALIDA_PRUEBAS).expect(200)
+        await iniciarSesion(app, empleado.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200)
       ).body.accessToken as string;
 
       const respuesta = await request(app.getHttpServer())
@@ -522,7 +522,7 @@ describe('branches (e2e)', () => {
         'Empleado Obtiene',
       );
       const token = (
-        await iniciarSesion(app, empleado.email, PASSWORD_VALIDA_PRUEBAS).expect(200)
+        await iniciarSesion(app, empleado.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200)
       ).body.accessToken as string;
 
       const respuesta = await request(app.getHttpServer())
@@ -541,7 +541,7 @@ describe('branches (e2e)', () => {
         'Empleado Ajeno',
       );
       const token = (
-        await iniciarSesion(app, empleado.email, PASSWORD_VALIDA_PRUEBAS).expect(200)
+        await iniciarSesion(app, empleado.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200)
       ).body.accessToken as string;
 
       await request(app.getHttpServer())
@@ -616,7 +616,7 @@ describe('branches (e2e)', () => {
         'Empleado Editor',
       );
       const token = (
-        await iniciarSesion(app, empleado.email, PASSWORD_VALIDA_PRUEBAS).expect(200)
+        await iniciarSesion(app, empleado.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200)
       ).body.accessToken as string;
 
       await request(app.getHttpServer())

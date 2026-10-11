@@ -78,7 +78,7 @@ model RolPermiso {
 model Usuario {
   id           String        @id @default(uuid(7)) @db.Uuid
   nombre       String
-  email        String        @unique
+  nombreUsuario String       @unique @map("nombre_usuario")
   passwordHash String        @map("password_hash")
   rolId        String        @map("rol_id") @db.Uuid
   /// NULLABLE — el Admin es central, no pertenece a una sucursal

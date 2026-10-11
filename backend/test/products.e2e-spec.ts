@@ -14,6 +14,7 @@ import {
   crearEmpleado,
   crearGerente,
   idsDeSucursales,
+  nombreUsuarioDesdeNombre,
   type Sucursales,
 } from './utils/fixtures-pruebas';
 import { idsDeVariantes, type Variantes } from './utils/fixtures-productos-pruebas';
@@ -187,10 +188,10 @@ async function tokenDeEmpleado(
   sucursalId: string,
   nombre: string,
 ): Promise<string> {
-  const email = `${nombre.toLowerCase().replace(/\s+/gu, '.')}@cafeteria.test`;
+  const nombreUsuario = nombreUsuarioDesdeNombre(nombre);
   await crearEmpleado(app, admin, sucursalId, nombre);
 
-  const respuesta = await iniciarSesion(app, email, PASSWORD_VALIDA_PRUEBAS).expect(200);
+  const respuesta = await iniciarSesion(app, nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200);
   return (respuesta.body as { accessToken: string }).accessToken;
 }
 
@@ -924,9 +925,9 @@ describe('products (e2e)', () => {
      * Arma una sucursal norte con un producto, una oferta activa y otra inactiva,
      * y devuelve el token del Gerente que las fijo.
      *
-     * Devuelve el token en vez de crear cada uno su propio Gerente: el email se
-     * deriva del nombre, y dos Gerentes llamados igual en la misma prueba
-     * chocarían con el 409 de email duplicado.
+     * Devuelve el token en vez de crear cada uno su propio Gerente: el nombre de
+     * usuario se deriva del nombre, y dos Gerentes llamados igual en la misma
+     * prueba chocarían con el 409 de nombre de usuario duplicado.
      */
     async function montarEscenario(): Promise<{ tokenGerente: string; producto: ProductoE2E }> {
       const cliente = { token: admin };

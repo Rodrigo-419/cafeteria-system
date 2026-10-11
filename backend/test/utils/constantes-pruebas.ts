@@ -16,8 +16,8 @@
 export const JWT_SECRET_PRUEBAS =
   'secreto-solo-para-pruebas-e2e-cafeteria-2026';
 
-/** Correo del administrador que crea el seed en la base de pruebas. */
-export const ADMIN_EMAIL_PRUEBAS = 'admin@cafeteria.test';
+/** Nombre de usuario del administrador que crea el seed en la base de pruebas. */
+export const ADMIN_USUARIO_PRUEBAS = 'admin';
 
 /**
  * Contrasena del administrador de pruebas.

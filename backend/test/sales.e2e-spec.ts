@@ -25,6 +25,7 @@ import {
   crearGerente,
   idDePermiso,
   idsDeSucursales,
+  nombreUsuarioDesdeNombre,
   type Sucursales,
 } from './utils/fixtures-pruebas';
 import { idsDeVariantes, type Variantes } from './utils/fixtures-productos-pruebas';
@@ -173,10 +174,10 @@ function tokenDeEmpleado(
   sucursalId: string,
   nombre: string,
 ): Promise<string> {
-  const email = `${nombre.toLowerCase().replace(/\s+/gu, '.')}@cafeteria.test`;
+  const nombreUsuario = nombreUsuarioDesdeNombre(nombre);
 
   return crearEmpleado(app, admin, sucursalId, nombre)
-    .then(() => iniciarSesion(app, email, PASSWORD_VALIDA_PRUEBAS).expect(200))
+    .then(() => iniciarSesion(app, nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200))
     .then((r) => (r.body as { accessToken: string }).accessToken);
 }
 
@@ -414,7 +415,7 @@ describe('ventas (e2e)', () => {
       const tokenRegistrador = (
         await iniciarSesion(
           app,
-          'empleado.registrador@cafeteria.test',
+          empleado.nombreUsuario,
           PASSWORD_VALIDA_PRUEBAS,
         ).expect(200)
       ).body.accessToken as string;
@@ -468,7 +469,7 @@ describe('ventas (e2e)', () => {
       const tokenConcedido = (
         await iniciarSesion(
           app,
-          'empleado.concedido@cafeteria.test',
+          empleado.nombreUsuario,
           PASSWORD_VALIDA_PRUEBAS,
         ).expect(200)
       ).body.accessToken as string;

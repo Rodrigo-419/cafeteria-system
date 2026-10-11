@@ -28,7 +28,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Inicia sesion y devuelve un token de acceso JWT' })
   login(@Body() loginDto: LoginDto) {
-    return this.loginUseCase.ejecutar(loginDto.email, loginDto.password);
+    return this.loginUseCase.ejecutar(loginDto.nombreUsuario, loginDto.password);
   }
 
   @Get('me')
@@ -37,7 +37,7 @@ export class AuthController {
   obtenerPerfil(@User() usuario: UsuarioAutenticado): {
     id: string;
     nombre: string;
-    email: string;
+    nombreUsuario: string;
     rol: string | null;
     sucursalId: string | null;
     permisos: string[];
@@ -45,7 +45,7 @@ export class AuthController {
     return {
       id: usuario.id,
       nombre: usuario.nombre,
-      email: usuario.email,
+      nombreUsuario: usuario.nombreUsuario,
       rol: usuario.rol,
       sucursalId: usuario.sucursalId,
       permisos: usuario.permisos,

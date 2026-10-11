@@ -165,7 +165,7 @@ describe('attendance (e2e)', () => {
     const empleado = await registrarEmpleado(usuario.id);
     const pin = await generarPin(empleado.id);
     const token = (
-      await iniciarSesion(app, usuario.email, PASSWORD_VALIDA_PRUEBAS).expect(200)
+      await iniciarSesion(app, usuario.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(200)
     ).body.accessToken as string;
 
     return { usuario, empleado, pin, token };

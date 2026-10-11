@@ -12,16 +12,16 @@ import {
   resetDatabase,
 } from './utils/reset-database';
 import {
-  ADMIN_EMAIL_PRUEBAS,
   ADMIN_PASSWORD_PRUEBAS,
+  ADMIN_USUARIO_PRUEBAS,
 } from './utils/constantes-pruebas';
 import { como, iniciarSesion, type RespuestaLogin } from './utils/http-pruebas';
 import { NOMBRE_BASE_PRUEBAS } from './utils/url-base-pruebas';
 import { PrismaService } from '../src/database/prisma.service';
 
-// Mismo texto para "contrasena incorrecta" y "correo inexistente": no debe
-// revelar si el correo esta registrado.
-const MENSAJE_CREDENCIALES_INVALIDAS = 'Correo electronico o contrasena incorrectos';
+// Mismo texto para "contrasena incorrecta" y "usuario inexistente": no debe
+// revelar si el usuario esta registrado.
+const MENSAJE_CREDENCIALES_INVALIDAS = 'Usuario o contraseña incorrectos';
 
 describe('auth (e2e)', () => {
   let app: INestApplication;
@@ -56,7 +56,7 @@ describe('auth (e2e)', () => {
     it('acepta credenciales validas y devuelve token y permisos del Admin', async () => {
       const respuesta = await iniciarSesion(
         app,
-        ADMIN_EMAIL_PRUEBAS,
+        ADMIN_USUARIO_PRUEBAS,
         ADMIN_PASSWORD_PRUEBAS,
       ).expect(200);
 
@@ -67,10 +67,12 @@ describe('auth (e2e)', () => {
       expect(body.tokenType).toBe('Bearer');
       expect(typeof body.expiresIn).toBe('number');
 
-      expect(body.user.email).toBe(ADMIN_EMAIL_PRUEBAS);
+      expect(body.user.nombreUsuario).toBe(ADMIN_USUARIO_PRUEBAS);
       expect(body.user.rol).toBe('Admin');
       // El Admin no pertenece a ninguna sucursal.
       expect(body.user.sucursalId).toBeNull();
+      // La respuesta jamas incluye el campo `email`.
+      expect((body.user as Record<string, unknown>).email).toBeUndefined();
     });
 
     it('devuelve exactamente 20 permisos al Admin', async () => {
@@ -79,7 +81,7 @@ describe('auth (e2e)', () => {
       // asistencia.corregir), asi que al Admin le tocan los otros 20.
       const respuesta = await iniciarSesion(
         app,
-        ADMIN_EMAIL_PRUEBAS,
+        ADMIN_USUARIO_PRUEBAS,
         ADMIN_PASSWORD_PRUEBAS,
       ).expect(200);
 
@@ -94,7 +96,7 @@ describe('auth (e2e)', () => {
     it('rechaza una contrasena erronea con 401', async () => {
       const respuesta = await iniciarSesion(
         app,
-        ADMIN_EMAIL_PRUEBAS,
+        ADMIN_USUARIO_PRUEBAS,
         'EstaNoEsLaContrasena2026!',
       ).expect(401);
 
@@ -102,10 +104,10 @@ describe('auth (e2e)', () => {
       expect(respuesta.body.accessToken).toBeUndefined();
     });
 
-    it('rechaza un correo inexistente con 401 y el MISMO mensaje', async () => {
+    it('rechaza un usuario inexistente con 401 y el MISMO mensaje', async () => {
       const respuesta = await iniciarSesion(
         app,
-        'nadie@cafeteria.test',
+        'nadie',
         ADMIN_PASSWORD_PRUEBAS,
       ).expect(401);
 
@@ -113,39 +115,52 @@ describe('auth (e2e)', () => {
       expect(respuesta.body.accessToken).toBeUndefined();
     });
 
-    it('normaliza el correo: el mismo usuario puede entrar en mayusculas', async () => {
+    it('normaliza el nombre de usuario: el mismo usuario puede entrar en mayusculas', async () => {
       const respuesta = await iniciarSesion(
         app,
-        ADMIN_EMAIL_PRUEBAS.toUpperCase(),
+        ADMIN_USUARIO_PRUEBAS.toUpperCase(),
         ADMIN_PASSWORD_PRUEBAS,
       ).expect(200);
 
-      expect((respuesta.body as RespuestaLogin).user.email).toBe(ADMIN_EMAIL_PRUEBAS);
+      expect((respuesta.body as RespuestaLogin).user.nombreUsuario).toBe(
+        ADMIN_USUARIO_PRUEBAS,
+      );
     });
 
     it('rechaza un cuerpo invalido con 400', async () => {
       await request(app.getHttpServer())
         .post('/api/auth/login')
-        .send({ email: 'no-es-un-correo', password: 'x' })
+        .send({ nombreUsuario: 'ab', password: 'x' })
+        .expect(400);
+    });
+
+    it('rechaza el campo antiguo "email" con 400', async () => {
+      await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email: 'admin@cafeteria.test', password: ADMIN_PASSWORD_PRUEBAS })
         .expect(400);
     });
   });
 
   describe('GET /api/auth/me', () => {
     it('devuelve el usuario autenticado con su token', async () => {
-      const token = (await iniciarSesion(app, ADMIN_EMAIL_PRUEBAS, ADMIN_PASSWORD_PRUEBAS)
-        .expect(200)).body.accessToken as string;
+      const token = (
+        await iniciarSesion(app, ADMIN_USUARIO_PRUEBAS, ADMIN_PASSWORD_PRUEBAS).expect(
+          200,
+        )
+      ).body.accessToken as string;
 
       const respuesta = await request(app.getHttpServer())
         .get('/api/auth/me')
         .set(...como(token))
         .expect(200);
 
-      expect(respuesta.body.email).toBe(ADMIN_EMAIL_PRUEBAS);
+      expect(respuesta.body.nombreUsuario).toBe(ADMIN_USUARIO_PRUEBAS);
       expect(respuesta.body.rol).toBe('Admin');
       expect(respuesta.body.permisos).toHaveLength(20);
-      // El hash jamas viaja en una respuesta.
+      // El hash jamas viaja en una respuesta, y tampoco el campo `email`.
       expect(respuesta.body.passwordHash).toBeUndefined();
+      expect(respuesta.body.email).toBeUndefined();
     });
 
     it('responde 401 sin token', async () => {
@@ -160,7 +175,7 @@ describe('auth (e2e)', () => {
     });
 
     it('responde 401 tras bloquear a la cuenta', async () => {
-      const token = await iniciarSesion(app, ADMIN_EMAIL_PRUEBAS, ADMIN_PASSWORD_PRUEBAS)
+      const token = await iniciarSesion(app, ADMIN_USUARIO_PRUEBAS, ADMIN_PASSWORD_PRUEBAS)
         .expect(200)
         .then((r) => r.body.accessToken as string);
 
@@ -168,7 +183,7 @@ describe('auth (e2e)', () => {
       // se bloquee a si mismo, asi que el caso se comprueba a nivel de datos.
       const prisma = clientePrueba();
       const admin = await prisma.usuario.findUniqueOrThrow({
-        where: { email: ADMIN_EMAIL_PRUEBAS },
+        where: { nombreUsuario: ADMIN_USUARIO_PRUEBAS },
         select: { id: true },
       });
       await prisma.usuario.update({
@@ -183,7 +198,11 @@ describe('auth (e2e)', () => {
         .expect(401);
 
       // Y tampoco se puede volver a iniciar sesion.
-      await iniciarSesion(app, ADMIN_EMAIL_PRUEBAS, ADMIN_PASSWORD_PRUEBAS).expect(403);
+      await iniciarSesion(
+        app,
+        ADMIN_USUARIO_PRUEBAS,
+        ADMIN_PASSWORD_PRUEBAS,
+      ).expect(403);
     });
   });
 });

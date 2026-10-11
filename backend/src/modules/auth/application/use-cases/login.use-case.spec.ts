@@ -20,7 +20,7 @@ const PASSWORD_HASH = bcrypt.hashSync(PASSWORD, 4);
 type UsuarioFalso = {
   id: string;
   nombre: string;
-  email: string;
+  nombreUsuario: string;
   passwordHash: string;
   estado: 'activo' | 'bloqueado' | 'inactivo';
   rolId: string | null;
@@ -39,7 +39,7 @@ function usuarioActivo(overrides: Partial<UsuarioFalso> = {}): UsuarioFalso {
   return {
     id: 'usr-1',
     nombre: 'Ana Perez',
-    email: 'ana@cafeteria.test',
+    nombreUsuario: 'ana.perez',
     passwordHash: PASSWORD_HASH,
     estado: 'activo',
     rolId: 'rol-1',
@@ -54,13 +54,15 @@ function usuarioActivo(overrides: Partial<UsuarioFalso> = {}): UsuarioFalso {
 }
 
 describe('LoginUseCase', () => {
-  let authRepository: jest.Mocked<Pick<AuthRepository, 'buscarUsuarioPorEmail'>>;
+  let authRepository: jest.Mocked<
+    Pick<AuthRepository, 'buscarUsuarioPorNombreUsuario'>
+  >;
   let jwtService: jest.Mocked<Pick<JwtService, 'signAsync'>>;
   let configService: jest.Mocked<Pick<ConfigService, 'get'>>;
   let useCase: LoginUseCase;
 
   beforeEach(() => {
-    authRepository = { buscarUsuarioPorEmail: jest.fn() };
+    authRepository = { buscarUsuarioPorNombreUsuario: jest.fn() };
     jwtService = { signAsync: jest.fn().mockResolvedValue('token-falso') };
     configService = {
       get: jest.fn().mockReturnValue('8h'),
@@ -75,9 +77,11 @@ describe('LoginUseCase', () => {
 
   describe('credenciales validas', () => {
     it('devuelve el token y el usuario sin password_hash', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(usuarioActivo() as never);
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
+        usuarioActivo() as never,
+      );
 
-      const resultado = await useCase.ejecutar('ana@cafeteria.test', PASSWORD);
+      const resultado = await useCase.ejecutar('ana.perez', PASSWORD);
 
       expect(resultado).toEqual({
         accessToken: 'token-falso',
@@ -86,7 +90,7 @@ describe('LoginUseCase', () => {
         user: {
           id: 'usr-1',
           nombre: 'Ana Perez',
-          email: 'ana@cafeteria.test',
+          nombreUsuario: 'ana.perez',
           rol: 'ADMIN',
           sucursalId: 'suc-1',
           permisos: ['ventas.ver'],
@@ -97,23 +101,29 @@ describe('LoginUseCase', () => {
     });
 
     it('firma el token solo con el id del usuario', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(usuarioActivo() as never);
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
+        usuarioActivo() as never,
+      );
 
-      await useCase.ejecutar('ana@cafeteria.test', PASSWORD);
+      await useCase.ejecutar('ana.perez', PASSWORD);
 
       expect(jwtService.signAsync).toHaveBeenCalledWith({ sub: 'usr-1' });
     });
 
-    it('normaliza el correo a minusculas y sin espacios', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(usuarioActivo() as never);
+    it('normaliza el nombre de usuario a minusculas y sin espacios', async () => {
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
+        usuarioActivo() as never,
+      );
 
-      await useCase.ejecutar('  ANA@Cafeteria.TEST  ', PASSWORD);
+      await useCase.ejecutar('  ANA.PEREZ  ', PASSWORD);
 
-      expect(authRepository.buscarUsuarioPorEmail).toHaveBeenCalledWith('ana@cafeteria.test');
+      expect(authRepository.buscarUsuarioPorNombreUsuario).toHaveBeenCalledWith(
+        'ana.perez',
+      );
     });
 
     it('calcula los permisos efectivos: rol + concedidos - revocados', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
         usuarioActivo({
           rol: {
             nombre: 'SUPERVISOR',
@@ -129,50 +139,55 @@ describe('LoginUseCase', () => {
         }) as never,
       );
 
-      const resultado = await useCase.ejecutar('ana@cafeteria.test', PASSWORD);
+      const resultado = await useCase.ejecutar('ana.perez', PASSWORD);
 
       expect(resultado.user.permisos).toEqual(['reportes.ver', 'ventas.ver']);
     });
   });
 
   describe('credenciales invalidas', () => {
-    it('lanza 401 cuando el correo no existe', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(null);
+    it('lanza 401 cuando el nombre de usuario no existe', async () => {
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(null);
 
       await expect(
-        useCase.ejecutar('nadie@cafeteria.test', 'cualquiera'),
+        useCase.ejecutar('nadie', 'cualquiera'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
     it('lanza 401 cuando la contrasena es erronea', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(usuarioActivo() as never);
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
+        usuarioActivo() as never,
+      );
 
       await expect(
-        useCase.ejecutar('ana@cafeteria.test', 'contrasena-mala'),
+        useCase.ejecutar('ana.perez', 'contrasena-mala'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('usa el MISMO mensaje para correo inexistente y contrasena erronea', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(null);
-      const errorCorretoInexistente = (await useCase
-        .ejecutar('nadie@cafeteria.test', 'cualquiera')
+    it('usa el MISMO mensaje para usuario inexistente y contrasena erronea', async () => {
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(null);
+      const errorUsuarioInexistente = (await useCase
+        .ejecutar('nadie', 'cualquiera')
         .catch((e: unknown) => e)) as Error;
 
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(usuarioActivo() as never);
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
+        usuarioActivo() as never,
+      );
       const errorContrasenaErronea = (await useCase
-        .ejecutar('ana@cafeteria.test', 'contrasena-mala')
+        .ejecutar('ana.perez', 'contrasena-mala')
         .catch((e: unknown) => e)) as Error;
 
-      expect(errorCorretoInexistente).toBeInstanceOf(UnauthorizedException);
+      expect(errorUsuarioInexistente).toBeInstanceOf(UnauthorizedException);
       expect(errorContrasenaErronea).toBeInstanceOf(UnauthorizedException);
-      expect(errorContrasenaErronea.message).toBe(errorCorretoInexistente.message);
+      expect(errorContrasenaErronea.message).toBe(errorUsuarioInexistente.message);
+      expect(errorContrasenaErronea.message).toBe('Usuario o contraseña incorrectos');
     });
 
     it('compara siempre contra un hash, aunque el usuario no exista', async () => {
       const spy = jest.spyOn(bcrypt, 'compare');
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(null);
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(null);
 
-      await useCase.ejecutar('nadie@cafeteria.test', 'cualquiera').catch(() => undefined);
+      await useCase.ejecutar('nadie', 'cualquiera').catch(() => undefined);
 
       expect(spy).toHaveBeenCalledTimes(1);
       spy.mockRestore();
@@ -180,9 +195,9 @@ describe('LoginUseCase', () => {
 
     it('el hash falso tiene largo valido para que bcrypt haga el trabajo completo', async () => {
       const spy = jest.spyOn(bcrypt, 'compare');
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(null);
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(null);
 
-      await useCase.ejecutar('nadie@cafeteria.test', 'cualquiera').catch(() => undefined);
+      await useCase.ejecutar('nadie', 'cualquiera').catch(() => undefined);
 
       const hashUsado = spy.mock.calls[0][1] as string;
       expect(hashUsado).toHaveLength(60);
@@ -192,44 +207,44 @@ describe('LoginUseCase', () => {
 
   describe('usuario bloqueado', () => {
     it('lanza 403 "Cuenta bloqueada" con la contrasena correcta', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
         usuarioActivo({ estado: 'bloqueado' }) as never,
       );
 
       await expect(
-        useCase.ejecutar('ana@cafeteria.test', PASSWORD),
+        useCase.ejecutar('ana.perez', PASSWORD),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('el mensaje es exactamente "Cuenta bloqueada"', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
         usuarioActivo({ estado: 'bloqueado' }) as never,
       );
 
       const error = (await useCase
-        .ejecutar('ana@cafeteria.test', PASSWORD)
+        .ejecutar('ana.perez', PASSWORD)
         .catch((e: unknown) => e)) as Error;
 
       expect(error.message).toBe('Cuenta bloqueada');
     });
 
     it('no emite token si el usuario esta bloqueado', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
         usuarioActivo({ estado: 'bloqueado' }) as never,
       );
 
-      await useCase.ejecutar('ana@cafeteria.test', PASSWORD).catch(() => undefined);
+      await useCase.ejecutar('ana.perez', PASSWORD).catch(() => undefined);
 
       expect(jwtService.signAsync).not.toHaveBeenCalled();
     });
 
     it('la contrasena erronea en un usuario bloqueado da 401, no 403', async () => {
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
         usuarioActivo({ estado: 'bloqueado' }) as never,
       );
 
       await expect(
-        useCase.ejecutar('ana@cafeteria.test', 'contrasena-mala'),
+        useCase.ejecutar('ana.perez', 'contrasena-mala'),
       ).rejects.toThrow(UnauthorizedException);
     });
   });
@@ -243,9 +258,11 @@ describe('LoginUseCase', () => {
       ['3600', 3600],
     ])('convierte %s en %i segundos', async (configurado, esperado) => {
       configService.get = jest.fn().mockReturnValue(configurado) as never;
-      authRepository.buscarUsuarioPorEmail.mockResolvedValue(usuarioActivo() as never);
+      authRepository.buscarUsuarioPorNombreUsuario.mockResolvedValue(
+        usuarioActivo() as never,
+      );
 
-      const resultado = await useCase.ejecutar('ana@cafeteria.test', PASSWORD);
+      const resultado = await useCase.ejecutar('ana.perez', PASSWORD);
 
       expect(resultado.expiresIn).toBe(esperado);
     });

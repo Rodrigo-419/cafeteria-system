@@ -458,7 +458,7 @@ describe('reports (e2e)', () => {
         'Empleado Sin Reporte',
       );
       const token = (
-        await iniciarSesion(app, usuario.email, PASSWORD_VALIDA_PRUEBAS).expect(
+        await iniciarSesion(app, usuario.nombreUsuario, PASSWORD_VALIDA_PRUEBAS).expect(
           200,
         )
       ).body.accessToken as string;

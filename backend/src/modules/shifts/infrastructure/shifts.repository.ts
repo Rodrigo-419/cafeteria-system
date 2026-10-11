@@ -45,7 +45,7 @@ export type AsignacionRespuesta = {
     id: string;
     cargo: string;
     sucursalId: string;
-    usuario: { id: string; nombre: string; email: string };
+    usuario: { id: string; nombre: string; nombreUsuario: string };
   };
   turno: TurnoRespuesta;
 };
@@ -167,7 +167,7 @@ const SELECT_ASIGNACION_RESPUESTA = {
       id: true,
       cargo: true,
       sucursalId: true,
-      usuario: { select: { id: true, nombre: true, email: true } },
+      usuario: { select: { id: true, nombre: true, nombreUsuario: true } },
     },
   },
   turno: { select: SELECT_TURNO },
@@ -560,7 +560,7 @@ export class ShiftsRepository {
 
     const usuario = await db.usuario.findUnique({
       where: { id: empleado.usuarioId },
-      select: { id: true, nombre: true, email: true },
+      select: { id: true, nombre: true, nombreUsuario: true },
     });
 
     if (usuario === null) {
@@ -592,7 +592,11 @@ export class ShiftsRepository {
         id: empleado.id,
         cargo: empleado.cargo,
         sucursalId: empleado.sucursalId,
-        usuario: { id: usuario.id, nombre: usuario.nombre, email: usuario.email },
+        usuario: {
+          id: usuario.id,
+          nombre: usuario.nombre,
+          nombreUsuario: usuario.nombreUsuario,
+        },
       },
       turno: aTurnoRespuesta(turno),
     };
@@ -624,7 +628,7 @@ function aAsignacionRespuesta(fila: {
     id: string;
     cargo: string;
     sucursalId: string;
-    usuario: { id: string; nombre: string; email: string };
+    usuario: { id: string; nombre: string; nombreUsuario: string };
   };
   turno: TurnoEscalares;
 }): AsignacionRespuesta {
