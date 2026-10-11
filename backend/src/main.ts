@@ -12,6 +12,7 @@ async function bootstrap() {
   // usan las pruebas end-to-end, para no duplicar la configuracion.
   configureApp(app, {
     trustProxy: configService.get<string>('TRUST_PROXY'),
+    corsOrigin: configService.get<string>('CORS_ORIGIN'),
   });
 
   // Necesario para que se ejecute onModuleDestroy y PrismaService cierre

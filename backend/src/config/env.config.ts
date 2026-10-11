@@ -23,6 +23,11 @@ export const envSchema = z.object({
   // de saltos, o una lista de subredes o palabras clave de Express
   // ("loopback", "10.0.0.0/8").
   TRUST_PROXY: z.string().default('false'),
+  // Origenes autorizados a consumir la API desde un navegador, separados por
+  // comas (ej. "http://localhost:5173,http://localhost:4173"). Vacio por
+  // defecto: sin la variable NO se permite ningun origen, que es el default
+  // seguro para una API autenticada con Bearer.
+  CORS_ORIGIN: z.string().default(''),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -43,6 +48,8 @@ const DESCRIPCIONES: Record<string, string> = {
     'debe ser una duracion como 8h, 30m, 45s o un numero de segundos (por defecto 8h)',
   TRUST_PROXY:
     'debe ser false/off/0 para desactivarlo, true/on, un numero de saltos o una lista de subredes (por defecto false)',
+  CORS_ORIGIN:
+    'debe ser una lista de origenes separados por comas (por defecto vacio: no se permite ninguno)',
 };
 
 /**

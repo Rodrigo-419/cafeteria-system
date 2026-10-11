@@ -1,10 +1,11 @@
 // Configuracion de la aplicacion Nest compartida entre `main.ts` y las pruebas
 // end-to-end.
 //
-// Existe para que el prefijo global y el ValidationPipe se configuren en un
-// unico sitio. Si cada uno los declarara por su cuenta, las pruebas pasarian
-// contra una aplicacion distinta a la real y no detectarian, por ejemplo, que
-// falte `forbidNonWhitelisted`.
+// Existe para que el prefijo global, el ValidationPipe, `trust proxy` y CORS
+// se configuren en un unico sitio. Si cada uno los declarara por su cuenta,
+// las pruebas pasarian contra una aplicacion distinta a la real y no
+// detectarian, por ejemplo, que falte `forbidNonWhitelisted` o que CORS quede
+// abierto a cualquier origen.
 import { ValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import { APP_GLOBAL_PREFIX } from './config/app.config';
@@ -48,10 +49,29 @@ export function interpretarTrustProxy(
   return normalizado;
 }
 
+/**
+ * Traduce `CORS_ORIGIN` a la lista de origenes que `enableCors` permite.
+ *
+ * La variable es una lista separada por comas ("http://localhost:5173,
+ * http://localhost:4173"). Se recortan los espacios y se descartan los tramos
+ * vacios para tolerar comas colgantes. Un valor ausente o vacio devuelve `[]`,
+ * que en la libreria `cors` significa que NINGUN origen recibe cabeceras de
+ * CORS: es el default seguro para una API autenticada con Bearer, donde no se
+ * quiere que cualquier pagina web pueda leer las respuestas.
+ */
+export function interpretarCorsOrigin(valor: string | undefined): string[] {
+  return (valor ?? '')
+    .split(',')
+    .map((origen) => origen.trim())
+    .filter((origen) => origen.length > 0);
+}
+
 /** Opciones que `main.ts` puede pasar a `configureApp`. */
 export interface OpcionesConfiguracion {
   /** Valor crudo de `TRUST_PROXY` (ver `interpretarTrustProxy`). */
   trustProxy?: string;
+  /** Valor crudo de `CORS_ORIGIN` (ver `interpretarCorsOrigin`). */
+  corsOrigin?: string;
 }
 
 /**
@@ -82,6 +102,17 @@ export function configureApp(
     .getHttpAdapter()
     .getInstance()
     .set('trust proxy', interpretarTrustProxy(opciones.trustProxy));
+
+  // CORS: solo los origenes declarados en `CORS_ORIGIN`. Sin la variable la
+  // lista queda vacia y ningun origen recibe `Access-Control-Allow-Origin`.
+  // No se habilitan credenciales: la autenticacion viaja en la cabecera
+  // `Authorization` (Bearer), que va en `allowedHeaders`.
+  app.enableCors({
+    origin: interpretarCorsOrigin(opciones.corsOrigin),
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false,
+  });
 
   return app;
 }
