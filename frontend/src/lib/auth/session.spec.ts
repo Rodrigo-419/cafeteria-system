@@ -7,7 +7,7 @@ const CLAVE = 'cafeteria.sesion'
 const USUARIO: UsuarioApi = {
   id: 'u-1',
   nombre: 'Ada',
-  email: 'ada@cafeteria.test',
+  nombreUsuario: 'ada',
   rol: 'Gerente',
   sucursalId: 's-1',
   permisos: ['ventas.ver'],
@@ -46,6 +46,30 @@ describe('cargarSesionInicial', () => {
 
     expect(sesion).toBeNull()
     expect(expirada).toBe(false)
+  })
+
+  it('descarta una sesion con la forma antigua (campo email)', () => {
+    sessionStorage.setItem(
+      CLAVE,
+      JSON.stringify({
+        accessToken: 'tok',
+        expiresAt: Date.now() + 3600_000,
+        user: {
+          id: 'u-1',
+          nombre: 'Ada',
+          email: 'ada@cafeteria.test',
+          rol: 'Gerente',
+          sucursalId: 's-1',
+          permisos: ['ventas.ver'],
+        },
+      }),
+    )
+
+    const { sesion, expirada } = cargarSesionInicial()
+
+    expect(sesion).toBeNull()
+    expect(expirada).toBe(false)
+    expect(sessionStorage.getItem(CLAVE)).toBeNull()
   })
 
   it('devuelve null cuando no hay nada guardado', () => {

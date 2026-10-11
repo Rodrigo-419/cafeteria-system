@@ -9,7 +9,7 @@ function usuarioCon(permisos: string[]): UsuarioApi {
   return {
     id: 'u-1',
     nombre: 'Prueba Permisos',
-    email: 'permisos@cafeteria.test',
+    nombreUsuario: 'permisos',
     rol: 'Gerente',
     sucursalId: 'sucursal-1',
     permisos,

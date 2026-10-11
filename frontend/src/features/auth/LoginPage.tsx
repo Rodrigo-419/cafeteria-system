@@ -28,7 +28,7 @@ function mensajeDeError(error: unknown): string {
   if (error instanceof ApiError) {
     switch (error.status) {
       case 401:
-        return 'Correo electrónico o contraseña incorrectos.'
+        return 'Usuario o contraseña incorrectos.'
       case 403:
         return 'Tu cuenta está bloqueada. Contacta al administrador.'
       case 429:
@@ -48,7 +48,7 @@ export function LoginPage() {
 
   const form = useForm<ValoresLogin>({
     resolver: zodResolver(esquemaLogin),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { nombreUsuario: '', password: '' },
   })
 
   const enviando = form.formState.isSubmitting
@@ -62,7 +62,7 @@ export function LoginPage() {
     setErrorEnvio(null)
     limpiarMotivoSalida()
     try {
-      await iniciarSesion(valores.email, valores.password)
+      await iniciarSesion(valores.nombreUsuario, valores.password)
     } catch (error) {
       setErrorEnvio(mensajeDeError(error))
     }
@@ -96,15 +96,15 @@ export function LoginPage() {
             <form onSubmit={onSubmit} className="grid gap-4" noValidate>
               <FormField
                 control={form.control}
-                name="email"
+                name="nombreUsuario"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Correo electrónico</FormLabel>
+                    <FormLabel>Usuario</FormLabel>
                     <FormControl>
                       <Input
-                        type="email"
-                        autoComplete="email"
-                        placeholder="usuario@cafeteria.test"
+                        type="text"
+                        autoComplete="username"
+                        placeholder="admin"
                         {...field}
                       />
                     </FormControl>

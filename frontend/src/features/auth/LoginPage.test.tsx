@@ -15,9 +15,9 @@ function abrirLogin() {
   render(<App />)
 }
 
-async function completarYEnviar(email: string, password: string) {
+async function completarYEnviar(nombreUsuario: string, password: string) {
   const user = userEvent.setup()
-  await user.type(screen.getByLabelText(/correo electrónico/i), email)
+  await user.type(screen.getByLabelText(/usuario/i), nombreUsuario)
   await user.type(screen.getByLabelText(/contraseña/i), password)
   await user.click(screen.getByRole('button', { name: /ingresar/i }))
 }
@@ -27,7 +27,7 @@ describe('LoginPage', () => {
     abrirLogin()
 
     await completarYEnviar(
-      CREDENCIALES_VALIDAS.email,
+      CREDENCIALES_VALIDAS.nombreUsuario,
       CREDENCIALES_VALIDAS.password,
     )
 
@@ -38,10 +38,10 @@ describe('LoginPage', () => {
   it('muestra el error de credenciales ante un 401', async () => {
     abrirLogin()
 
-    await completarYEnviar('nadie@cafeteria.test', 'incorrecta')
+    await completarYEnviar('nadie', 'incorrecta')
 
     expect(
-      await screen.findByText(/Correo electrónico o contraseña incorrectos/),
+      await screen.findByText(/Usuario o contraseña incorrectos/),
     ).toBeInTheDocument()
   })
 
@@ -56,7 +56,7 @@ describe('LoginPage', () => {
     )
     abrirLogin()
 
-    await completarYEnviar('bloqueado@cafeteria.test', 'loquesea12345')
+    await completarYEnviar('bloqueado', 'loquesea12345')
 
     expect(
       await screen.findByText(/Tu cuenta está bloqueada/),
@@ -79,7 +79,7 @@ describe('LoginPage', () => {
     abrirLogin()
 
     await completarYEnviar(
-      CREDENCIALES_VALIDAS.email,
+      CREDENCIALES_VALIDAS.nombreUsuario,
       CREDENCIALES_VALIDAS.password,
     )
 
@@ -96,7 +96,7 @@ describe('LoginPage', () => {
     abrirLogin()
 
     await completarYEnviar(
-      CREDENCIALES_VALIDAS.email,
+      CREDENCIALES_VALIDAS.nombreUsuario,
       CREDENCIALES_VALIDAS.password,
     )
 

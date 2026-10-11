@@ -6,7 +6,10 @@
 import { z } from 'zod'
 
 export const esquemaLogin = z.object({
-  email: z.email({ message: 'Ingresa un correo electrónico válido' }),
+  nombreUsuario: z
+    .string()
+    .min(1, { message: 'El usuario es obligatorio' })
+    .max(30, { message: 'El usuario no puede exceder 30 caracteres' }),
   password: z
     .string()
     .min(1, { message: 'La contraseña es obligatoria' })

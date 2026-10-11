@@ -34,6 +34,8 @@ export interface DataTableProps<T> {
   pageSize?: number
   total?: number
   onPageChange?: (page: number) => void
+  /** Identidad estable de cada fila; si falta se usa el indice. */
+  getRowId?: (item: T, index: number) => string
   className?: string
 }
 
@@ -49,6 +51,7 @@ export function DataTable<T>({
   pageSize = 10,
   total,
   onPageChange,
+  getRowId,
   className,
 }: DataTableProps<T>) {
   const totalPages =
@@ -98,7 +101,7 @@ export function DataTable<T>({
           </TableHeader>
           <TableBody>
             {data.map((item, idx) => (
-              <TableRow key={idx}>
+              <TableRow key={getRowId ? getRowId(item, idx) : idx}>
                 {columns.map((c) => (
                   <TableCell key={c.key} className={c.className}>
                     {c.cell(item, idx)}

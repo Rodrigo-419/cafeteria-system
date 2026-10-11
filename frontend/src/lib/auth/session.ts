@@ -114,7 +114,7 @@ function parsearSesion(crudo: string): Sesion | null {
   if (
     typeof usuario.id !== 'string' ||
     typeof usuario.nombre !== 'string' ||
-    typeof usuario.email !== 'string' ||
+    typeof usuario.nombreUsuario !== 'string' ||
     !Array.isArray(usuario.permisos)
   ) {
     return null
@@ -126,7 +126,7 @@ function parsearSesion(crudo: string): Sesion | null {
     user: {
       id: usuario.id,
       nombre: usuario.nombre,
-      email: usuario.email,
+      nombreUsuario: usuario.nombreUsuario,
       rol: typeof usuario.rol === 'string' ? usuario.rol : null,
       sucursalId:
         typeof usuario.sucursalId === 'string' ? usuario.sucursalId : null,

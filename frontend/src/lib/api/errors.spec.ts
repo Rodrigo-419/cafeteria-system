@@ -15,11 +15,11 @@ describe('parsearErrorApi', () => {
   it('toma todos los mensajes cuando es un arreglo (validacion)', () => {
     const error = parsearErrorApi(400, {
       statusCode: 400,
-      message: ['email debe ser valido', 'password es obligatoria'],
+      message: ['nombreUsuario debe ser valido', 'password es obligatoria'],
     })
 
     expect(error.mensajes).toEqual([
-      'email debe ser valido',
+      'nombreUsuario debe ser valido',
       'password es obligatoria',
     ])
   })

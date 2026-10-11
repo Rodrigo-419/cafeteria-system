@@ -16,6 +16,13 @@ if (typeof window.matchMedia !== 'function') {
     }) as MediaQueryList
 }
 
+// jsdom no implementa la captura de puntero que Radix Select usa para cerrar
+// el menú al hacer clic fuera; sin estos stubs el menú no llega a abrirse.
+Element.prototype.hasPointerCapture ??= () => false
+Element.prototype.setPointerCapture ??= () => {}
+Element.prototype.releasePointerCapture ??= () => {}
+Element.prototype.scrollIntoView ??= () => {}
+
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 
 afterEach(() => {

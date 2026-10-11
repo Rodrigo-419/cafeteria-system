@@ -4,12 +4,12 @@ import type { RespuestaLogin, UsuarioApi } from '@/types/api'
 
 /** `POST /api/auth/login`. No adjunta token (es la peticion que lo obtiene). */
 export function iniciarSesion(
-  email: string,
+  nombreUsuario: string,
   password: string,
 ): Promise<RespuestaLogin> {
   return peticionApi<RespuestaLogin>('/auth/login', {
     method: 'POST',
-    body: { email, password },
+    body: { nombreUsuario, password },
     auth: false,
   })
 }

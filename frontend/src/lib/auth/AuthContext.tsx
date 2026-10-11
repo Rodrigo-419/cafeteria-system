@@ -38,7 +38,7 @@ export interface ValorAutenticacion {
   /** `true` mientras se valida la sesion guardada al arrancar. */
   cargando: boolean
   motivoSalida: MotivoSalida
-  iniciarSesion: (email: string, password: string) => Promise<void>
+  iniciarSesion: (nombreUsuario: string, password: string) => Promise<void>
   cerrarSesion: () => void
   limpiarMotivoSalida: () => void
 }
@@ -115,8 +115,8 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
       .finally(() => setCargando(false))
   }, [inicial.sesion])
 
-  const iniciarSesion = useCallback(async (email: string, password: string) => {
-    const respuesta = await apiIniciarSesion(email, password)
+  const iniciarSesion = useCallback(async (nombreUsuario: string, password: string) => {
+    const respuesta = await apiIniciarSesion(nombreUsuario, password)
     const nueva = crearSesion(
       respuesta.accessToken,
       respuesta.user,

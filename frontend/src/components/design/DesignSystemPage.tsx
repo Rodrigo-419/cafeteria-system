@@ -408,6 +408,8 @@ function SeccionToasts() {
 
 export function DesignSystemPage() {
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmConMotivo, setConfirmConMotivo] = useState(false)
+  const [motivo, setMotivo] = useState('')
   const columns: Column<Item>[] = [
     { key: 'name', header: 'Nombre', cell: (i) => i.name },
     {
@@ -504,6 +506,34 @@ export function DesignSystemPage() {
                 destructive
                 onConfirm={() => setConfirmOpen(false)}
               />
+              <Button variant="outline" onClick={() => setConfirmConMotivo(true)}>
+                ConfirmDialog con motivo
+              </Button>
+              <ConfirmDialog
+                open={confirmConMotivo}
+                onOpenChange={(abierto) => {
+                  setConfirmConMotivo(abierto)
+                  if (!abierto) setMotivo('')
+                }}
+                title="Anular venta"
+                description="Se requiere un motivo para la acción."
+                confirmText="Confirmar"
+                confirmDisabled={motivo.trim().length === 0}
+                onConfirm={() => setConfirmConMotivo(false)}
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="ds-motivo">Motivo</Label>
+                  <Textarea
+                    id="ds-motivo"
+                    value={motivo}
+                    maxLength={200}
+                    onChange={(evento) => setMotivo(evento.target.value)}
+                  />
+                  <p className="text-right text-xs text-muted-foreground">
+                    {motivo.length}/200
+                  </p>
+                </div>
+              </ConfirmDialog>
             </CardContent>
           </Card>
           <Card>
@@ -588,6 +618,11 @@ export function DesignSystemPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <DataTable columns={columns} data={data} />
+              <DataTable
+                columns={columns}
+                data={data}
+                getRowId={(item) => item.id}
+              />
               <DataTable columns={columns} data={[]} emptyTitle="Sin productos" />
               <DataTable
                 columns={columns}

@@ -8,7 +8,7 @@ function usuarioCon(permisos: string[]): UsuarioApi {
   return {
     id: 'u-1',
     nombre: 'Ada',
-    email: 'ada@cafeteria.test',
+    nombreUsuario: 'ada',
     rol: 'Gerente',
     sucursalId: null,
     permisos,

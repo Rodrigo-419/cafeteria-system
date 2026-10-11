@@ -13,6 +13,9 @@ import { Forbidden } from '@/routes/Forbidden'
 import { NotFound } from '@/routes/NotFound'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
 import { MENU_ITEMS } from '@/lib/navigation/menu'
+import { SalesHome } from '@/features/sales/SalesHome'
+import { NewSalePage } from '@/features/sales/NewSalePage'
+import { SaleDetailPage } from '@/features/sales/SaleDetailPage'
 
 function crearQueryClient() {
   return new QueryClient({
@@ -28,7 +31,9 @@ function crearQueryClient() {
 export function App() {
   const [queryClient] = useState(crearQueryClient)
 
-  const rutasModulo = MENU_ITEMS.filter((item) => item.to !== '/')
+  const rutasModulo = MENU_ITEMS.filter(
+    (item) => item.to !== '/' && item.to !== '/sales',
+  )
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -59,6 +64,33 @@ export function App() {
                   }
                 />
               ))}
+              <Route
+                path="sales"
+                element={
+                  <RequirePermission
+                    permiso={['ventas.ver', 'ventas.registrar']}
+                    modo="any"
+                  >
+                    <SalesHome />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="sales/nueva"
+                element={
+                  <RequirePermission permiso="ventas.registrar">
+                    <NewSalePage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="sales/:id"
+                element={
+                  <RequirePermission permiso="ventas.ver">
+                    <SaleDetailPage />
+                  </RequirePermission>
+                }
+              />
               {import.meta.env.DEV && (
                 <Route path="design-system" element={<DesignSystemPage />} />
               )}
