@@ -29,3 +29,5 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+# Capturas de referencia del diseno (solo locales)
+docs/diseno/**/*.png

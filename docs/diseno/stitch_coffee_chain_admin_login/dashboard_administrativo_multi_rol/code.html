@@ -1,0 +1,548 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-fixed-variant":"#613f26","outline-variant":"#d6c3b6","on-primary-container":"#fffbff","tertiary-container":"#946c4f","error-container":"#ffdad6","surface-container-lowest":"#ffffff","tertiary":"#795439","secondary-container":"#fed4c2","error":"#ba1a1a","tertiary-fixed":"#ffdcc5","on-error":"#ffffff","on-tertiary":"#ffffff","primary-fixed":"#ffdcc2","secondary-fixed-dim":"#e6bead","surface-tint":"#875221","on-secondary-fixed":"#2c160b","primary":"#84501f","inverse-primary":"#feb87e","secondary":"#765749","outline":"#847469","background":"#fff8f5","surface-bright":"#fff8f5","inverse-surface":"#3c2d25","primary-fixed-dim":"#feb87e","surface-container-low":"#fff1ea","on-tertiary-fixed":"#2e1502","surface":"#fff8f5","on-primary":"#ffffff","primary-container":"#a16835","inverse-on-surface":"#ffede4","secondary-fixed":"#ffdbcc","surface-container":"#ffeadf","on-secondary-container":"#795a4c","on-primary-fixed-variant":"#6a3b0b","surface-container-highest":"#f6ded1","on-background":"#251911","on-primary-fixed":"#2e1500","on-error-container":"#93000a","on-tertiary-container":"#fffbff","surface-variant":"#f6ded1","on-secondary-fixed-variant":"#5c4033","on-secondary":"#ffffff","surface-container-high":"#fce3d6","surface-dim":"#edd5c8","on-surface-variant":"#52443a","tertiary-fixed-dim":"#eebd9b","on-surface":"#251911"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xs":"0.25rem","space-sm":"0.5rem","gutter-sm":"1rem","space-lg":"1.5rem",gutter:"1.5rem","margin-sm":"1rem","space-2xl":"3rem","space-xl":"2rem",margin:"2rem","space-md":"1rem"},fontFamily:{"body-sm":["Plus Jakarta Sans"],"headline-lg-mobile":["Plus Jakarta Sans"],"title-lg":["Plus Jakarta Sans"],"title-md":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"tabular-data":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"label-lg":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"]},fontSize:{"body-sm":["12px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"headline-lg-mobile":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"title-lg":["16px",{lineHeight:"24px",letterSpacing:"-0.005em",fontWeight:"600"}],"title-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"600"}],"headline-md":["18px",{lineHeight:"26px",letterSpacing:"-0.01em",fontWeight:"600"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-md":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}],"headline-xl-mobile":["26px",{lineHeight:"34px",letterSpacing:"-0.01em",fontWeight:"700"}],"tabular-data":["13px",{lineHeight:"18px",letterSpacing:"-0.01em",fontWeight:"500"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"600"}],"label-lg":["13px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"600"}],"body-lg":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"400"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-md flex flex-col justify-center bg-surface-container"><div class="flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-primary text-[22px]">coffee</span><span class="font-headline-md text-headline-md tracking-tight text-on-surface font-bold">Sistema de Gestión — Cadena de Cafeterías</span></div><span class="material-symbols-outlined text-on-surface-variant cursor-pointer text-[18px]">menu_open</span></div><div class="flex items-center gap-space-xs mt-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span><span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Red de 3 Sucursales</span></div></div><div class="px-space-md py-space-sm"><span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant px-space-xs">Operaciones</span></div><nav class="flex flex-col gap-space-xs px-space-sm" data-active-classes="bg-primary-container text-on-primary-container font-title-md"><a aria-current="page" class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg transition-colors bg-primary-container text-on-primary-container font-title-md" data-path="inicio" href="#"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="">Inicio</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="ventas" href="#"><span class="material-symbols-outlined text-[20px]">point_of_sale</span><span class="">Ventas</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="inventario" href="#"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="">Inventario</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="productos" href="#"><span class="material-symbols-outlined text-[20px]">local_cafe</span><span class="">Productos</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="empleados" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="">Empleados</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="turnos" href="#"><span class="material-symbols-outlined text-[20px]">schedule</span><span class="">Turnos</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="asistencia" href="#"><span class="material-symbols-outlined text-[20px]">how_to_reg</span><span class="">Asistencia</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="equipos" href="#"><span class="material-symbols-outlined text-[20px]">precision_manufacturing</span><span class="">Equipos</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="reportes" href="#"><span class="material-symbols-outlined text-[20px]">monitoring</span><span class="">Reportes</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="usuarios" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span><span class="">Usuarios</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="sucursales" href="#"><span class="material-symbols-outlined text-[20px]">storefront</span><span class="">Sucursales</span></a></nav></div><div class="p-space-sm bg-surface-container m-space-sm rounded-xl flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="font-label-md text-label-md text-on-surface-variant font-medium">En línea - HTTPS</span></div><span class="font-label-md text-label-md text-primary font-semibold">v2.4.0</span></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-md"><div class="flex items-center bg-surface-container-low px-space-sm py-space-xs rounded-lg gap-space-xs"><span class="material-symbols-outlined text-primary text-[18px]">store</span><select class="bg-transparent font-title-md text-title-md text-on-surface focus:outline-none cursor-pointer pr-space-xs"><option>Todas las sucursales - Vista Global Admin</option><option>Sucursal A (Principal)</option><option>Sucursal B</option><option>Sucursal C</option></select></div><div class="hidden xl:flex items-center bg-surface-container-lowest px-space-sm py-space-xs rounded-lg gap-space-xs shadow-[0_1px_3px_rgba(43,30,22,0.04)]"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><input class="bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none w-56" placeholder="Buscar pedidos, stock, barista..." type="text"><kbd class="font-label-md text-label-md bg-surface-container px-1.5 py-0.5 rounded text-on-surface-variant">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><div class="flex items-center bg-secondary-container/40 px-space-sm py-space-xs rounded-lg gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">shield_person</span><span class="font-label-md text-label-md uppercase tracking-wider text-on-secondary-fixed-variant">Rol demo:</span><select class="bg-transparent font-title-md text-title-md text-on-secondary-fixed font-semibold focus:outline-none cursor-pointer"><option>Admin General</option><option>Gerente Sucursal A</option><option>Empleado / Barista</option></select></div><div class="hidden lg:flex items-center gap-space-xs text-on-surface-variant font-label-lg text-label-lg"><span class="material-symbols-outlined text-[16px]">calendar_today</span><span class="font-tabular-data text-tabular-data">18 Mayo, 2025</span></div><button class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">notifications</span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="hidden sm:flex flex-col text-right"><span class="font-title-md text-title-md text-on-surface font-semibold leading-tight">M. Vargas</span><span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Administrador General</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-space-lg py-space-lg"><div class="flex flex-col w-full gap-space-xl">
+<!-- Top Operational Banner & Dynamic Role Switcher -->
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-lg bg-surface-container-low p-space-lg rounded-xl shadow-sm">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-sm">
+<span class="px-space-xs py-0.5 rounded bg-primary text-on-primary font-label-md text-label-md uppercase tracking-wider font-semibold">Consolidado en Vivo</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span> Sincronizado hace 42s
+        </span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface font-bold tracking-tight">Panel de Control Operativo</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Resumen consolidado y multi-rol para la red de cafeterías de especialidad</p>
+</div>
+<!-- Role Simulator Switcher -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center bg-surface-container p-1.5 rounded-xl gap-1.5 self-start xl:self-center shadow-inner">
+<button class="role-btn flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-surface-container-lowest text-on-surface shadow-sm font-title-md text-title-md transition-all" id="role-admin-btn" onclick="switchRole('admin')">
+<span class="material-symbols-outlined text-primary text-[18px]">domain</span>
+<div class="flex flex-col text-left">
+<span class="leading-none font-bold">Admin General</span>
+<span class="font-label-md text-label-md text-primary font-medium tracking-normal mt-0.5">Vista Corporativa 3 Sucursales</span>
+</div>
+</button>
+<button class="role-btn flex items-center gap-space-xs px-space-md py-space-sm rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all font-title-md text-title-md" id="role-manager-btn" onclick="switchRole('manager')">
+<span class="material-symbols-outlined text-[18px]">store</span>
+<div class="flex flex-col text-left">
+<span class="leading-none font-semibold">Gerente Sucursal</span>
+<span class="font-label-md text-label-md text-on-surface-variant/80 tracking-normal mt-0.5">Vista Local Sucursal A</span>
+</div>
+</button>
+<button class="role-btn flex items-center gap-space-xs px-space-md py-space-sm rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all font-title-md text-title-md" id="role-barista-btn" onclick="switchRole('barista')">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+<div class="flex flex-col text-left">
+<span class="leading-none font-semibold">Empleado / Barista</span>
+<span class="font-label-md text-label-md text-on-surface-variant/80 tracking-normal mt-0.5">Terminal Rápido</span>
+</div>
+</button>
+</div>
+</div>
+<!-- VIEW 1: ADMIN CONSOLIDATED MULTI-STORE (PRIMARY) -->
+<section class="flex flex-col gap-space-xl transition-opacity duration-200" id="view-admin">
+<!-- Row: 4 Consolidated KPIs -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Metric 1: Ventas Hoy -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:scale-125 transition-transform duration-500"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider">Ventas Totales Hoy</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+</div>
+</div>
+<div class="mt-space-md flex flex-col">
+<span class="font-headline-xl text-headline-xl text-on-surface font-extrabold tracking-tight">$3,420,500</span>
+<div class="flex items-center justify-between mt-space-xs">
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">≈ $3,850 USD</span>
+<span class="font-label-md text-label-md px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> +14.2% vs ayer
+            </span>
+</div>
+</div>
+</div>
+<!-- Metric 2: Transacciones -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider">Transacciones</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+</div>
+</div>
+<div class="mt-space-md flex flex-col">
+<span class="font-headline-xl text-headline-xl text-on-surface font-extrabold tracking-tight">428 <span class="font-body-md text-body-md text-on-surface-variant font-normal">tickets</span></span>
+<div class="flex items-center justify-between mt-space-xs">
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">Pico a las 11:30 AM (82 tx/h)</span>
+<span class="font-label-md text-label-md px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-bold">3 tiendas</span>
+</div>
+</div>
+</div>
+<!-- Metric 3: Ticket Promedio -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wider">Ticket Promedio</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">analytics</span>
+</div>
+</div>
+<div class="mt-space-md flex flex-col">
+<span class="font-headline-xl text-headline-xl text-on-surface font-extrabold tracking-tight">$8,000</span>
+<div class="flex items-center justify-between mt-space-xs">
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">Líder: Sucursal C ($8,500)</span>
+<span class="font-label-md text-label-md px-1.5 py-0.5 rounded bg-surface-container-high text-primary font-bold">+5.3%</span>
+</div>
+</div>
+</div>
+<!-- Metric 4: Stock Crítico -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-error uppercase tracking-wider">Alertas de Stock</span>
+<div class="w-8 h-8 rounded-lg bg-error-container/60 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+</div>
+</div>
+<div class="mt-space-md flex flex-col">
+<span class="font-headline-xl text-headline-xl text-error font-extrabold tracking-tight">5 <span class="font-body-md text-body-md text-error/80 font-normal">insumos</span></span>
+<div class="flex items-center justify-between mt-space-xs">
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">2 en Sucursal B · 3 en Sucursal C</span>
+<span class="font-label-md text-label-md px-1.5 py-0.5 rounded bg-error-container text-on-error-container font-bold">Reponer Hoy</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Comparative Table of 3 Branches -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-sm">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold">Rendimiento Comparativo por Sucursal</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Desglose de recaudación diaria, flujo de comensales y salud de inventario en almacenes.</p>
+</div>
+<div class="flex items-center gap-space-xs self-start sm:self-center">
+<span class="font-label-md text-label-md text-on-surface-variant">Rango:</span>
+<span class="font-title-md text-title-md bg-surface-container px-space-sm py-1 rounded-lg text-on-surface font-semibold">Jornada en curso (07:00 - 22:00)</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+<th class="py-space-sm px-space-md rounded-l-lg">Sucursal / Ubicación</th>
+<th class="py-space-sm px-space-md">Ventas Hoy</th>
+<th class="py-space-sm px-space-md">Tickets</th>
+<th class="py-space-sm px-space-md">Ticket Prom.</th>
+<th class="py-space-sm px-space-md">Salud Inventario</th>
+<th class="py-space-sm px-space-md">Incidencias</th>
+<th class="py-space-sm px-space-md rounded-r-lg text-right">Estado Operativo</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md divide-y-0">
+<!-- Row 1: Sucursal Centro -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-space-md px-space-md flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center font-title-md text-title-md font-bold text-primary">S-A</div>
+<div><div class="font-title-md text-title-md font-bold text-on-surface">Sucursal A (Casa Matriz)</div><div class="font-body-sm text-body-sm text-on-surface-variant">Av. Libertador 1420 · Roastery &amp; Bar</div></div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-tabular-data text-tabular-data font-bold text-on-surface text-[15px]">$1,650,000</span>
+<span class="block font-body-sm text-body-sm text-primary font-medium">48.2% de la red</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-tabular-data text-tabular-data font-semibold text-on-surface">210</span>
+<span class="block font-body-sm text-body-sm text-on-surface-variant">≈ 19 pedidos/h</span>
+</td>
+<td class="py-space-md px-space-md font-tabular-data text-tabular-data font-medium text-on-surface">
+                $7,857
+              </td>
+<td class="py-space-md px-space-md">
+<div class="w-36 flex flex-col gap-1">
+<div class="flex justify-between font-label-md text-label-md text-on-surface-variant">
+<span class="">Nivel global</span>
+<span class="font-bold text-on-surface">94%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 94%;"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1 font-label-md text-label-md text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] text-primary">check_circle</span> Ninguna activa
+                </span>
+</td>
+<td class="py-space-md px-space-md text-right">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-surface-container-high text-primary font-label-lg text-label-lg font-bold">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Óptimo
+                </span>
+</td>
+</tr>
+<!-- Row 2: Sucursal Norte -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-space-md px-space-md flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center font-title-md text-title-md font-bold text-primary">S-B</div>
+<div><div class="font-title-md text-title-md font-bold text-on-surface">Sucursal B</div><div class="font-body-sm text-body-sm text-on-surface-variant">Mall Paseo Norte Local 312</div></div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-tabular-data text-tabular-data font-bold text-on-surface text-[15px]">$980,000</span>
+<span class="block font-body-sm text-body-sm text-on-surface-variant font-medium">28.6% de la red</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-tabular-data text-tabular-data font-semibold text-on-surface">125</span>
+<span class="block font-body-sm text-body-sm text-on-surface-variant">≈ 11 pedidos/h</span>
+</td>
+<td class="py-space-md px-space-md font-tabular-data text-tabular-data font-medium text-on-surface">
+                $7,840
+              </td>
+<td class="py-space-md px-space-md">
+<div class="w-36 flex flex-col gap-1">
+<div class="flex justify-between font-label-md text-label-md text-error">
+<span class="">Crítico</span>
+<span class="font-bold">76%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-error h-full rounded-full" style="width: 76%;"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1 font-label-md text-label-md text-error bg-error-container/50 px-2 py-0.5 rounded font-semibold">
+<span class="material-symbols-outlined text-[14px]">error</span> 2 alertas de stock
+                </span>
+</td>
+<td class="py-space-md px-space-md text-right">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-error-container text-error font-label-lg text-label-lg font-bold">
+<span class="w-2 h-2 rounded-full bg-error"></span> Atención
+                </span>
+</td>
+</tr>
+<!-- Row 3: Sucursal Palermo -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-space-md px-space-md flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center font-title-md text-title-md font-bold text-primary">S-C</div>
+<div><div class="font-title-md text-title-md font-bold text-on-surface">Sucursal C</div><div class="font-body-sm text-body-sm text-on-surface-variant">Paseo de las Artes 890</div></div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-tabular-data text-tabular-data font-bold text-on-surface text-[15px]">$790,500</span>
+<span class="block font-body-sm text-body-sm text-on-surface-variant font-medium">23.2% de la red</span>
+</td>
+<td class="py-space-md px-space-md">
+<span class="font-tabular-data text-tabular-data font-semibold text-on-surface">93</span>
+<span class="block font-body-sm text-body-sm text-on-surface-variant">≈ 8 pedidos/h</span>
+</td>
+<td class="py-space-md px-space-md font-tabular-data text-tabular-data font-medium text-on-surface">
+                $8,500
+              </td>
+<td class="py-space-md px-space-md">
+<div class="w-36 flex flex-col gap-1">
+<div class="flex justify-between font-label-md text-label-md text-on-surface-variant">
+<span class="">Moderado</span>
+<span class="font-bold text-on-surface">88%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary/80 h-full rounded-full" style="width: 88%;"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1 font-label-md text-label-md text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] text-tertiary">priority_high</span> 3 insumos bajo 20%
+                </span>
+</td>
+<td class="py-space-md px-space-md text-right">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full bg-surface-container text-on-surface-variant font-label-lg text-label-lg font-bold">
+<span class="w-2 h-2 rounded-full bg-outline"></span> Normal
+                </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Comparative Grid: Sales Chart vs Inventory Stock Balances -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- Left Column: Sales Comparison SVG Chart (Hoy vs Ayer) -->
+<div class="lg:col-span-7 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between">
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">Ventas Comparadas: Hoy vs Ayer</h3>
+<div class="flex items-center gap-space-md">
+<span class="flex items-center gap-1.5 font-label-md text-label-md text-on-surface">
+<span class="w-3 h-3 rounded bg-primary"></span> Hoy
+              </span>
+<span class="flex items-center gap-1.5 font-label-md text-label-md text-on-surface-variant">
+<span class="w-3 h-3 rounded bg-surface-container-highest"></span> Ayer
+              </span>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Recaudación por sucursal en millones de pesos (CLP)</p>
+</div>
+<!-- Inline SVG Bar Chart -->
+<div class="w-full py-space-md">
+<svg class="w-full h-52 text-on-surface" fill="none" preserveAspectRatio="none" viewBox="0 0 540 200"><line stroke="#f6ded1" stroke-dasharray="3 3" x1="40" x2="520" y1="20" y2="20"></line><line stroke="#f6ded1" stroke-dasharray="3 3" x1="40" x2="520" y1="70" y2="70"></line><line stroke="#f6ded1" stroke-dasharray="3 3" x1="40" x2="520" y1="120" y2="120"></line><line stroke="#e5dbd0" x1="40" x2="520" y1="170" y2="170"></line><text fill="#847469" font-family="Plus Jakarta Sans" font-size="10" text-anchor="end" x="32" y="24">$2.0M</text><text fill="#847469" font-family="Plus Jakarta Sans" font-size="10" text-anchor="end" x="32" y="74">$1.5M</text><text fill="#847469" font-family="Plus Jakarta Sans" font-size="10" text-anchor="end" x="32" y="124">$0.8M</text><text fill="#847469" font-family="Plus Jakarta Sans" font-size="10" text-anchor="end" x="32" y="174">$0</text><rect fill="#f6ded1" height="115" rx="4" width="34" x="100" y="55"></rect><rect fill="#84501f" height="135" rx="4" width="34" x="138" y="35"></rect><text fill="#251911" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" text-anchor="middle" x="136" y="190">Sucursal A</text><text fill="#84501f" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" text-anchor="middle" x="155" y="27">$1.65M</text><rect fill="#f6ded1" height="85" rx="4" width="34" x="250" y="85"></rect><rect fill="#84501f" height="98" rx="4" width="34" x="288" y="72"></rect><text fill="#251911" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" text-anchor="middle" x="286" y="190">Sucursal B</text><text fill="#84501f" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" text-anchor="middle" x="305" y="64">$0.98M</text><rect fill="#f6ded1" height="65" rx="4" width="34" x="400" y="105"></rect><rect fill="#84501f" height="79" rx="4" width="34" x="438" y="91"></rect><text fill="#251911" font-family="Plus Jakarta Sans" font-size="12" font-weight="600" text-anchor="middle" x="436" y="190">Sucursal C</text><text fill="#84501f" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" text-anchor="middle" x="455" y="83">$0.79M</text></svg>
+</div>
+<div class="flex items-center justify-between pt-space-xs border-t border-transparent bg-surface-container p-space-sm rounded-lg">
+<div class="flex items-center gap-space-xs text-on-surface">
+<span class="material-symbols-outlined text-primary text-[18px]">trending_up</span>
+<span class="font-title-md text-title-md font-semibold">Crecimiento Red Total:</span>
+<span class="font-tabular-data text-tabular-data text-primary font-bold">+18.5% en recaudación neta vs mismo día semana anterior</span>
+</div>
+<button class="font-label-lg text-label-lg text-primary hover:underline font-bold flex items-center">
+            Ver métricas históricas <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Right Column: Critical Cross-Store Inventory Monitor -->
+<div class="lg:col-span-5 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between">
+<h3 class="font-headline-md text-headline-md text-on-surface font-bold">Insumos Críticos de Cadena</h3>
+<span class="font-label-md text-label-md bg-error-container text-on-error-container px-2 py-0.5 rounded font-bold">5 en Falta</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Control de existencias clave en tiempo real entre sedes</p>
+</div>
+<div class="flex flex-col gap-space-sm my-space-md"><div class="p-space-sm rounded-lg bg-surface-container flex flex-col gap-1"><div class="flex items-center justify-between"><span class="font-title-md text-title-md font-bold text-on-surface flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-[18px]">coffee</span> Café Grano Especialidad (Huila, Col)</span><span class="font-label-md text-label-md text-primary font-bold">148 kg Total</span></div><div class="grid grid-cols-3 gap-space-xs text-center font-body-sm text-body-sm mt-1"><div class="bg-surface-container-lowest py-1 rounded"><span class="text-on-surface-variant block text-[11px]">Sucursal A</span><span class="font-tabular-data text-tabular-data font-bold text-on-surface">82 kg</span></div><div class="bg-error-container py-1 rounded"><span class="text-error block text-[11px] font-bold">Sucursal B (Bajo)</span><span class="font-tabular-data text-tabular-data font-bold text-error">16 kg</span></div><div class="bg-surface-container-lowest py-1 rounded"><span class="text-on-surface-variant block text-[11px]">Sucursal C</span><span class="font-tabular-data text-tabular-data font-bold text-on-surface">50 kg</span></div></div></div><div class="p-space-sm rounded-lg bg-surface-container flex flex-col gap-1"><div class="flex items-center justify-between"><span class="font-title-md text-title-md font-bold text-on-surface flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-[18px]">local_drink</span> Leche Barista 1L</span><span class="font-label-md text-label-md text-primary font-bold">290 lts Total</span></div><div class="grid grid-cols-3 gap-space-xs text-center font-body-sm text-body-sm mt-1"><div class="bg-surface-container-lowest py-1 rounded"><span class="text-on-surface-variant block text-[11px]">Sucursal A</span><span class="font-tabular-data text-tabular-data font-bold text-on-surface">180 lts</span></div><div class="bg-surface-container-lowest py-1 rounded"><span class="text-on-surface-variant block text-[11px]">Sucursal B</span><span class="font-tabular-data text-tabular-data font-bold text-on-surface">70 lts</span></div><div class="bg-error-container py-1 rounded"><span class="text-error block text-[11px] font-bold">Sucursal C (Bajo)</span><span class="font-tabular-data text-tabular-data font-bold text-error">40 lts</span></div></div></div><div class="p-space-sm rounded-lg bg-surface-container flex flex-col gap-1"><div class="flex items-center justify-between"><span class="font-title-md text-title-md font-bold text-on-surface flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-[18px]">recycling</span> Vasos 12oz Compostables</span><span class="font-label-md text-label-md text-on-surface-variant font-bold">850 uds Total</span></div><div class="grid grid-cols-3 gap-space-xs text-center font-body-sm text-body-sm mt-1"><div class="bg-surface-container-lowest py-1 rounded"><span class="text-on-surface-variant block text-[11px]">Sucursal A</span><span class="font-tabular-data text-tabular-data font-bold text-on-surface">500 uds</span></div><div class="bg-error-container py-1 rounded"><span class="text-error block text-[11px] font-bold">Sucursal B (Crítico)</span><span class="font-tabular-data text-tabular-data font-bold text-error">120 uds</span></div><div class="bg-surface-container-lowest py-1 rounded"><span class="text-on-surface-variant block text-[11px]">Sucursal C</span><span class="font-tabular-data text-tabular-data font-bold text-on-surface">230 uds</span></div></div></div><div class="p-space-sm rounded-lg bg-surface-container flex flex-col gap-1"><div class="flex items-center justify-between"><span class="font-title-md text-title-md font-bold text-on-surface flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-[18px]">bakery_dining</span> Harina Repostería Orgánica</span><span class="font-label-md text-label-md text-on-surface-variant font-bold">65 kg Total</span></div><div class="grid grid-cols-3 gap-space-xs text-center font-body-sm text-body-sm mt-1"><div class="bg-surface-container-lowest py-1 rounded"><span class="text-on-surface-variant block text-[11px]">Sucursal A</span><span class="font-tabular-data text-tabular-data font-bold text-on-surface">45 kg</span></div><div class="bg-surface-container-lowest py-1 rounded"><span class="text-on-surface-variant block text-[11px]">Sucursal B</span><span class="font-tabular-data text-tabular-data font-bold text-on-surface">15 kg</span></div><div class="bg-error-container py-1 rounded"><span class="text-error block text-[11px] font-bold">Sucursal C (Bajo)</span><span class="font-tabular-data text-tabular-data font-bold text-error">5 kg</span></div></div></div></div>
+
+</div>
+</div>
+</section>
+<!-- VIEW 2: BRANCH MANAGER PERSPECTIVE (CENTRO FOCUS) -->
+<section class="flex flex-col gap-space-md" id="view-manager">
+<!-- Context Header -->
+<div class="bg-primary/10 p-space-md rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<div>
+<span class="font-label-md text-label-md text-primary uppercase font-bold tracking-wider">Simulación de Rol Activo</span>
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold">Vista del Gerente de Sucursal (Sucursal A - Casa Matriz)</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Acceso restringido a métricas locales, personal en turno y requisición directa a tueste central.</p>
+</div>
+</div>
+<span class="font-title-md text-title-md px-space-md py-1 bg-surface-container-lowest rounded-lg font-bold text-on-surface shadow-sm">ID: SUC-001 (Sucursal A)</span>
+</div>
+<!-- Manager Local KPI Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-space-md">
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-lg text-label-lg uppercase">Caja Actual en Turno</span>
+<span class="material-symbols-outlined text-primary">point_of_sale</span>
+</div>
+<div class="mt-space-md">
+<span class="font-headline-xl text-headline-xl text-on-surface font-bold font-tabular-data">$1,650,000</span>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Efectivo: $340k · POS: $1.31M</div>
+</div>
+</div>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-lg text-label-lg uppercase">Equipo en Servicio</span>
+<span class="material-symbols-outlined text-primary">groups</span>
+</div>
+<div class="mt-space-md">
+<span class="font-headline-xl text-headline-xl text-on-surface font-bold">4 Baristas</span>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Turno Mañana (07:30 - 15:30)</div>
+</div>
+</div>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="font-label-lg text-label-lg uppercase">Asistencia del Día</span>
+<span class="material-symbols-outlined text-primary">verified</span>
+</div>
+<div class="mt-space-md">
+<span class="font-headline-xl text-headline-xl text-on-surface font-bold">100% Puntual</span>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-1">4 de 4 con marcaje en turno</div>
+</div>
+</div>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between text-on-surface-variant"><span class="font-label-lg text-label-lg uppercase">Eficiencia de Barra</span><span class="material-symbols-outlined text-primary">speed</span></div><div class="mt-space-md"><span class="font-headline-xl text-headline-xl text-primary font-bold">98.4%</span><div class="font-body-sm text-body-sm text-on-surface-variant mt-1">Velocidad media de despacho</div></div></div>
+</div>
+<!-- Manager Detailed Cards -->
+<div class="grid grid-cols-1 gap-space-lg">
+<!-- Active Baristas on Shift -->
+<div class="p-space-lg bg-surface-container-lowest rounded-xl shadow-sm flex flex-col gap-space-md"><div class="flex items-center justify-between"><h3 class="font-headline-md text-headline-md text-on-surface font-bold">Personal Activo en Barra</h3><span class="font-label-md text-label-md bg-surface-container-high px-2 py-0.5 rounded text-primary font-bold">Estación Sucursal A</span></div><div class="flex flex-col gap-space-xs"><div class="flex items-center justify-between p-space-sm bg-surface-container rounded-lg"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-primary text-on-primary font-bold flex items-center justify-center font-body-sm text-body-sm">E1</div><div><span class="font-title-md text-title-md font-bold text-on-surface">Empleado 1</span><span class="block font-body-sm text-body-sm text-on-surface-variant">Lead Barista · Máquina Principal</span></div></div><span class="font-label-md text-label-md px-2 py-0.5 rounded bg-surface-container-high text-primary font-semibold">Entrada: 07:45 AM</span></div><div class="flex items-center justify-between p-space-sm bg-surface-container rounded-lg"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-secondary text-on-secondary font-bold flex items-center justify-center font-body-sm text-body-sm">E2</div><div><span class="font-title-md text-title-md font-bold text-on-surface">Empleado 2</span><span class="block font-body-sm text-body-sm text-on-surface-variant">Barista de Apoyo · Métodos Filtrados</span></div></div><span class="font-label-md text-label-md px-2 py-0.5 rounded bg-surface-container-high text-primary font-semibold">Entrada: 07:55 AM</span></div></div></div>
+<!-- Quick Actions for Store Manager -->
+
+</div>
+</section>
+<!-- VIEW 3: BARISTA / EMPLOYEE OPERATIONAL QUICK ACCESS -->
+<section class="flex flex-col gap-space-md" id="view-barista">
+<!-- Context Banner -->
+<div class="bg-secondary-container/40 p-space-md rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="w-3 h-3 rounded-full bg-secondary"></span>
+<div>
+<span class="font-label-md text-label-md text-secondary uppercase font-bold tracking-wider">Modo Empleado / Barista de Barra</span>
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold">Terminal TPV y Control de Asistencia Personal</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Empleado 1 · Barista Titular · Sucursal A</p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm bg-surface-container-lowest px-space-md py-1.5 rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<div class="text-right">
+<span class="font-label-md text-label-md text-on-surface-variant block uppercase">Turno Actual</span>
+<span class="font-tabular-data text-tabular-data font-bold text-on-surface">08:00 - 16:30 (En curso)</span>
+</div>
+</div>
+</div>
+<!-- 2 GIGANTIC OPERATIONAL CALL-TO-ACTION BUTTONS -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- BUTTON A: REGISTRAR VENTA (TPV) -->
+<a class="p-space-xl rounded-2xl bg-primary hover:bg-primary-container text-on-primary shadow-lg transition-all transform hover:-translate-y-1 flex flex-col justify-between min-h-[220px] group relative overflow-hidden" href="#">
+<div class="absolute right-0 top-0 translate-x-4 -translate-y-4 w-44 h-44 bg-surface-container-lowest/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
+<div class="flex items-start justify-between relative z-10">
+<div class="w-16 h-16 rounded-2xl bg-on-primary/10 flex items-center justify-center backdrop-blur-sm">
+<span class="material-symbols-outlined text-on-primary text-[36px]">point_of_sale</span>
+</div>
+<span class="font-label-lg text-label-lg bg-on-primary/20 text-on-primary px-space-sm py-1 rounded-lg font-bold tracking-wider">
+            ATAJO: TECLA [F2]
+          </span>
+</div>
+<div class="relative z-10 mt-space-lg">
+<span class="font-label-md text-label-md text-on-primary/80 uppercase tracking-widest font-bold block mb-1">Operación Continua</span>
+<h3 class="font-headline-xl text-headline-xl font-extrabold leading-tight">⚡ REGISTRAR VENTA (TPV Rápido)</h3>
+<p class="font-body-md text-body-md text-on-primary/90 mt-1">Lanza el terminal de caja táctil, lector de códigos y comanda directa a cocina.</p>
+</div>
+</a>
+<!-- BUTTON B: MARCAR ASISTENCIA / TURNO -->
+<button class="p-space-xl rounded-2xl bg-surface-container-lowest hover:bg-surface-container-low text-on-surface shadow-lg transition-all transform hover:-translate-y-1 flex flex-col justify-between min-h-[220px] group text-left relative overflow-hidden" onclick="simulateCheckIn()">
+<div class="absolute right-0 bottom-0 translate-x-6 translate-y-6 w-40 h-40 bg-secondary/10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
+<div class="flex items-start justify-between relative z-10">
+<div class="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[36px]">how_to_reg</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-md text-label-md px-space-sm py-1 rounded-lg bg-surface-container-high text-primary font-bold">
+              ESTADO: EN BARRA
+            </span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant text-[11px] mt-1">Turno iniciado: 07:45 AM</span>
+</div>
+</div>
+<div class="relative z-10 mt-space-lg">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest font-bold block mb-1">CÓDIGO PIN / QR</span>
+<h3 class="font-headline-xl text-headline-xl font-extrabold leading-tight text-on-surface">🕒 MARCAR ASISTENCIA / TURNO</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1" id="clock-status-desc">Haz clic para registrar tu pausa de almuerzo o fin de jornada laboral.</p>
+</div>
+</button>
+</div>
+<!-- Active Shift Summary & Personal Checklist for Barista -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-space-md">
+<!-- Card 1: Checklist de Apertura de Barra -->
+<div class="p-space-lg bg-surface-container-lowest rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-title-md text-title-md font-bold text-on-surface">Protocolo de Apertura (Barra)</span>
+<span class="font-label-md text-label-md bg-surface-container px-2 py-0.5 rounded font-bold text-primary">3 / 4 Listos</span>
+</div>
+<div class="flex flex-col gap-2 font-body-sm text-body-sm">
+<label class="flex items-center gap-space-xs text-on-surface cursor-pointer">
+<input checked="" class="accent-primary w-4 h-4 rounded" type="checkbox">
+<span class="">Calibración de molienda y receta espresso (18g in / 36g out)</span>
+</label>
+<label class="flex items-center gap-space-xs text-on-surface cursor-pointer"><input checked="" class="accent-primary w-4 h-4 rounded" type="checkbox"><span class="">Limpieza general de barra y vaporizador</span></label>
+<label class="flex items-center gap-space-xs text-on-surface cursor-pointer">
+<input checked="" class="accent-primary w-4 h-4 rounded" type="checkbox">
+<span class="">Carga de leches enteras, vegetales y hielo frappé</span>
+</label>
+<label class="flex items-center gap-space-xs text-on-surface cursor-pointer">
+<input class="accent-primary w-4 h-4 rounded" type="checkbox">
+<span class="font-semibold text-primary">Test de agua y TDS matutino (Falta)</span>
+</label>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs">
+<span class="font-label-md text-label-md text-on-surface-variant">Supervisor a cargo: M. Vargas</span>
+</div>
+</div>
+<!-- Card 2: Recetas del Día & Lotes de Café -->
+<div class="p-space-lg bg-surface-container-lowest rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-title-md text-title-md font-bold text-on-surface">Tolvas Activas Hoy</span>
+<span class="font-label-md text-label-md bg-surface-container px-2 py-0.5 rounded text-on-surface-variant font-bold">Molinos Mythos II</span>
+</div>
+<div class="flex flex-col gap-space-xs font-body-sm text-body-sm"><div class="p-space-xs bg-surface-container rounded-lg flex items-center justify-between"><div><span class="font-title-md text-title-md font-semibold text-on-surface">Tolva 1: Café Casa</span><span class="block text-on-surface-variant text-[11px]">Blend Clásico · En servicio</span></div><span class="font-tabular-data text-tabular-data font-bold text-primary">Listo</span></div><div class="p-space-xs bg-surface-container rounded-lg flex items-center justify-between"><div><span class="font-title-md text-title-md font-semibold text-on-surface">Tolva 2: Café Descafeinado</span><span class="block text-on-surface-variant text-[11px]">Proceso Suizo al Agua · En servicio</span></div><span class="font-tabular-data text-tabular-data font-bold text-primary">Listo</span></div></div>
+</div>
+<button class="mt-space-md w-full py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-lg text-label-lg font-semibold transition-colors">
+          Ver Ficha Técnica de Extracción
+        </button>
+</div>
+<!-- Card 3: Novedades & Mensajes del Turno -->
+<div class="p-space-lg bg-surface-container-lowest rounded-xl shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<span class="font-title-md text-title-md font-bold text-on-surface">Avisos de Administración</span>
+<span class="font-label-md text-label-md bg-surface-container px-2 py-0.5 rounded text-on-surface-variant font-bold">Hoy</span>
+</div>
+<div class="p-space-sm bg-surface-container rounded-lg flex flex-col gap-1">
+<span class="font-title-md text-title-md font-bold text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-[16px]">campaign</span> Cata con clientes a las 17:00
+            </span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Reservar 60g del lote Kenya AA para el taller de métodos en la mesa comunitaria.
+            </p>
+</div>
+</div>
+<div class="mt-space-md flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Firmado: Gerencia Sucursal A</span>
+<span class="font-label-md text-label-md text-primary font-bold">Entendido ✓</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Simple Vanilla Interactive Role-Switcher Script -->
+<script>
+  function switchRole(role) {
+    const adminView = document.getElementById('view-admin');
+    const managerView = document.getElementById('view-manager');
+    const baristaView = document.getElementById('view-barista');
+
+    const adminBtn = document.getElementById('role-admin-btn');
+    const managerBtn = document.getElementById('role-manager-btn');
+    const baristaBtn = document.getElementById('role-barista-btn');
+
+    // Reset styles
+    [adminBtn, managerBtn, baristaBtn].forEach(btn => {
+      btn.className = "role-btn flex items-center gap-space-xs px-space-md py-space-sm rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all font-title-md text-title-md";
+    });
+
+    if (role === 'admin') {
+      adminView.classList.remove('hidden');
+      managerView.classList.remove('hidden');
+      baristaView.classList.remove('hidden');
+
+      // Scroll smoothly to top
+      adminView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      adminBtn.className = "role-btn flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-surface-container-lowest text-on-surface shadow-sm font-title-md text-title-md transition-all";
+    } else if (role === 'manager') {
+      // In manager mode, highlight manager view and scroll to it
+      adminView.classList.add('hidden');
+      managerView.classList.remove('hidden');
+      baristaView.classList.add('hidden');
+
+      managerBtn.className = "role-btn flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-surface-container-lowest text-on-surface shadow-sm font-title-md text-title-md transition-all";
+    } else if (role === 'barista') {
+      // In barista mode, jump directly to POS and quick actions
+      adminView.classList.add('hidden');
+      managerView.classList.add('hidden');
+      baristaView.classList.remove('hidden');
+
+      baristaBtn.className = "role-btn flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-surface-container-lowest text-on-surface shadow-sm font-title-md text-title-md transition-all";
+    }
+  }
+
+  // Keyboard shortcut listener for F2 key to trigger simulated POS
+  window.addEventListener('keydown', function(e) {
+    if (e.key === 'F2') {
+      e.preventDefault();
+      alert('⚡ Acceso Directo [F2] activado: Abriendo Terminal TPV de Venta Rápida...');
+    }
+  });
+
+  function simulateCheckIn() {
+    const desc = document.getElementById('clock-status-desc');
+    desc.innerText = '✓ Marcación registrada con éxito a las ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) + '. Guardado en auditoría.';
+  }
+</script></main></div>
+
+
+
+
+
+</body></html>

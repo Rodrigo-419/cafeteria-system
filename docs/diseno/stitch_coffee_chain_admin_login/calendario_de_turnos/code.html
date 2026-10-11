@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}@media print{nav,aside,header,.no-print{display:none!important;}.pl-64{padding-left:0!important;}main{padding:0!important;}}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-error-container":"#93000a","on-secondary":"#ffffff","primary-fixed":"#ffdcc2","surface-container-high":"#fce3d6","error-container":"#ffdad6","on-primary-container":"#fffbff","on-tertiary-fixed":"#2e1502","secondary-container":"#fed4c2","background":"#fff8f5","tertiary-container":"#946c4f","secondary":"#765749","on-secondary-fixed":"#2c160b","primary-container":"#a16835","error":"#ba1a1a","on-tertiary-container":"#fffbff","primary-fixed-dim":"#feb87e","on-background":"#251911","secondary-fixed-dim":"#e6bead","on-surface-variant":"#52443a","tertiary-fixed-dim":"#eebd9b","surface-container-highest":"#f6ded1","surface-container":"#ffeadf","on-primary-fixed":"#2e1500","primary":"#84501f","on-surface":"#251911","on-error":"#ffffff","surface-tint":"#875221","surface-container-low":"#fff1ea","on-secondary-fixed-variant":"#5c4033","surface-bright":"#fff8f5","inverse-primary":"#feb87e","outline-variant":"#d6c3b6","outline":"#847469","on-primary-fixed-variant":"#6a3b0b","on-primary":"#ffffff","surface-dim":"#edd5c8","inverse-on-surface":"#ffede4","surface-variant":"#f6ded1","surface":"#fff8f5","tertiary":"#795439","inverse-surface":"#3c2d25","tertiary-fixed":"#ffdcc5","secondary-fixed":"#ffdbcc","on-secondary-container":"#795a4c","on-tertiary-fixed-variant":"#613f26","on-tertiary":"#ffffff","surface-container-lowest":"#ffffff"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-md":"1rem",gutter:"1.5rem","space-xl":"2rem",margin:"2rem","space-sm":"0.5rem","space-2xl":"3rem","space-xs":"0.25rem","space-lg":"1.5rem","margin-sm":"1rem","gutter-sm":"1rem"},fontFamily:{"label-md":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"headline-lg-mobile":["Plus Jakarta Sans"],"tabular-data":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],"label-lg":["Plus Jakarta Sans"],"title-lg":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"title-md":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"]},fontSize:{"label-md":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}],"headline-xl-mobile":["26px",{lineHeight:"34px",letterSpacing:"-0.01em",fontWeight:"700"}],"headline-md":["18px",{lineHeight:"26px",letterSpacing:"-0.01em",fontWeight:"600"}],"headline-lg-mobile":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"tabular-data":["13px",{lineHeight:"18px",letterSpacing:"-0.01em",fontWeight:"500"}],"body-sm":["12px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"label-lg":["13px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"600"}],"title-lg":["16px",{lineHeight:"24px",letterSpacing:"-0.005em",fontWeight:"600"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"600"}],"body-lg":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"400"}],"title-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-md flex flex-col justify-center bg-surface-container"><div class="flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-primary text-[22px]">coffee</span><span class="font-headline-md text-headline-md tracking-tight text-on-surface font-bold">Sistema de Gestión — Cadena de Cafeterías</span></div><span class="material-symbols-outlined text-on-surface-variant cursor-pointer text-[18px]">menu_open</span></div><div class="flex items-center gap-space-xs mt-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span><span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Red de 3 Sucursales</span></div></div><div class="px-space-md py-space-sm"><span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant px-space-xs">Personal y Turnos</span></div><nav class="flex flex-col gap-space-xs px-space-sm" data-active-classes="bg-primary-container text-on-primary-container font-title-md"><a aria-current="page" class="flex items-center px-space-sm py-space-xs rounded-lg transition-colors bg-primary-container text-on-primary-container font-title-md" data-path="calendario-de-turnos" href="#"><span>Calendario de Turnos</span></a><a class="flex items-center px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="asignacion-de-turnos-fijos-y-variables" href="#"><span>Asignación de Turnos Fijos y Variables</span></a><a class="flex items-center px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="listado-y-gestion-de-empleados" href="#"><span>Listado y Gestión de Empleados</span></a></nav></div><div class="p-space-sm bg-surface-container m-space-sm rounded-xl flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="font-label-md text-label-md text-on-surface-variant font-medium">En línea - HTTPS</span></div><span class="font-label-md text-label-md text-primary font-semibold">v2.4.0</span></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-md"><div class="flex items-center bg-surface-container-low px-space-sm py-space-xs rounded-lg gap-space-xs"><span class="material-symbols-outlined text-primary text-[18px]">store</span><select class="bg-transparent font-title-md text-title-md text-on-surface focus:outline-none cursor-pointer pr-space-xs"><option>Todas las sucursales - Vista Global Admin</option><option>Sucursal A</option><option>Sucursal B</option><option>Sucursal C</option></select></div><div class="hidden xl:flex items-center bg-surface-container-lowest px-space-sm py-space-xs rounded-lg gap-space-xs shadow-[0_1px_3px_rgba(43,30,22,0.04)]"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><input class="bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none w-56" placeholder="Buscar pedidos, stock, barista..." type="text"/><kbd class="font-label-md text-label-md bg-surface-container px-1.5 py-0.5 rounded text-on-surface-variant">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><div class="flex items-center bg-secondary-container/40 px-space-sm py-space-xs rounded-lg gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">shield_person</span><span class="font-label-md text-label-md uppercase tracking-wider text-on-secondary-fixed-variant">Rol demo:</span><select class="bg-transparent font-title-md text-title-md text-on-secondary-fixed font-semibold focus:outline-none cursor-pointer"><option>Admin General</option><option>Gerente Sucursal A</option><option>Empleado / Barista</option></select></div><div class="hidden lg:flex items-center gap-space-xs text-on-surface-variant font-label-lg text-label-lg"><span class="material-symbols-outlined text-[16px]">calendar_today</span><span class="font-tabular-data text-tabular-data">18 Mayo, 2025</span></div><button class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">notifications</span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="hidden sm:flex flex-col text-right"><span class="font-title-md text-title-md text-on-surface font-semibold leading-tight">Empleado 1</span><span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Administrador General</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-space-lg py-space-lg"><div class="flex flex-col w-full">
+<style>
+    @media print {
+      .no-print, header, aside, nav, select, button {
+        display: none !important;
+      }
+      body, main, .pl-64 {
+        padding: 0 !important;
+        margin: 0 !important;
+        background-color: #ffffff !important;
+      }
+      .print-full-width {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+      }
+      .print-break-inside {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .print-show {
+        display: block !important;
+      }
+    }
+    .print-show {
+      display: none;
+    }
+  </style>
+<!-- Banner Encabezado de Documento para Impresión Exclusiva -->
+<div class="print-show mb-space-lg">
+<div class="flex items-center justify-between pb-space-sm">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface font-bold">Artisan Ops — Cadena de Cafeterías</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Reporte Oficial de Cobertura Semanal • Sucursal A (Principal)</p>
+</div>
+<div class="text-right">
+<span class="font-label-lg text-label-lg text-primary font-bold">Semana: 14 Abr – 20 Abr 2025</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Generado: 18 Mayo, 2025 • Modo Solo Lectura</p>
+</div>
+</div>
+</div>
+<!-- Header Section with Controls -->
+<section class="flex flex-col gap-space-lg mb-space-lg no-print">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div>
+<div class="flex items-center gap-space-xs mb-space-xs">
+<span class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold bg-primary-fixed px-2 py-0.5 rounded">Módulo de Consulta</span>
+<span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            Supervisión Operativa
+          </span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface font-bold tracking-tight">Calendario de Turnos</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-3xl mt-1">
+          Planificación semanal de turnos fijos y variables por sucursal. Vista consolidada para supervisión operativa y consulta de cobertura en piso.
+        </p>
+</div>
+<!-- Action: Export / Print Button -->
+<div class="flex items-center gap-space-sm flex-shrink-0">
+<button class="inline-flex items-center gap-space-xs px-space-md py-2.5 rounded-xl bg-primary text-on-primary font-title-md text-title-md hover:bg-primary-container transition-all shadow-sm active:scale-95 cursor-pointer" onclick="window.print()" type="button">
+<span class="material-symbols-outlined text-[20px]">print</span>
+<span>Exportar / Imprimir</span>
+</button>
+</div>
+</div>
+<!-- Filter & Scope Navigation Bar -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-space-md">
+<!-- Sucursal Tabs / Dropdown selector -->
+<div class="flex items-center gap-space-xs bg-surface-container-low p-1 rounded-xl">
+<button class="px-space-sm py-1.5 rounded-lg bg-surface-container-lowest font-title-md text-title-md text-on-surface font-semibold shadow-sm flex items-center gap-1.5 cursor-default" type="button">
+<span class="material-symbols-outlined text-primary text-[18px]">store</span>
+<span>Sucursal A (Principal)</span>
+<span class="w-2 h-2 rounded-full bg-primary ml-1"></span>
+</button>
+<button class="px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-title-md text-title-md transition-colors cursor-pointer" type="button">
+<span>Sucursal B</span>
+</button>
+<button class="px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-title-md text-title-md transition-colors cursor-pointer" type="button">
+<span>Sucursal C</span>
+</button>
+</div>
+<!-- Week Navigator -->
+<div class="flex items-center justify-center gap-space-xs bg-surface-container-low px-space-xs py-1 rounded-xl">
+<button class="p-1 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Semana anterior" type="button">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<div class="flex items-center gap-2 px-space-sm">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">event</span>
+<span class="font-title-md text-title-md text-on-surface font-bold tracking-tight">14 Abr – 20 Abr 2025</span>
+</div>
+<button class="p-1 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Semana siguiente" type="button">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+<button class="ml-space-xs px-2.5 py-1 rounded-lg bg-surface-container font-label-md text-label-md text-primary font-semibold hover:bg-surface-container-high transition-colors" type="button">
+          Semana actual
+        </button>
+</div>
+<!-- Legend -->
+<div class="flex items-center flex-wrap gap-space-sm bg-surface-container-low px-space-md py-1.5 rounded-xl">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-semibold">Leyenda:</span>
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary border-none">Fijo</span>
+<span class="font-body-sm text-body-sm text-on-surface">Turno Fijo</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed font-semibold">Variable</span>
+<span class="font-body-sm text-body-sm text-on-surface">Turno Variable</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-[17px]">shield_person</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">Encargado en piso</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Summary KPI Strip: Cobertura Operativa (Consulta Rápida) -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-space-md mb-space-lg print-break-inside">
+<!-- Metric 1 -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-medium">Total Personal Semanal</p>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-bold mt-0.5">12 <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">colaboradores</span></h2>
+<p class="font-label-md text-label-md text-primary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[15px]">badge</span>
+          Plantilla completa asignada
+        </p>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[24px]">group</span>
+</div>
+</div>
+<!-- Metric 2 -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-medium">Turnos Fijos Activos</p>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-bold mt-0.5">28 <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">asignaciones</span></h2>
+<p class="font-label-md text-label-md text-secondary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[15px]">event_repeat</span>
+          66.7% base troncal
+        </p>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-secondary flex-shrink-0">
+<span class="material-symbols-outlined text-[24px]">calendar_month</span>
+</div>
+</div>
+<!-- Metric 3 -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-medium">Turnos Variables</p>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-bold mt-0.5">14 <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">asignaciones</span></h2>
+<p class="font-label-md text-label-md text-tertiary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[15px]">tune</span>
+          Refuerzo de horas pico
+        </p>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-tertiary flex-shrink-0">
+<span class="material-symbols-outlined text-[24px]">published_with_changes</span>
+</div>
+</div>
+<!-- Metric 4 -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-medium">Cobertura de Encargados</p>
+<h2 class="font-headline-lg text-headline-lg text-primary font-bold mt-0.5">100% <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">cubierto</span></h2>
+<p class="font-label-md text-label-md text-primary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[15px]">verified_user</span>
+          28/28 bloques garantizados
+        </p>
+</div>
+<div class="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center text-on-primary-fixed flex-shrink-0">
+<span class="material-symbols-outlined text-[24px]">star</span>
+</div>
+</div>
+</section>
+<!-- Grilla Calendario Semanal (Contenedor Responsivo y Optimizado para Impresión) -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-lg print-full-width">
+<div class="overflow-x-auto w-full">
+<table class="w-full border-collapse text-left min-w-[1080px]">
+<thead>
+<tr class="bg-surface-container-low text-on-surface">
+<!-- Columna Franja Horaria -->
+<th class="w-48 p-space-md font-label-md text-label-md uppercase tracking-wider text-secondary font-bold sticky left-0 bg-surface-container-low z-10">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span>Bloque Horario</span>
+</div>
+</th>
+<!-- Días de la semana -->
+<th class="p-space-sm text-center">
+<div class="py-1">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant block font-bold">Lunes</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">14 Abr</span>
+</div>
+</th>
+<th class="p-space-sm text-center">
+<div class="py-1">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant block font-bold">Martes</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">15 Abr</span>
+</div>
+</th>
+<!-- Día Actual Resaltado: Miércoles 16 Abr -->
+<th class="p-space-sm text-center bg-primary/10 rounded-t-lg">
+<div class="py-1">
+<div class="inline-flex items-center gap-1 bg-primary text-on-primary px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mb-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                  Hoy
+                </div>
+<span class="font-label-md text-label-md uppercase tracking-wider text-primary block font-bold">Miércoles</span>
+<span class="font-headline-md text-headline-md text-primary font-bold">16 Abr</span>
+</div>
+</th>
+<th class="p-space-sm text-center">
+<div class="py-1">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant block font-bold">Jueves</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">17 Abr</span>
+</div>
+</th>
+<th class="p-space-sm text-center">
+<div class="py-1">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant block font-bold">Viernes</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">18 Abr</span>
+</div>
+</th>
+<th class="p-space-sm text-center bg-surface-container-high/40">
+<div class="py-1">
+<span class="font-label-md text-label-md uppercase tracking-wider text-secondary block font-bold">Sábado</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">19 Abr</span>
+</div>
+</th>
+<th class="p-space-sm text-center bg-surface-container-high/40">
+<div class="py-1">
+<span class="font-label-md text-label-md uppercase tracking-wider text-secondary block font-bold">Domingo</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">20 Abr</span>
+</div>
+</th>
+</tr>
+</thead>
+<tbody class="divide-y-0">
+<!-- BLOQUE 1: 07:00 - 11:00 (Apertura y Franja Matutina) -->
+<tr class="align-top hover:bg-surface-container-lowest">
+<!-- Header Franja -->
+<td class="p-space-md sticky left-0 bg-surface-container-lowest z-10">
+<div class="flex flex-col gap-1">
+<span class="font-title-md text-title-md text-on-surface font-bold">07:00 – 11:00</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-primary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">wb_twilight</span>
+                  Apertura y Mañana
+                </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Requerido: 2 a 3 pers.</span>
+</div>
+</td>
+<!-- Lunes 14 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<!-- Tarjeta Encargado -->
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+<!-- Tarjeta Colaborador -->
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista Principal</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 3 (Barista)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+</div>
+</td>
+<!-- Martes 15 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Caja / Atención</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 2 (Cajero)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 11:00
+                  </span>
+</div>
+</div>
+</td>
+<!-- Miércoles 16 Abr (Día Actual) -->
+<td class="p-2 bg-primary/5">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-bold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-primary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista Senior</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 3 (Barista)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Apoyo Barra</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 4</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 11:00
+                  </span>
+</div>
+</div>
+</td>
+<!-- Jueves 17 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 3 (Barista)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+</div>
+</td>
+<!-- Viernes 18 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Atención</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 5</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 11:00
+                  </span>
+</div>
+</div>
+</td>
+<!-- Sábado 19 Abr (Fin de semana) -->
+<td class="p-2 bg-surface-container-high/20">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 7</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Refuerzo Desayunos</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 8</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:30 – 11:30
+                  </span>
+</div>
+</div>
+</td>
+<!-- Domingo 20 Abr -->
+<td class="p-2 bg-surface-container-high/20">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 7</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">alarm</span>
+                    07:00 – 15:00
+                  </span>
+</div>
+</div>
+</td>
+</tr>
+<!-- BLOQUE 2: 11:00 - 15:00 (Horario Pico / Almuerzo) -->
+<tr class="align-top hover:bg-surface-container-lowest bg-surface-container-lowest">
+<!-- Header Franja -->
+<td class="p-space-md sticky left-0 bg-surface-container-lowest z-10">
+<div class="flex flex-col gap-1">
+<span class="font-title-md text-title-md text-on-surface font-bold">11:00 – 15:00</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-error font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">local_fire_department</span>
+                  Pico / Almuerzo
+                </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Requerido: 3 a 4 pers.</span>
+</div>
+</td>
+<!-- Lunes 14 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">07:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Caja Principal</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 2 (Cajero)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 19:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Refuerzo Almuerzos</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 4</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:30 – 15:30</span>
+</div>
+</div>
+</td>
+<!-- Martes 15 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">07:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 3 (Barista)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">10:00 – 18:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Pico Ventas</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 9</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 15:00</span>
+</div>
+</div>
+</td>
+<!-- Miércoles 16 Abr (Día Actual) -->
+<td class="p-2 bg-primary/5">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-bold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-primary font-semibold">07:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cajero Principal</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 2 (Cajero)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 19:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista Refuerzo</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 5</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Steward / Salón</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 10</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">12:00 – 16:00</span>
+</div>
+</div>
+</td>
+<!-- Jueves 17 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">07:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Caja</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 2 (Cajero)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 19:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Salón</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 4</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 15:00</span>
+</div>
+</div>
+</td>
+<!-- Viernes 18 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">07:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cajero</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 2 (Cajero)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 19:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Refuerzo Pico</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 8</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">12:00 – 16:00</span>
+</div>
+</div>
+</td>
+<!-- Sábado 19 Abr -->
+<td class="p-2 bg-surface-container-high/20">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">07:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 7</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">07:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista Apoyo</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 9</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 16:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Caja Extra</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 11</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">12:00 – 16:00</span>
+</div>
+</div>
+</td>
+<!-- Domingo 20 Abr -->
+<td class="p-2 bg-surface-container-high/20">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">07:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 7</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">07:00 – 15:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Refuerzo Brunch</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 8</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 15:30</span>
+</div>
+</div>
+</td>
+</tr>
+<!-- BLOQUE 3: 15:00 - 19:00 (Franja Tarde / Merienda) -->
+<tr class="align-top hover:bg-surface-container-lowest">
+<!-- Header Franja -->
+<td class="p-space-md sticky left-0 bg-surface-container-lowest z-10">
+<div class="flex flex-col gap-1">
+<span class="font-title-md text-title-md text-on-surface font-bold">15:00 – 19:00</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-secondary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">coffee</span>
+                  Tarde / Merienda
+                </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Requerido: 2 a 3 pers.</span>
+</div>
+</td>
+<!-- Lunes 14 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cajero</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 2 (Cajero)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 19:00</span>
+</div>
+</div>
+</td>
+<!-- Martes 15 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 3 (Barista)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">10:00 – 18:00</span>
+</div>
+</div>
+</td>
+<!-- Miércoles 16 Abr (Día Actual) -->
+<td class="p-2 bg-primary/5">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-bold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-primary font-semibold">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cajero</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 2 (Cajero)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 19:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Pastelería &amp; Café</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 7</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 19:30</span>
+</div>
+</div>
+</td>
+<!-- Jueves 17 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Caja</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 2 (Cajero)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">11:00 – 19:00</span>
+</div>
+</div>
+</td>
+<!-- Viernes 18 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 12</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+</div>
+</td>
+<!-- Sábado 19 Abr -->
+<td class="p-2 bg-surface-container-high/20">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista Tarde</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 3 (Barista)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Apoyo Sábado</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 10</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 20:00</span>
+</div>
+</div>
+</td>
+<!-- Domingo 20 Abr -->
+<td class="p-2 bg-surface-container-high/20">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Atención</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 12</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+</div>
+</td>
+</tr>
+<!-- BLOQUE 4: 19:00 - 23:00 (Cierre y Limpieza de Equipos) -->
+<tr class="align-top hover:bg-surface-container-lowest bg-surface-container-lowest">
+<!-- Header Franja -->
+<td class="p-space-md sticky left-0 bg-surface-container-lowest z-10">
+<div class="flex flex-col gap-1">
+<span class="font-title-md text-title-md text-on-surface font-bold">19:00 – 23:00</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-secondary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">cleaning_services</span>
+                  Cierre y Sanitizado
+                </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Requerido: 2 colaboradores</span>
+</div>
+</td>
+<!-- Lunes 14 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cierre y Máquinas</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 12</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">19:00 – 23:00</span>
+</div>
+</div>
+</td>
+<!-- Martes 15 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Limpieza Barista</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 5</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">19:00 – 23:00</span>
+</div>
+</div>
+</td>
+<!-- Miércoles 16 Abr (Día Actual) -->
+<td class="p-2 bg-primary/5">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-bold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-primary font-semibold">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Sanitizado Espresso</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 12</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">19:00 – 23:00</span>
+</div>
+</div>
+</td>
+<!-- Jueves 17 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cierre de Barra</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 12</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">19:00 – 23:00</span>
+</div>
+</div>
+</td>
+<!-- Viernes 18 Abr -->
+<td class="p-2 bg-surface-container-low/30">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 6 (Líder Turno)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Mantenimiento Molinos</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-secondary-container text-on-secondary-fixed">Variable</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 11</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">19:00 – 23:00</span>
+</div>
+</div>
+</td>
+<!-- Sábado 19 Abr -->
+<td class="p-2 bg-surface-container-high/20">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cierre y Caja</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 3 (Barista)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+</div>
+</td>
+<!-- Domingo 20 Abr -->
+<td class="p-2 bg-surface-container-high/20">
+<div class="flex flex-col gap-2">
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 text-[10px] font-bold text-primary bg-primary-fixed px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[12px]">shield_person</span>
+                      Encargado
+                    </span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 1 (Gerente)</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Limpieza General</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-surface-container-highest text-secondary">Fijo</span>
+</div>
+<span class="font-title-md text-title-md text-on-surface font-semibold truncate">Empleado 12</span>
+<span class="font-tabular-data text-tabular-data text-on-surface-variant">15:00 – 23:00</span>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Pie Informativo & Auditoría de Consulta -->
+<footer class="bg-surface-container-low p-space-md rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-space-md print-break-inside">
+<div class="flex items-start gap-space-sm max-w-3xl">
+<span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0 mt-0.5">info</span>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md text-on-surface font-bold">Nota de supervisión y consulta:</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Los turnos mostrados corresponden a las asignaciones vigentes registradas en el módulo de Asignación de Turnos. Para modificaciones de horarios o asignaciones de personal, acudir a la sección de Asignación de Turnos (sujeto a permisos de Gerencia General).
+        </p>
+</div>
+</div>
+<div class="flex flex-col items-start md:items-end flex-shrink-0">
+<div class="flex items-center gap-1.5 text-on-surface font-label-md text-label-md">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-bold">Sincronizado:</span> Hoy a las 08:30
+      </div>
+<span class="font-label-md text-label-md uppercase tracking-wider text-secondary font-medium">Vigencia semanal activa</span>
+</div>
+</footer>
+</div></main></div></body></html>

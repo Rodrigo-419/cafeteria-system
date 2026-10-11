@@ -1,0 +1,512 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-fixed-variant":"#613f26","outline-variant":"#d6c3b6","on-primary-container":"#fffbff","tertiary-container":"#946c4f","error-container":"#ffdad6","surface-container-lowest":"#ffffff","tertiary":"#795439","secondary-container":"#fed4c2","error":"#ba1a1a","tertiary-fixed":"#ffdcc5","on-error":"#ffffff","on-tertiary":"#ffffff","primary-fixed":"#ffdcc2","secondary-fixed-dim":"#e6bead","surface-tint":"#875221","on-secondary-fixed":"#2c160b","primary":"#84501f","inverse-primary":"#feb87e","secondary":"#765749","outline":"#847469","background":"#fff8f5","surface-bright":"#fff8f5","inverse-surface":"#3c2d25","primary-fixed-dim":"#feb87e","surface-container-low":"#fff1ea","on-tertiary-fixed":"#2e1502","surface":"#fff8f5","on-primary":"#ffffff","primary-container":"#a16835","inverse-on-surface":"#ffede4","secondary-fixed":"#ffdbcc","surface-container":"#ffeadf","on-secondary-container":"#795a4c","on-primary-fixed-variant":"#6a3b0b","surface-container-highest":"#f6ded1","on-background":"#251911","on-primary-fixed":"#2e1500","on-error-container":"#93000a","on-tertiary-container":"#fffbff","surface-variant":"#f6ded1","on-secondary-fixed-variant":"#5c4033","on-secondary":"#ffffff","surface-container-high":"#fce3d6","surface-dim":"#edd5c8","on-surface-variant":"#52443a","tertiary-fixed-dim":"#eebd9b","on-surface":"#251911"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xs":"0.25rem","space-sm":"0.5rem","gutter-sm":"1rem","space-lg":"1.5rem",gutter:"1.5rem","margin-sm":"1rem","space-2xl":"3rem","space-xl":"2rem",margin:"2rem","space-md":"1rem"},fontFamily:{"body-sm":["Plus Jakarta Sans"],"headline-lg-mobile":["Plus Jakarta Sans"],"title-lg":["Plus Jakarta Sans"],"title-md":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"tabular-data":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"label-lg":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"]},fontSize:{"body-sm":["12px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"headline-lg-mobile":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"title-lg":["16px",{lineHeight:"24px",letterSpacing:"-0.005em",fontWeight:"600"}],"title-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"600"}],"headline-md":["18px",{lineHeight:"26px",letterSpacing:"-0.01em",fontWeight:"600"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-md":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}],"headline-xl-mobile":["26px",{lineHeight:"34px",letterSpacing:"-0.01em",fontWeight:"700"}],"tabular-data":["13px",{lineHeight:"18px",letterSpacing:"-0.01em",fontWeight:"500"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"600"}],"label-lg":["13px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"600"}],"body-lg":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"400"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-md flex flex-col justify-center bg-surface-container"><div class="flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-primary text-[22px]">coffee</span><span class="font-headline-md text-headline-md tracking-tight text-on-surface font-bold">Sistema de Gestión — Cadena de Cafeterías</span></div><span class="material-symbols-outlined text-on-surface-variant cursor-pointer text-[18px]">menu_open</span></div><div class="flex items-center gap-space-xs mt-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span><span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Red de 3 Sucursales</span></div></div><div class="px-space-md py-space-sm"><span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant px-space-xs">Operaciones</span></div><nav class="flex flex-col gap-space-xs px-space-sm" data-active-classes="bg-primary-container text-on-primary-container font-title-md"><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="inicio" href="#"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="">Inicio</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="ventas" href="#"><span class="material-symbols-outlined text-[20px]">point_of_sale</span><span class="">Ventas</span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg transition-colors bg-primary-container text-on-primary-container font-title-md" data-path="inventario" href="#"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="">Inventario</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="productos" href="#"><span class="material-symbols-outlined text-[20px]">local_cafe</span><span class="">Productos</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="empleados" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="">Empleados</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="turnos" href="#"><span class="material-symbols-outlined text-[20px]">schedule</span><span class="">Turnos</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="asistencia" href="#"><span class="material-symbols-outlined text-[20px]">how_to_reg</span><span class="">Asistencia</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="equipos" href="#"><span class="material-symbols-outlined text-[20px]">precision_manufacturing</span><span class="">Equipos</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="reportes" href="#"><span class="material-symbols-outlined text-[20px]">monitoring</span><span class="">Reportes</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="usuarios" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span><span class="">Usuarios</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="sucursales" href="#"><span class="material-symbols-outlined text-[20px]">storefront</span><span class="">Sucursales</span></a></nav></div><div class="p-space-sm bg-surface-container m-space-sm rounded-xl flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="font-label-md text-label-md text-on-surface-variant font-medium">En línea - HTTPS</span></div><span class="font-label-md text-label-md text-primary font-semibold">v2.4.0</span></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-md"><div class="flex items-center bg-surface-container-low px-space-sm py-space-xs rounded-lg gap-space-xs"><span class="material-symbols-outlined text-primary text-[18px]">store</span><select class="bg-transparent font-title-md text-title-md text-on-surface focus:outline-none cursor-pointer pr-space-xs"><option>Sucursal A</option><option>Sucursal B</option><option>Sucursal C</option></select></div><div class="hidden xl:flex items-center bg-surface-container-lowest px-space-sm py-space-xs rounded-lg gap-space-xs shadow-[0_1px_3px_rgba(43,30,22,0.04)]"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><input class="bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none w-56" placeholder="Buscar pedidos, stock, barista..." type="text"><kbd class="font-label-md text-label-md bg-surface-container px-1.5 py-0.5 rounded text-on-surface-variant">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><div class="flex items-center bg-secondary-container/40 px-space-sm py-space-xs rounded-lg gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">shield_person</span><span class="font-label-md text-label-md uppercase tracking-wider text-on-secondary-fixed-variant">Rol demo:</span><select class="bg-transparent font-title-md text-title-md text-on-secondary-fixed font-semibold focus:outline-none cursor-pointer"><option>Admin General</option><option>Gerente Sucursal Centro</option><option>Empleado / Barista</option></select></div><div class="hidden lg:flex items-center gap-space-xs text-on-surface-variant font-label-lg text-label-lg"><span class="material-symbols-outlined text-[16px]">calendar_today</span><span class="font-tabular-data text-tabular-data">18 Mayo, 2025</span></div><button class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">notifications</span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="hidden sm:flex flex-col text-right"><span class="font-title-md text-title-md text-on-surface font-semibold leading-tight">Empleado 1</span><span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Admin General</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-space-lg py-space-lg"><div class="flex flex-col w-full">
+<!-- ENCABEZADO Y ACCIONES PRINCIPALES -->
+<section class="flex flex-col xl:flex-row xl:items-end justify-between gap-space-lg mb-space-xl">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="">Logística &amp; Abastecimiento Multitienda</span>
+<span class="">/</span>
+<span class="text-primary font-bold">Auditoría Operativa</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface font-bold tracking-tight">Control de Inventario e Insumos Operativos</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+        Balance de materias primas críticas, café verde/tostado y packaging en tiempo real con umbrales de reabastecimiento automático.
+      </p>
+</div>
+<!-- Controles de Sucursal y Acciones de Cabecera -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<!-- Selector de Sucursal contextual -->
+<div class="flex items-center gap-space-xs bg-surface-container px-space-md py-space-xs rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">store</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface-variant leading-none">Punto Activo:</span>
+<select class="bg-transparent font-title-md text-title-md text-on-surface font-semibold focus:outline-none cursor-pointer pr-space-xs" id="branch-filter"><option selected="" value="sucursal-a">Sucursal A</option><option value="sucursal-b">Sucursal B</option><option value="sucursal-c">Sucursal C</option></select>
+</div>
+</div>
+<!-- Botón Exportar -->
+<button class="flex items-center gap-space-xs px-space-md py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors font-title-md text-title-md shadow-sm" title="Exportar reporte de insumos">
+<span class="material-symbols-outlined text-[18px]">file_download</span>
+<span class="hidden md:inline">Exportar</span>
+</button>
+<!-- Botón Recuento (Secundario requerido) -->
+<button class="flex items-center gap-space-xs px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-primary hover:bg-surface-container transition-all font-title-md text-title-md shadow-sm" onclick="document.getElementById('modal-recuento').classList.toggle('hidden')">
+<span class="material-symbols-outlined text-primary text-[19px]">fact_check</span>
+<span class="">Hacer recuento</span>
+</button>
+<!-- Botón Entrada (Primario café tostado requerido) -->
+<button class="flex items-center gap-space-xs px-space-lg py-2.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-title-md text-title-md shadow-md transition-all" onclick="document.getElementById('modal-entrada').classList.toggle('hidden')">
+<span class="material-symbols-outlined text-[19px]">move_to_inbox</span>
+<span class="">Registrar entrada</span>
+</button>
+</div>
+</section>
+<!-- BANNER RESUMEN OPERATIVO / TARJETAS KPI -->
+<section class="grid grid-cols-1 sm:grid-cols-2 gap-space-md mb-space-xl lg:grid-cols-3">
+<!-- Total Insumos -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-semibold">Total Registrado</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+</div>
+</div>
+<div class="mt-space-md">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-headline-xl text-headline-xl font-bold text-on-surface tabular-nums">64</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">ítems en almacén</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface-variant mt-space-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary">sync</span>
+          Sincronizado hace 14 min
+        </p>
+</div>
+<div class="absolute -right-4 -bottom-4 w-20 h-20 bg-primary/5 rounded-full blur-xl pointer-events-none"></div>
+</div>
+<!-- Stock Óptimo -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-semibold">Nivel Óptimo</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</div>
+</div>
+<div class="mt-space-md">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-headline-xl text-headline-xl font-bold text-on-surface tabular-nums">52</span>
+<span class="font-label-lg text-label-lg font-semibold text-primary">81.2%</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full mt-space-xs overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 81.2%"></div>
+</div>
+</div>
+</div>
+<!-- Stock Crítico o Bajo Mínimo -->
+<div class="p-space-lg rounded-xl bg-error-container/40 shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md uppercase tracking-wider text-error font-bold">Bajo Mínimo / Alerta</span>
+<div class="w-8 h-8 rounded-lg bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[18px]">emergency</span>
+</div>
+</div>
+<div class="mt-space-md">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-headline-xl text-headline-xl font-bold text-error tabular-nums">7</span>
+<span class="font-body-sm text-body-sm text-error font-medium">requieren reposición</span>
+</div>
+<p class="font-label-md text-label-md text-error mt-space-xs flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[14px]">priority_high</span>
+          2 sin stock de seguridad para turno tarde
+        </p>
+</div>
+</div>
+<!-- Pedido Sugerido a Tostaduría Central -->
+
+</section>
+<!-- CONTENEDOR PRINCIPAL: FILTROS + TABLA DE INSUMOS -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Barra de Filtros, Categorías y Búsqueda -->
+<div class="p-space-lg bg-surface-container-lowest flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<!-- Input de búsqueda -->
+<div class="flex items-center bg-surface-container-low px-space-md py-2 rounded-lg w-full lg:w-96 shadow-inner">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px] mr-space-xs">search</span>
+<input class="bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none w-full" id="searchInput" placeholder="Buscar por grano, leche, desechable, SKU..." type="text">
+<button class="text-on-surface-variant hover:text-on-surface" onclick="document.getElementById('searchInput').value=''; filterTable();">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+<!-- Filtros de categoría por chips -->
+<div class="flex items-center gap-space-xs overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+<button class="category-chip px-space-sm py-1.5 rounded-lg font-label-lg text-label-lg font-semibold bg-primary text-on-primary transition-all whitespace-nowrap" onclick="setCategoryFilter('all', this)">
+          Todos (64)
+        </button>
+<button class="category-chip px-space-sm py-1.5 rounded-lg font-label-lg text-label-lg font-semibold bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all whitespace-nowrap" onclick="setCategoryFilter('cafes', this)">
+          Granos de Café
+        </button>
+<button class="category-chip px-space-sm py-1.5 rounded-lg font-label-lg text-label-lg font-semibold bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all whitespace-nowrap" onclick="setCategoryFilter('lacteos', this)">
+          Lácteos y Bebidas
+        </button>
+<button class="category-chip px-space-sm py-1.5 rounded-lg font-label-lg text-label-lg font-semibold bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all whitespace-nowrap" onclick="setCategoryFilter('packaging', this)">
+          Packaging &amp; Vasos
+        </button>
+<button class="category-chip px-space-sm py-1.5 rounded-lg font-label-lg text-label-lg font-semibold bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all whitespace-nowrap" onclick="setCategoryFilter('jarabes', this)">
+          Jarabes &amp; Secos
+        </button>
+<button class="px-space-sm py-1.5 rounded-lg font-label-lg text-label-lg font-semibold bg-error-container text-error hover:bg-error/20 transition-all flex items-center gap-1 whitespace-nowrap ml-space-xs" id="criticalFilterBtn" onclick="toggleOnlyCritical(this)">
+<span class="material-symbols-outlined text-[15px]">warning</span>
+<span class="">Sólo Alertas (7)</span>
+</button>
+</div>
+</div>
+<!-- TABLA DE ALTA DENSIDAD Y FIDELIDAD -->
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse" id="inventoryTable">
+<thead>
+<tr class="bg-surface-container font-label-md text-label-md uppercase text-on-surface-variant tracking-wider select-none">
+<th class="py-space-sm px-space-lg font-semibold">Insumo / Especificación / SKU</th>
+<th class="py-space-sm px-space-md font-semibold">Categoría</th>
+<th class="py-space-sm px-space-md font-semibold text-center">Unidad</th>
+<th class="py-space-sm px-space-md font-semibold text-right">Stock Actual</th>
+<th class="py-space-sm px-space-md font-semibold text-right">Stock Mínimo</th>
+<th class="py-space-sm px-space-lg font-semibold w-72">Estado &amp; Nivel Visual</th>
+<th class="py-space-sm px-space-md font-semibold">Último Ingreso / Recuento</th>
+<th class="py-space-sm px-space-lg font-semibold text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 text-on-surface font-body-md text-body-md" id="tableBody">
+<!-- FILA 1: CAFÉ COLOMBIA SUPREMO (CRÍTICO BAJO MÍNIMO) -->
+<tr class="hover:bg-surface-container-low transition-colors group bg-surface-container-lowest" data-category="cafes" data-status="critical"><td class="py-3 px-space-lg"><div class="flex items-center gap-space-sm"><div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary flex-shrink-0"><span class="material-symbols-outlined text-[20px]">drive_file_rename_outline</span></div><div class="flex flex-col"><span class="font-title-md text-title-md text-on-surface font-bold group-hover:text-primary transition-colors">Café Especialidad Colombia Supremo</span><div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md"><span class="">Lavado • Tueste Medio Oscuro</span><span class="">•</span><span class="font-tabular-data text-tabular-data">SKU-CF-014</span></div></div></div></td><td class="py-3 px-space-md"><span class="px-2 py-0.5 rounded-full font-label-md text-label-md font-semibold bg-surface-container-high text-primary">Granos Café</span></td><td class="py-3 px-space-md text-center font-tabular-data text-tabular-data text-on-surface-variant">Bolsa 1kg</td><td class="py-3 px-space-md text-right font-headline-md text-headline-md font-bold text-error tabular-nums">3</td><td class="py-3 px-space-md text-right font-tabular-data text-tabular-data text-on-surface-variant tabular-nums">10</td><td class="py-3 px-space-lg"><div class="flex flex-col gap-1 w-full max-w-xs"><div class="flex items-center justify-between"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-error-container text-error font-label-md text-label-md font-bold"><span class="material-symbols-outlined text-[13px]">warning</span> CRÍTICO (-70%)</span><span class="font-label-md text-label-md text-error font-semibold tabular-nums">30%</span></div><div class="w-full bg-surface-container h-2 rounded-full overflow-hidden"><div class="bg-error h-full rounded-full transition-all" style="width: 30%"></div></div></div></td><td class="py-3 px-space-md text-on-surface-variant font-body-sm text-body-sm"><span class="font-medium text-on-surface">Hoy, 07:15 AM</span><p class="font-label-md text-label-md text-on-surface-variant">Recuento Barista J. Paz</p></td><td class="py-3 px-space-lg text-right"><div class="flex items-center justify-end gap-space-xs"><button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Detalle del insumo"><span class="material-symbols-outlined text-[18px]">visibility</span></button></div></td></tr>
+<!-- FILA 2: LECHE ENTERA BARISTA (CRÍTICO BAJO MÍNIMO) -->
+<tr class="hover:bg-surface-container-low transition-colors group bg-surface-container-lowest" data-category="lacteos" data-status="critical"><td class="py-3 px-space-lg"><div class="flex items-center gap-space-sm"><div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary flex-shrink-0"><span class="material-symbols-outlined text-[20px]">water_drop</span></div><div class="flex flex-col"><span class="font-title-md text-title-md text-on-surface font-bold group-hover:text-primary transition-colors">Leche Entera Barista (Microespuma)</span><div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md"><span class="">3.8% Grasa • Tetra Top 1L</span><span class="">•</span><span class="font-tabular-data text-tabular-data">SKU-LC-002</span></div></div></div></td><td class="py-3 px-space-md"><span class="px-2 py-0.5 rounded-full font-label-md text-label-md font-semibold bg-surface-container-high text-primary">Lácteos</span></td><td class="py-3 px-space-md text-center font-tabular-data text-tabular-data text-on-surface-variant">Caja 12L</td><td class="py-3 px-space-md text-right font-headline-md text-headline-md font-bold text-error tabular-nums">1</td><td class="py-3 px-space-md text-right font-tabular-data text-tabular-data text-on-surface-variant tabular-nums">4</td><td class="py-3 px-space-lg"><div class="flex flex-col gap-1 w-full max-w-xs"><div class="flex items-center justify-between"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-error-container text-error font-label-md text-label-md font-bold"><span class="material-symbols-outlined text-[13px]">warning</span> CRÍTICO (-75%)</span><span class="font-label-md text-label-md text-error font-semibold tabular-nums">25%</span></div><div class="w-full bg-surface-container h-2 rounded-full overflow-hidden"><div class="bg-error h-full rounded-full" style="width: 25%"></div></div></div></td><td class="py-3 px-space-md text-on-surface-variant font-body-sm text-body-sm"><span class="font-medium text-on-surface">Ayer, 19:40 PM</span><p class="font-label-md text-label-md text-on-surface-variant">Cierre de Caja Noche</p></td><td class="py-3 px-space-lg text-right"><div class="flex items-center justify-end gap-space-xs"><button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Detalle del insumo"><span class="material-symbols-outlined text-[18px]">visibility</span></button></div></td></tr>
+<!-- FILA 3: VASOS POLIPAPEL 12oz (EN EL MÍNIMO EXACTO) -->
+<tr class="hover:bg-surface-container-low transition-colors group bg-surface-container-lowest" data-category="packaging" data-status="warning">
+<td class="py-3 px-space-lg">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">local_cafe</span>
+</div>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md text-on-surface font-bold group-hover:text-primary transition-colors">Vasos Polipapel Doble Pared 12oz</span>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md">
+<span class="">Cartón Kraft Compostable</span>
+<span class="">•</span>
+<span class="font-tabular-data text-tabular-data">SKU-PK-088</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md">
+<span class="px-2 py-0.5 rounded-full font-label-md text-label-md font-semibold bg-surface-container-high text-primary">Packaging</span>
+</td>
+<td class="py-3 px-space-md text-center font-tabular-data text-tabular-data text-on-surface-variant">Unidades</td>
+<td class="py-3 px-space-md text-right font-headline-md text-headline-md font-bold text-primary-container tabular-nums">50</td>
+<td class="py-3 px-space-md text-right font-tabular-data text-tabular-data text-on-surface-variant tabular-nums">50</td>
+<td class="py-3 px-space-lg">
+<div class="flex flex-col gap-1 w-full max-w-xs">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-fixed font-label-md text-label-md font-bold">
+<span class="material-symbols-outlined text-[13px]">error_outline</span>
+                    EN EL MÍNIMO (100%)
+                  </span>
+<span class="font-label-md text-label-md text-on-secondary-fixed font-semibold tabular-nums">50/50</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 50%"></div>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md text-on-surface-variant font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">16 May, 11:30 AM</span>
+<p class="font-label-md text-label-md text-on-surface-variant">Recepción Distribuidor</p>
+</td>
+<td class="py-3 px-space-lg text-right">
+<div class="flex items-center justify-end gap-space-xs"><button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Detalle del insumo"><span class="material-symbols-outlined text-[18px]">visibility</span></button></div>
+</td>
+</tr>
+<!-- FILA 4: JARABE DE VAINILLA FRANCESA (CRÍTICO) -->
+<tr class="hover:bg-surface-container-low transition-colors group bg-surface-container-lowest" data-category="jarabes" data-status="critical"><td class="py-3 px-space-lg"><div class="flex items-center gap-space-sm"><div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary flex-shrink-0"><span class="material-symbols-outlined text-[20px]">liquor</span></div><div class="flex flex-col"><span class="font-title-md text-title-md text-on-surface font-bold group-hover:text-primary transition-colors">Jarabe Natural Vainilla Francesa</span><div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md"><span class="">Extracto Puro Bourbon 750ml</span><span class="">•</span><span class="font-tabular-data text-tabular-data">SKU-JR-005</span></div></div></div></td><td class="py-3 px-space-md"><span class="px-2 py-0.5 rounded-full font-label-md text-label-md font-semibold bg-surface-container-high text-primary">Jarabes</span></td><td class="py-3 px-space-md text-center font-tabular-data text-tabular-data text-on-surface-variant">Botella 750ml</td><td class="py-3 px-space-md text-right font-headline-md text-headline-md font-bold text-error tabular-nums">1</td><td class="py-3 px-space-md text-right font-tabular-data text-tabular-data text-on-surface-variant tabular-nums">4</td><td class="py-3 px-space-lg"><div class="flex flex-col gap-1 w-full max-w-xs"><div class="flex items-center justify-between"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-error-container text-error font-label-md text-label-md font-bold"><span class="material-symbols-outlined text-[13px]">warning</span> CRÍTICO (-75%)</span><span class="font-label-md text-label-md text-error font-semibold tabular-nums">25%</span></div><div class="w-full bg-surface-container h-2 rounded-full overflow-hidden"><div class="bg-error h-full rounded-full" style="width: 25%"></div></div></div></td><td class="py-3 px-space-md text-on-surface-variant font-body-sm text-body-sm"><span class="font-medium text-on-surface">15 May, 18:00 PM</span><p class="font-label-md text-label-md text-on-surface-variant">Ajuste por consumo</p></td><td class="py-3 px-space-lg text-right"><div class="flex items-center justify-end gap-space-xs"><button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Detalle del insumo"><span class="material-symbols-outlined text-[18px]">visibility</span></button></div></td></tr>
+<!-- FILA 5: CAFÉ ETIOPÍA YIRGACHEFFE (ÓPTIMO) -->
+<tr class="hover:bg-surface-container-low transition-colors group bg-surface-container-lowest" data-category="cafes" data-status="optimal"><td class="py-3 px-space-lg"><div class="flex items-center gap-space-sm"><div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary flex-shrink-0"><span class="material-symbols-outlined text-[20px]">drive_file_rename_outline</span></div><div class="flex flex-col"><span class="font-title-md text-title-md text-on-surface font-bold group-hover:text-primary transition-colors">Café Etiopía Yirgacheffe G1</span><div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md"><span class="">Natural • Tueste Claro Filtrados</span><span class="">•</span><span class="font-tabular-data text-tabular-data">SKU-CF-009</span></div></div></div></td><td class="py-3 px-space-md"><span class="px-2 py-0.5 rounded-full font-label-md text-label-md font-semibold bg-surface-container-high text-primary">Granos Café</span></td><td class="py-3 px-space-md text-center font-tabular-data text-tabular-data text-on-surface-variant">Bolsa</td><td class="py-3 px-space-md text-right font-headline-md text-headline-md font-bold text-on-surface tabular-nums">18</td><td class="py-3 px-space-md text-right font-tabular-data text-tabular-data text-on-surface-variant tabular-nums">8</td><td class="py-3 px-space-lg"><div class="flex flex-col gap-1 w-full max-w-xs"><div class="flex items-center justify-between"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold"><span class="material-symbols-outlined text-[13px] text-primary">verified</span> Óptimo (+125%)</span><span class="font-label-md text-label-md text-primary font-semibold tabular-nums">100%</span></div><div class="w-full bg-surface-container h-2 rounded-full overflow-hidden"><div class="bg-primary h-full rounded-full" style="width: 100%"></div></div></div></td><td class="py-3 px-space-md text-on-surface-variant font-body-sm text-body-sm"><span class="font-medium text-on-surface">17 May, 09:00 AM</span><p class="font-label-md text-label-md text-on-surface-variant">Tueste Lote #T-912</p></td><td class="py-3 px-space-lg text-right"><div class="flex items-center justify-end gap-space-xs"><button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Detalle del insumo"><span class="material-symbols-outlined text-[18px]">visibility</span></button></div></td></tr>
+<!-- FILA 6: LECHE DE ALMENDRAS SIN AZÚCAR (ÓPTIMO) -->
+<tr class="hover:bg-surface-container-low transition-colors group bg-surface-container-lowest" data-category="lacteos" data-status="optimal">
+<td class="py-3 px-space-lg">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">nutrition</span>
+</div>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md text-on-surface font-bold group-hover:text-primary transition-colors">Bebida Vegetal Almendras Sin Azúcar</span>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md">
+<span class="">Edición Barista • Tetra Pak 1L</span>
+<span class="">•</span>
+<span class="font-tabular-data text-tabular-data">SKU-LC-018</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md">
+<span class="px-2 py-0.5 rounded-full font-label-md text-label-md font-semibold bg-surface-container-high text-primary">Lácteos</span>
+</td>
+<td class="py-3 px-space-md text-center font-tabular-data text-tabular-data text-on-surface-variant">Caja 12L</td>
+<td class="py-3 px-space-md text-right font-headline-md text-headline-md font-bold text-on-surface tabular-nums">22</td>
+<td class="py-3 px-space-md text-right font-tabular-data text-tabular-data text-on-surface-variant tabular-nums">10</td>
+<td class="py-3 px-space-lg">
+<div class="flex flex-col gap-1 w-full max-w-xs">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold">
+<span class="material-symbols-outlined text-[13px] text-primary">verified</span>
+                    Óptimo (+120%)
+                  </span>
+<span class="font-label-md text-label-md text-primary font-semibold tabular-nums">100%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md text-on-surface-variant font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">16 May, 14:10 PM</span>
+<p class="font-label-md text-label-md text-on-surface-variant">Recepción Prov. Alimentos</p>
+</td>
+<td class="py-3 px-space-lg text-right">
+<div class="flex items-center justify-end gap-space-xs">
+<button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Detalle del insumo">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- FILA 7: SERVILLETAS KRAFT BIODEGRADABLES (ÓPTIMO) -->
+<tr class="hover:bg-surface-container-low transition-colors group bg-surface-container-lowest" data-category="packaging" data-status="optimal">
+<td class="py-3 px-space-lg">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">layers</span>
+</div>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md text-on-surface font-bold group-hover:text-primary transition-colors">Servilletas Kraft Interdobladas 100% Recicladas</span>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md">
+<span class="">FSC Certificadas • Paquete Dispensador</span>
+<span class="">•</span>
+<span class="font-tabular-data text-tabular-data">SKU-PK-012</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md">
+<span class="px-2 py-0.5 rounded-full font-label-md text-label-md font-semibold bg-surface-container-high text-primary">Packaging</span>
+</td>
+<td class="py-3 px-space-md text-center font-tabular-data text-tabular-data text-on-surface-variant">Unidades</td>
+<td class="py-3 px-space-md text-right font-headline-md text-headline-md font-bold text-on-surface tabular-nums">1,200</td>
+<td class="py-3 px-space-md text-right font-tabular-data text-tabular-data text-on-surface-variant tabular-nums">400</td>
+<td class="py-3 px-space-lg">
+<div class="flex flex-col gap-1 w-full max-w-xs">
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold">
+<span class="material-symbols-outlined text-[13px] text-primary">verified</span>
+                    Óptimo (+200%)
+                  </span>
+<span class="font-label-md text-label-md text-primary font-semibold tabular-nums">100%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md text-on-surface-variant font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">12 May, 10:15 AM</span>
+<p class="font-label-md text-label-md text-on-surface-variant">Compra Mayorista Mensual</p>
+</td>
+<td class="py-3 px-space-lg text-right">
+<div class="flex items-center justify-end gap-space-xs">
+<button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Detalle del insumo">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- FILA 8: GRANOS DESCAFEINADO SWISS WATER (ÓPTIMO AJUSTADO) -->
+<tr class="hover:bg-surface-container-low transition-colors group bg-surface-container-lowest" data-category="cafes" data-status="optimal"><td class="py-3 px-space-lg"><div class="flex items-center gap-space-sm"><div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary flex-shrink-0"><span class="material-symbols-outlined text-[20px]">drive_file_rename_outline</span></div><div class="flex flex-col"><span class="font-title-md text-title-md text-on-surface font-bold group-hover:text-primary transition-colors">Café Descafeinado Swiss Water Process</span><div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md"><span class="">Origen Huila • Proceso 100% Sin Químicos</span><span class="">•</span><span class="font-tabular-data text-tabular-data">SKU-CF-033</span></div></div></div></td><td class="py-3 px-space-md"><span class="px-2 py-0.5 rounded-full font-label-md text-label-md font-semibold bg-surface-container-high text-primary">Granos Café</span></td><td class="py-3 px-space-md text-center font-tabular-data text-tabular-data text-on-surface-variant">Bolsa</td><td class="py-3 px-space-md text-right font-headline-md text-headline-md font-bold text-on-surface tabular-nums">6</td><td class="py-3 px-space-md text-right font-tabular-data text-tabular-data text-on-surface-variant tabular-nums">5</td><td class="py-3 px-space-lg"><div class="flex flex-col gap-1 w-full max-w-xs"><div class="flex items-center justify-between"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold"><span class="material-symbols-outlined text-[13px] text-primary">verified</span> En rango normal</span><span class="font-label-md text-label-md text-primary font-semibold tabular-nums">120%</span></div><div class="w-full bg-surface-container h-2 rounded-full overflow-hidden"><div class="bg-primary h-full rounded-full" style="width: 85%"></div></div></div></td><td class="py-3 px-space-md text-on-surface-variant font-body-sm text-body-sm"><span class="font-medium text-on-surface">17 May, 16:30 PM</span><p class="font-label-md text-label-md text-on-surface-variant">Pesaje Cierre Barra</p></td><td class="py-3 px-space-lg text-right"><div class="flex items-center justify-end gap-space-xs"><button class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Detalle del insumo"><span class="material-symbols-outlined text-[18px]">visibility</span></button></div></td></tr>
+</tbody>
+</table>
+</div>
+<!-- Paginación e Información Footer de Tabla -->
+<div class="p-space-md bg-surface-container flex flex-col sm:flex-row items-center justify-between gap-space-sm text-on-surface-variant font-body-sm text-body-sm">
+<div class="flex items-center gap-space-xs font-tabular-data text-tabular-data">
+<span class="">Mostrando 8 de 64 insumos en total</span>
+<span class="">•</span>
+<span class="text-error font-semibold">7 insumos bajo stock mínimo</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="px-space-sm py-1 rounded bg-surface-container-lowest text-on-surface-variant hover:text-on-surface disabled:opacity-50" disabled="">
+          Anterior
+        </button>
+<button class="px-2.5 py-1 rounded bg-primary text-on-primary font-semibold">1</button>
+<button class="px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface-variant hover:text-on-surface">2</button>
+<button class="px-2.5 py-1 rounded bg-surface-container-lowest text-on-surface-variant hover:text-on-surface">3</button>
+<button class="px-space-sm py-1 rounded bg-surface-container-lowest text-on-surface-variant hover:text-on-surface">
+          Siguiente
+        </button>
+</div>
+</div>
+</div>
+<!-- PANEL INFERIOR BESPOKE: PROTOCOLO DE AUDITORÍA & ESTADO DE MERMAS -->
+
+<!-- MODAL: REGISTRAR ENTRADA (MERCANCÍA & PROVEEDORES) -->
+<div class="hidden fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm flex items-center justify-center p-space-md" id="modal-entrada">
+<div class="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-space-xl shadow-2xl flex flex-col gap-space-lg">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[20px]">move_to_inbox</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">Registrar Entrada de Mercancía</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Recepción de proveedores y órdenes centrales</p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface" onclick="document.getElementById('modal-entrada').classList.add('hidden')">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<form class="flex flex-col gap-space-md" onsubmit="event.preventDefault(); document.getElementById('modal-entrada').classList.add('hidden');">
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-lg text-label-lg font-semibold text-on-surface">Insumo a Ingresar</label>
+<select class="w-full px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary shadow-sm">
+<option>Café Especialidad Colombia Supremo (SKU-CF-014)</option>
+<option>Leche Entera Barista 1L (SKU-LC-002)</option>
+<option>Vasos Polipapel 12oz (SKU-PK-088)</option>
+<option>Jarabe Natural Vainilla (SKU-JR-005)</option>
+<option>Café Etiopía Yirgacheffe (SKU-CF-009)</option>
+</select>
+</div>
+<div class="grid grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-lg text-label-lg font-semibold text-on-surface">Cantidad Recibida</label>
+<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-headline-md text-headline-md font-bold focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" required="" step="0.1" type="number" value="10">
+</div>
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-lg text-label-lg font-semibold text-on-surface">Unidad</label>
+<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container text-on-surface-variant font-body-md text-body-md" readonly="" type="text" value="kg / litros / u">
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-lg text-label-lg font-semibold text-on-surface">Proveedor / Origen</label>
+<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" placeholder="Ej: Tostaduría Central - Lote #T-914" type="text" value="Tostaduría Central ROASTERY">
+</div>
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-lg text-label-lg font-semibold text-on-surface">N° Factura / Guía Despacho</label>
+<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" placeholder="GD-2025-0981" type="text">
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-sm">
+<button class="px-space-md py-2 rounded-lg bg-surface-container text-on-surface font-title-md text-title-md hover:bg-surface-container-high transition-colors" onclick="document.getElementById('modal-entrada').classList.add('hidden')" type="button">
+            Cancelar
+          </button>
+<button class="px-space-lg py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-title-md text-title-md transition-colors shadow-md" type="submit">
+            Confirmar e Incrementar Stock
+          </button>
+</div>
+</form>
+</div>
+</div>
+<!-- MODAL: HACER RECUENTO (AUDITORÍA FÍSICA Y AJUSTE DE MERMAS) -->
+<div class="hidden fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm flex items-center justify-center p-space-md" id="modal-recuento">
+<div class="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-space-xl shadow-2xl flex flex-col gap-space-lg">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[20px]">fact_check</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">Hacer Recuento Físico</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Ajuste de inventario por arqueo real en barra</p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-on-surface" onclick="document.getElementById('modal-recuento').classList.add('hidden')">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<form class="flex flex-col gap-space-md" onsubmit="event.preventDefault(); document.getElementById('modal-recuento').classList.add('hidden');">
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-lg text-label-lg font-semibold text-on-surface">Insumo a Auditar</label>
+<select class="w-full px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" id="recuentoSelect" onchange="updateExpectedStock(this.value)">
+<option value="3.2">Café Especialidad Colombia Supremo (Actual teórico: 3.2 kg)</option>
+<option value="12.0">Leche Entera Barista (Actual teórico: 12.0 L)</option>
+<option value="50.0">Vasos Polipapel 12oz (Actual teórico: 50 u)</option>
+<option value="1.0">Jarabe Vainilla Francesa (Actual teórico: 1 bot.)</option>
+</select>
+</div>
+<div class="grid grid-cols-2 gap-space-md">
+<div class="p-space-md rounded-lg bg-surface-container-low flex flex-col justify-center">
+<span class="font-label-md text-label-md text-on-surface-variant">Stock en Sistema</span>
+<span class="font-headline-md text-headline-md font-bold text-on-surface tabular-nums" id="teoricoDisplay">3.2</span>
+</div>
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-lg text-label-lg font-semibold text-on-surface">Conteo Físico Real</label>
+<input class="w-full px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-headline-md text-headline-md font-bold focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" placeholder="Ej: 3.0" required="" step="0.1" type="number">
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-lg text-label-lg font-semibold text-on-surface">Motivo del Ajuste / Observación</label>
+<textarea class="w-full px-space-md py-2 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" placeholder="Ej: Merma no registrada durante calibración de espresso en el cambio de turno..." rows="3"></textarea>
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-sm">
+<button class="px-space-md py-2 rounded-lg bg-surface-container text-on-surface font-title-md text-title-md hover:bg-surface-container-high transition-colors" onclick="document.getElementById('modal-recuento').classList.add('hidden')" type="button">
+            Descartar
+          </button>
+<button class="px-space-lg py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-title-md text-title-md transition-colors shadow-md" type="submit">
+            Asentar Ajuste y Actualizar
+          </button>
+</div>
+</form>
+</div>
+</div>
+<!-- MODAL: MERMA OPERATIVA RÁPIDA -->
+
+<!-- SCRIPT DE FILTRADO Y COMPORTAMIENTO INTERACTIVO -->
+<script>
+    let currentCategory = 'all';
+    let onlyCritical = false;
+
+    function setCategoryFilter(category, buttonEl) {
+      currentCategory = category;
+      document.querySelectorAll('.category-chip').forEach(btn => {
+        btn.classList.remove('bg-primary', 'text-on-primary');
+        btn.classList.add('bg-surface-container', 'text-on-surface-variant');
+      });
+      buttonEl.classList.remove('bg-surface-container', 'text-on-surface-variant');
+      buttonEl.classList.add('bg-primary', 'text-on-primary');
+      filterTable();
+    }
+
+    function toggleOnlyCritical(buttonEl) {
+      onlyCritical = !onlyCritical;
+      if (onlyCritical) {
+        buttonEl.classList.remove('bg-error-container', 'text-error');
+        buttonEl.classList.add('bg-error', 'text-on-error');
+      } else {
+        buttonEl.classList.remove('bg-error', 'text-on-error');
+        buttonEl.classList.add('bg-error-container', 'text-error');
+      }
+      filterTable();
+    }
+
+    function filterTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase().trim();
+      const rows = document.querySelectorAll('#tableBody tr');
+
+      rows.forEach(row => {
+        const cat = row.getAttribute('data-category');
+        const status = row.getAttribute('data-status');
+        const text = row.innerText.toLowerCase();
+
+        const matchesCat = (currentCategory === 'all' || cat === currentCategory);
+        const matchesCritical = (!onlyCritical || status === 'critical' || status === 'warning');
+        const matchesSearch = text.includes(search);
+
+        if (matchesCat && matchesCritical && matchesSearch) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+
+    function updateExpectedStock(val) {
+      document.getElementById('teoricoDisplay').innerText = val;
+    }
+
+    function quickAdd(itemName, qty, unit) {
+      const modal = document.getElementById('modal-entrada');
+      modal.classList.remove('hidden');
+    }
+  </script>
+</div></main></div>
+
+
+
+
+
+</body></html>

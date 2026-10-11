@@ -1,0 +1,474 @@
+<!DOCTYPE html><html lang="es" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"surface-tint":"#875221","primary":"#84501f","surface-container-highest":"#f6ded1","on-background":"#251911","on-secondary-fixed-variant":"#5c4033","outline-variant":"#d6c3b6","inverse-primary":"#feb87e","surface-container-low":"#fff1ea","surface-container-high":"#fce3d6","error":"#ba1a1a","secondary-fixed":"#ffdbcc","on-secondary-fixed":"#2c160b","on-tertiary":"#ffffff","surface-container":"#ffeadf","surface-variant":"#f6ded1","on-surface-variant":"#52443a","inverse-on-surface":"#ffede4","on-error-container":"#93000a","background":"#fff8f5","on-secondary-container":"#795a4c","surface":"#fff8f5","on-error":"#ffffff","secondary":"#765749","inverse-surface":"#3c2d25","primary-fixed":"#ffdcc2","on-primary-container":"#fffbff","tertiary-container":"#946c4f","primary-fixed-dim":"#feb87e","on-primary-fixed":"#2e1500","on-primary-fixed-variant":"#6a3b0b","on-tertiary-fixed-variant":"#613f26","on-tertiary-container":"#fffbff","on-tertiary-fixed":"#2e1502","surface-dim":"#edd5c8","primary-container":"#a16835","on-surface":"#251911","surface-bright":"#fff8f5","secondary-fixed-dim":"#e6bead","error-container":"#ffdad6","secondary-container":"#fed4c2","tertiary":"#795439","tertiary-fixed-dim":"#eebd9b","outline":"#847469","on-secondary":"#ffffff","on-primary":"#ffffff","tertiary-fixed":"#ffdcc5","surface-container-lowest":"#ffffff"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-lg":"1.5rem","margin":"2rem","space-sm":"0.5rem","space-xl":"2rem","space-xs":"0.25rem","gutter":"1.5rem","margin-sm":"1rem","gutter-sm":"1rem","space-2xl":"3rem","space-md":"1rem"},"fontFamily":{"body-md":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"body-sm":["Plus Jakarta Sans"],"tabular-data":["Plus Jakarta Sans"],"title-md":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"headline-lg-mobile":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"title-lg":["Plus Jakarta Sans"],"label-lg":["Plus Jakarta Sans"]},"fontSize":{"body-md":["14px",{"lineHeight":"20px","letterSpacing":"0em","fontWeight":"400"}],"label-md":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"600"}],"headline-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.015em","fontWeight":"600"}],"body-sm":["12px",{"lineHeight":"18px","letterSpacing":"0.005em","fontWeight":"400"}],"tabular-data":["13px",{"lineHeight":"18px","letterSpacing":"-0.01em","fontWeight":"500"}],"title-md":["14px",{"lineHeight":"20px","letterSpacing":"0em","fontWeight":"600"}],"headline-xl-mobile":["26px",{"lineHeight":"34px","letterSpacing":"-0.01em","fontWeight":"700"}],"headline-lg-mobile":["20px",{"lineHeight":"28px","letterSpacing":"-0.01em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","letterSpacing":"0em","fontWeight":"400"}],"headline-xl":["32px",{"lineHeight":"40px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-md":["18px",{"lineHeight":"26px","letterSpacing":"-0.01em","fontWeight":"600"}],"title-lg":["16px",{"lineHeight":"24px","letterSpacing":"-0.005em","fontWeight":"600"}],"label-lg":["13px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"600"}]}}}};</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low z-50 flex flex-col justify-between py-space-md shadow-[0_1px_8px_rgba(43,30,22,0.06)]"><div class="flex flex-col gap-space-sm"><div class="flex items-center gap-space-sm px-space-md py-space-xs"><div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined text-[20px]">local_cafe</span></div><div class="flex flex-col"><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface leading-tight">Sistema de Gestión — Cadena de Cafeterías</span><span class="font-label-md text-label-md uppercase tracking-wider text-primary font-semibold">Coffee Management</span></div></div><div class="px-space-md my-space-xs"><div class="h-[1px] w-full bg-outline-variant/30"></div></div><div class="px-space-md mb-space-xs"><span class="font-label-md text-label-md uppercase text-on-surface-variant font-semibold tracking-wider">Módulos Operativos</span></div><nav class="flex flex-col gap-1 px-space-sm overflow-y-auto max-h-[calc(100vh-190px)]" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-lg shadow-sm"><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="inicio" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="font-title-md text-title-md">Inicio</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="ventas" href="#"><span class="material-symbols-outlined text-[20px]">point_of_sale</span><span class="font-title-md text-title-md">Ventas</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="inventario" href="#"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="font-title-md text-title-md">Inventario</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="productos" href="#"><span class="material-symbols-outlined text-[20px]">coffee</span><span class="font-title-md text-title-md">Productos</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="empleados" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="font-title-md text-title-md">Empleados</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="turnos" href="#"><span class="material-symbols-outlined text-[20px]">calendar_month</span><span class="font-title-md text-title-md">Turnos</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="asistencia" href="#"><span class="material-symbols-outlined text-[20px]">how_to_reg</span><span class="font-title-md text-title-md">Asistencia</span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-sm py-2 transition-colors bg-primary-container text-on-primary-container font-semibold rounded-lg shadow-sm" data-path="equipos" href="#"><span class="material-symbols-outlined text-[20px]">precision_manufacturing</span><span class="font-title-md text-title-md">Equipos</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="reportes" href="#"><span class="material-symbols-outlined text-[20px]">analytics</span><span class="font-title-md text-title-md">Reportes</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="usuarios" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span class="font-title-md text-title-md">Usuarios</span></a><a class="flex items-center gap-space-sm px-space-sm py-2 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="sucursales" href="#"><span class="material-symbols-outlined text-[20px]">storefront</span><span class="font-title-md text-title-md">Sucursales</span></a></nav></div><div class="px-space-md pt-space-xs"><div class="rounded-lg bg-surface-container p-space-sm flex items-center justify-between"><div class="flex flex-col"><span class="font-label-md text-label-md text-on-surface font-semibold">Cadena Roastery</span><span class="font-body-sm text-body-sm text-on-surface-variant">v2.4.0 • Enterprise</span></div><span class="material-symbols-outlined text-primary text-[18px]">verified</span></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(43,30,22,0.04)] z-40 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-md"><div class="flex items-center bg-surface-container-low rounded-lg px-space-sm py-1.5 shadow-sm"><span class="material-symbols-outlined text-primary text-[18px] mr-1.5">storefront</span><select class="bg-transparent font-title-md text-title-md text-on-surface font-medium focus:outline-none cursor-pointer pr-1"><option value="all" class="">Todas las sucursales - Vista Global Admin</option><option value="centro" class="">Sucursal A</option><option value="norte" class="">Sucursal B</option><option value="palermo" class="">Sucursal C</option></select></div><div class="hidden xl:flex items-center bg-surface-container-low rounded-lg px-space-sm py-1.5 w-64"><span class="material-symbols-outlined text-on-surface-variant text-[18px] mr-2">search</span><input class="bg-transparent w-full font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none" placeholder="Buscar módulo o registro..." type="text"></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-space-xs px-2.5 py-1 rounded-full bg-secondary-container/60 text-on-secondary-container"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="font-label-md text-label-md font-semibold">Rol: Admin Central</span></div><div class="hidden lg:flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm"><span class="material-symbols-outlined text-[16px]">today</span><span class="">18 Mayo, 2025</span></div><button class="relative p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary"></span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden sm:flex flex-col text-left"><span class="font-title-md text-title-md text-on-surface font-semibold leading-tight">Empleado 1 (Admin General)</span><span class="font-label-md text-label-md text-on-surface-variant">Administrador General</span></div></div></div></header><main class="relative pt-16 bg-surface w-full px-space-lg py-space-lg"><div class="flex flex-col w-full gap-space-lg">
+<!-- ENCABEZADO Y ACCIONES PRINCIPALES -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="font-label-md text-label-md uppercase tracking-wider text-primary">Mantenimiento &amp; Activos</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="font-label-md text-label-md uppercase tracking-wider font-semibold">Equipamiento de Red</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface font-bold tracking-tight">
+        Gestión y Estado de Equipos de Barra y Tueste
+      </h1>
+<p class="font-body-md text-body-md text-on-surface-variant">
+        Control de ciclo de vida, trazabilidad preventiva y estado operativo en tiempo real en las 3 sucursales.
+      </p>
+</div>
+<div class="flex items-center gap-space-sm flex-wrap">
+
+<button class="flex items-center gap-space-xs px-space-md py-2.5 rounded-lg bg-primary hover:bg-surface-tint text-on-primary font-title-md text-title-md font-semibold transition-all shadow-md" type="button">
+<span class="material-symbols-outlined text-[20px]">add_box</span>
+<span class="">Registrar Nuevo Equipo</span>
+</button>
+</div>
+</div>
+<!-- TARJETAS DE MÉTRICAS KPI -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Total Equipos -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant font-semibold">Inventario Total Red</span>
+<span class="font-headline-xl text-headline-xl font-bold text-on-surface mt-1">38</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">precision_manufacturing</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span class="flex items-center gap-1 font-semibold text-secondary">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> 3 Sucursales Activas
+        </span>
+<span class="tabular-nums font-tabular-data">100% Auditado</span>
+</div>
+</div>
+<!-- Funcionando Óptimo -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md uppercase tracking-wider text-[#2D6A4F] font-semibold">Funcionando Óptimo</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-headline-xl text-headline-xl font-bold text-[#2D6A4F]">31</span>
+<span class="font-label-md text-label-md text-[#2D6A4F] bg-[#EDF7F2] px-1.5 py-0.5 rounded font-bold">81.5%</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-[#EDF7F2] flex items-center justify-center text-[#2D6A4F]">
+<span class="material-symbols-outlined text-[22px]">check_circle</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Rendimiento continuo</span>
+<span class="text-[#2D6A4F] font-semibold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[16px]">trending_up</span> Estable
+        </span>
+</div>
+</div>
+<!-- En Mantenimiento -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md uppercase tracking-wider text-[#B54708] font-semibold">En Mantenimiento</span>
+<span class="font-headline-xl text-headline-xl font-bold text-[#B54708] mt-1">4</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-[#FFFAEB] flex items-center justify-center text-[#B54708]">
+<span class="material-symbols-outlined text-[22px]">build</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span class="">2 preventivos / 2 calibración</span>
+<span class="text-[#B54708] font-semibold">10.5% del parque</span>
+</div>
+</div>
+<!-- Dañados / Críticos -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md uppercase tracking-wider text-[#B42318] font-semibold">Dañados / Críticos</span>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-headline-xl text-headline-xl font-bold text-[#B42318]">2</span>
+<span class="font-label-md text-label-md text-[#B42318] bg-[#FEF3F2] px-1.5 py-0.5 rounded font-bold animate-pulse">Atención</span>
+</div>
+</div>
+<div class="w-10 h-10 rounded-lg bg-[#FEF3F2] flex items-center justify-center text-[#B42318]">
+<span class="material-symbols-outlined text-[22px]">warning</span>
+</div>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant">Requiere repuesto oficial</span>
+<span class="text-[#B42318] font-semibold">1 fuera de línea</span>
+</div>
+</div>
+</div>
+<!-- FILTROS Y CONTROLES OPERATIVOS -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<!-- Segmentación por Sucursal -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+<button class="branch-filter active px-3 py-1.5 rounded-lg bg-primary text-on-primary font-title-md text-title-md font-semibold transition-colors flex items-center gap-1.5 shrink-0" data-branch="all" type="button">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+<span class="">Todas (38)</span>
+</button>
+<button class="branch-filter px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-title-md text-title-md font-medium transition-colors flex items-center gap-1.5 shrink-0" data-branch="centro" type="button"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="">Sucursal A (18)</span></button>
+<button class="branch-filter px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-title-md text-title-md font-medium transition-colors flex items-center gap-1.5 shrink-0" data-branch="norte" type="button"><span class="w-2 h-2 rounded-full bg-secondary"></span><span class="">Sucursal B (11)</span></button>
+<button class="branch-filter px-3 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-title-md text-title-md font-medium transition-colors flex items-center gap-1.5 shrink-0" data-branch="palermo" type="button"><span class="w-2 h-2 rounded-full bg-tertiary"></span><span class="">Sucursal C (9)</span></button>
+</div>
+<!-- Búsqueda y selector de Tipo -->
+<div class="flex items-center gap-space-sm flex-wrap sm:flex-nowrap">
+<div class="relative w-full sm:w-64">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full bg-surface-container-low pl-9 pr-3 py-2 rounded-lg text-body-sm font-body-sm text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none focus:ring-1 focus:ring-primary" id="equipmentSearch" placeholder="Buscar por serie, modelo o marca..." type="text">
+</div>
+<select class="bg-surface-container-low text-on-surface font-body-sm text-body-sm rounded-lg px-3 py-2 focus:outline-none cursor-pointer" id="typeFilter">
+<option value="all">Todas las maquinarias</option>
+<option value="espresso">Máquinas de Espresso</option>
+<option value="molinos">Molinos On-Demand</option>
+<option value="tostadoras">Tostadoras de Café</option>
+<option value="filtrado">Torres de Frío &amp; Filtrados</option>
+<option value="balanzas">Balanzas de Precisión</option>
+</select>
+</div>
+</div>
+<!-- Segmentación por Estado con Pills de Color e Íconos Requeridos -->
+<div class="flex items-center gap-2 pt-space-xs overflow-x-auto">
+<span class="font-label-md text-label-md uppercase text-on-surface-variant font-semibold shrink-0 mr-1">Filtrar Estado:</span>
+<button class="status-chip active px-3 py-1 rounded-full text-body-sm font-body-sm font-semibold bg-surface-container text-on-surface transition-all flex items-center gap-1 shrink-0" data-status="all" type="button">
+<span class="">Todos (38)</span>
+</button>
+<!-- 1. Funcionando: verde esmeralda, check circle -->
+<button class="status-chip px-3 py-1 rounded-full text-body-sm font-body-sm font-semibold bg-[#EDF7F2] text-[#2D6A4F] hover:opacity-90 transition-all flex items-center gap-1.5 shrink-0" data-status="funcionando" type="button">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span class="">Funcionando (31)</span>
+</button>
+<!-- 2. Dañado: rojo alerta, cross / warning icon -->
+<button class="status-chip px-3 py-1 rounded-full text-body-sm font-body-sm font-semibold bg-[#FEF3F2] text-[#B42318] hover:opacity-90 transition-all flex items-center gap-1.5 shrink-0" data-status="danado" type="button">
+<span class="material-symbols-outlined text-[16px]">cancel</span>
+<span class="">Dañado (2)</span>
+</button>
+<!-- 3. En Mantenimiento: ámbar / naranja cálido, tools icon -->
+<button class="status-chip px-3 py-1 rounded-full text-body-sm font-body-sm font-semibold bg-[#FFFAEB] text-[#B54708] hover:opacity-90 transition-all flex items-center gap-1.5 shrink-0" data-status="mantenimiento" type="button">
+<span class="material-symbols-outlined text-[16px]">build</span>
+<span class="">En Mantenimiento (4)</span>
+</button>
+<!-- 4. Retirado: gris neutro / café apagado, archive / ban icon -->
+<button class="status-chip px-3 py-1 rounded-full text-body-sm font-body-sm font-semibold bg-surface-container text-on-surface-variant hover:opacity-90 transition-all flex items-center gap-1.5 shrink-0" data-status="retirado" type="button">
+<span class="material-symbols-outlined text-[16px]">archive</span>
+<span class="">Retirado (1)</span>
+</button>
+</div>
+</div>
+<!-- LISTADO PRINCIPAL DE EQUIPOS -->
+<div class="flex flex-col gap-space-md" id="equipmentList">
+<!-- EQUIPO 1: La Marzocco KB90 (En Mantenimiento) -->
+<div class="equipment-card bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-space-md" data-branch="centro" data-status="mantenimiento" data-type="espresso">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm pb-space-sm bg-surface-container-low/40 -mx-space-lg -mt-space-lg p-space-md rounded-t-xl">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[26px]">coffee_maker</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2 flex-wrap">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">La Marzocco KB90 ABR • 3 Grupos</h2>
+<span class="px-2 py-0.5 rounded-full text-label-md font-label-md bg-primary-fixed text-on-primary-fixed font-bold uppercase tracking-wider">Sucursal A</span>
+<span class="px-2 py-0.5 rounded text-label-md font-label-md bg-surface-container-highest text-on-surface-variant font-mono">ID: EQ-BAR-019</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Categoría: Máquina de Espresso de Especialidad con Auto Brew Ratio • Serie: LM-KB90-2023-884</span>
+</div>
+</div>
+<!-- Estado Badge Requerido: Ámbar / Naranja con Ícono Herramienta -->
+<div class="flex items-center gap-space-xs self-start lg:self-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-title-md text-title-md font-semibold bg-[#FFFAEB] text-[#B54708]">
+<span class="material-symbols-outlined text-[18px]">build</span>
+<span class="">En Mantenimiento</span>
+</span>
+</div>
+</div>
+<!-- OBSERVACIONES TÉCNICAS VISIBLE DIRECTAMENTE -->
+<div class="rounded-lg bg-surface-container-low p-space-md flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-primary font-title-md text-title-md font-semibold">
+<span class="material-symbols-outlined text-[18px]">engineering</span>
+<span class="">Observaciones Técnicas en Curso</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Por: <strong class="text-on-surface">Empleado 1</strong> • 17 May 2025, 14:30 hs</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface bg-surface-container-lowest/80 p-space-sm rounded">
+          "Fuga detectada en junta de teflón del vaporizador izquierdo. Se procedió a despresurizar el circuito auxiliar; repuesto original solicitado al service oficial La Marzocco Care (Guía #LMC-8921). Descalcificación química de caldera de café completada al 100%."
+        </p>
+</div>
+<!-- Métricas del Equipo y Calendario de Mantenimiento -->
+
+</div>
+<!-- EQUIPO 2: Mahlkönig EK43S (Funcionando) -->
+<div class="equipment-card bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-space-md" data-branch="palermo" data-status="funcionando" data-type="molinos">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm pb-space-sm bg-surface-container-low/40 -mx-space-lg -mt-space-lg p-space-md rounded-t-xl">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[26px]">cyclone</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2 flex-wrap">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">Mahlkönig EK43S Allround Grinder</h2>
+<span class="px-2 py-0.5 rounded-full text-label-md font-label-md bg-tertiary-fixed text-on-tertiary-fixed font-bold uppercase tracking-wider">Sucursal C</span>
+<span class="px-2 py-0.5 rounded text-label-md font-label-md bg-surface-container-highest text-on-surface-variant font-mono">ID: EQ-MOL-004</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Categoría: Molino On-Demand para Filtrados Especiales y Cupping • Serie: MK-EK43S-9912</span>
+</div>
+</div>
+<!-- Estado Badge Requerido: Verde Esmeralda con Check Circle -->
+<div class="flex items-center gap-space-xs self-start lg:self-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-title-md text-title-md font-semibold bg-[#EDF7F2] text-[#2D6A4F]">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span class="">Funcionando Óptimo</span>
+</span>
+</div>
+</div>
+<!-- OBSERVACIONES TÉCNICAS VISIBLE DIRECTAMENTE -->
+<div class="rounded-lg bg-surface-container-low p-space-md flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-primary font-title-md text-title-md font-semibold">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="">Observaciones Técnicas en Curso</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Por: <strong class="text-on-surface">Empleado 2</strong> • 14 May 2025, 09:10 hs</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface bg-surface-container-lowest/80 p-space-sm rounded">
+          "Alineación micrométrica de muelas planas de 98mm verificada con comparador dial. Retención residual en tolva y cámara inferior menor a 0.2g. Calibrado perfecto para perfiles V60 y Origami de la carta de origen Geisha Panamá."
+        </p>
+</div>
+<!-- Calendario y Acciones -->
+
+</div>
+<!-- EQUIPO 3: Mazzer Robur S (Dañado) -->
+<div class="equipment-card bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-space-md" data-branch="norte" data-status="danado" data-type="molinos">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm pb-space-sm bg-surface-container-low/40 -mx-space-lg -mt-space-lg p-space-md rounded-t-xl">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-error-container/40 flex items-center justify-center text-error shrink-0">
+<span class="material-symbols-outlined text-[26px]">electrical_services</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2 flex-wrap">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">Mazzer Robur S Electronic • Muelas Cónicas</h2>
+<span class="px-2 py-0.5 rounded-full text-label-md font-label-md bg-secondary-fixed text-on-secondary-fixed font-bold uppercase tracking-wider">Sucursal B</span>
+<span class="px-2 py-0.5 rounded text-label-md font-label-md bg-surface-container-highest text-on-surface-variant font-mono">ID: EQ-MOL-011</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Categoría: Molino Principal de Alto Despacho Comercial • Serie: MZ-ROB-4410-X</span>
+</div>
+</div>
+<!-- Estado Badge Requerido: Rojo Alerta con Cancel Icon -->
+<div class="flex items-center gap-space-xs self-start lg:self-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-title-md text-title-md font-semibold bg-[#FEF3F2] text-[#B42318]">
+<span class="material-symbols-outlined text-[18px]">cancel</span>
+<span class="">Dañado / Fuera de Servicio</span>
+</span>
+</div>
+</div>
+<!-- OBSERVACIONES TÉCNICAS VISIBLE DIRECTAMENTE -->
+<div class="rounded-lg bg-[#FEF3F2] p-space-md flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-[#B42318] font-title-md text-title-md font-semibold">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+<span class="">Observaciones Críticas de Guardia</span>
+</div>
+<span class="font-body-sm text-body-sm text-[#B42318]/80">Por: <strong class="text-[#B42318]">Empleado 3</strong> • 18 May 2025, 08:20 hs</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface bg-surface-container-lowest/90 p-space-sm rounded">
+          "Motor bloqueado tras pico de tensión y corte de luz matutino. El condensador de arranque no dispara y el sensor térmico bloquea el panel digital (Error E-03). Se derivó el flujo de espresso al molino secundario Anfim. Urge reemplazo de placa o bobinado."
+        </p>
+</div>
+<!-- Calendario y Acciones -->
+
+</div>
+<!-- EQUIPO 4: Tostadora Giesen W6A (Funcionando) -->
+<div class="equipment-card bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-space-md" data-branch="centro" data-status="funcionando" data-type="tostadoras">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm pb-space-sm bg-surface-container-low/40 -mx-space-lg -mt-space-lg p-space-md rounded-t-xl">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[26px]">local_fire_department</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2 flex-wrap">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">Tostadora Giesen W6A Profiler • Tambor 6 Kg</h2>
+<span class="px-2 py-0.5 rounded-full text-label-md font-label-md bg-primary-fixed text-on-primary-fixed font-bold uppercase tracking-wider">Sucursal A</span>
+<span class="px-2 py-0.5 rounded text-label-md font-label-md bg-surface-container-highest text-on-surface-variant font-mono">ID: EQ-ROAST-001</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Categoría: Tostadora Industrial con Control Computarizado de Flujo de Aire • Serie: GSN-W6A-2022</span>
+</div>
+</div>
+<!-- Estado Badge Requerido: Verde Esmeralda con Check Circle -->
+<div class="flex items-center gap-space-xs self-start lg:self-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-title-md text-title-md font-semibold bg-[#EDF7F2] text-[#2D6A4F]">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span class="">Funcionando Óptimo</span>
+</span>
+</div>
+</div>
+<!-- OBSERVACIONES TÉCNICAS VISIBLE DIRECTAMENTE -->
+<div class="rounded-lg bg-surface-container-low p-space-md flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-primary font-title-md text-title-md font-semibold">
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+<span class="">Observaciones Técnicas en Curso</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Por: <strong class="text-on-surface">Empleado 4</strong> • 16 May 2025, 17:00 hs</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface bg-surface-container-lowest/80 p-space-sm rounded">
+          "Limpieza exhaustiva de ciclón descaramillador y ductos de extracción de humos realizada tras 60 ciclos de tostado. Termocuplas calibradas contra patrón de referencia. Presión de gas estable en 22 mbar. Listo para lote de tueste fin de semana."
+        </p>
+</div>
+<!-- Calendario y Acciones -->
+
+</div>
+<!-- EQUIPO 5: Synesso Cyncra 2 Grupos (Retirado) -->
+<div class="equipment-card bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-space-md opacity-90" data-branch="centro" data-status="retirado" data-type="espresso">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm pb-space-sm bg-surface-container-low/40 -mx-space-lg -mt-space-lg p-space-md rounded-t-xl">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-on-surface-variant shrink-0">
+<span class="material-symbols-outlined text-[26px]">inventory</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2 flex-wrap">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface-variant">Synesso Cyncra • 2 Grupos Multi-Boiler</h2>
+<span class="px-2 py-0.5 rounded-full text-label-md font-label-md bg-surface-container-high text-on-surface-variant font-bold uppercase tracking-wider">Sucursal A (Depósito)</span>
+<span class="px-2 py-0.5 rounded text-label-md font-label-md bg-surface-container text-on-surface-variant font-mono">ID: EQ-BAR-002-OBS</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Categoría: Máquina Espresso Clásica • Serie: SYN-CYN-2015-09</span>
+</div>
+</div>
+<!-- Estado Badge Requerido: Gris Neutro / Café Apagado con Archive Icon -->
+<div class="flex items-center gap-space-xs self-start lg:self-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-title-md text-title-md font-semibold bg-surface-container text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">archive</span>
+<span class="">Retirado / En Depósito</span>
+</span>
+</div>
+</div>
+<!-- OBSERVACIONES TÉCNICAS VISIBLE DIRECTAMENTE -->
+<div class="rounded-lg bg-surface-container p-space-md flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-on-surface-variant font-title-md text-title-md font-semibold">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+<span class="">Observaciones de Baja y Destino</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Por: <strong class="text-on-surface">Empleado 5</strong> • 10 Ene 2025</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface bg-surface-container-lowest/80 p-space-sm rounded">
+          "Dado de baja operativa de la barra activa por recambio generacional hacia KB90. Calderas completamente drenadas, secadas y selladas con nitrógeno para evitar corrosión interna. Almacenada en depósito central como equipo de backup para eventos corporativos o pop-ups."
+        </p>
+</div>
+<!-- Acciones de equipo retirado -->
+
+</div>
+<!-- EQUIPO 6: Marco Über Boiler (Funcionando) -->
+<div class="equipment-card bg-surface-container-lowest rounded-xl p-space-lg shadow-sm hover:shadow-md transition-shadow flex flex-col gap-space-md" data-branch="palermo" data-status="funcionando" data-type="filtrado">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm pb-space-sm bg-surface-container-low/40 -mx-space-lg -mt-space-lg p-space-md rounded-t-xl">
+<div class="flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[26px]">water_drop</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2 flex-wrap">
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface">Marco Beverage Systems • Über Boiler Integrado</h2>
+<span class="px-2 py-0.5 rounded-full text-label-md font-label-md bg-tertiary-fixed text-on-tertiary-fixed font-bold uppercase tracking-wider">Sucursal C</span>
+<span class="px-2 py-0.5 rounded text-label-md font-label-md bg-surface-container-highest text-on-surface-variant font-mono">ID: EQ-WAT-007</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Categoría: Módulo Bajo Mesada de Precisión Térmica para Infusiones Manuales • Serie: MRC-UB-654</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs self-start lg:self-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-title-md text-title-md font-semibold bg-[#EDF7F2] text-[#2D6A4F]">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+<span class="">Funcionando Óptimo</span>
+</span>
+</div>
+</div>
+<!-- OBSERVACIONES TÉCNICAS VISIBLE DIRECTAMENTE -->
+<div class="rounded-lg bg-surface-container-low p-space-md flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-primary font-title-md text-title-md font-semibold">
+<span class="material-symbols-outlined text-[18px]">water_voc</span>
+<span class="">Observaciones Técnicas en Curso</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Por: <strong class="text-on-surface">Empleado 6</strong> • 05 May 2025, 11:15 hs</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface bg-surface-container-lowest/80 p-space-sm rounded">
+          "Calibración de temperatura de salida a 93.5°C constante con sonda Fluke. Filtro de ósmosis inversa BWT Bestmax Premium sustituido con conductividad controlada en 115 ppm. Caudal de erogación verificado a 28 ml/s."
+        </p>
+</div>
+
+</div>
+</div>
+<!-- PANEL INFERIOR: CONTRATOS DE GARANTÍA Y CONTACTOS DE SERVICIO TÉCNICO OFICIAL -->
+
+</div>
+<script>
+  (function initEquipmentModule() {
+    let currentBranch = 'all';
+    let currentStatus = 'all';
+    let currentSearch = '';
+    let currentType = 'all';
+
+    const branchButtons = document.querySelectorAll('.branch-filter');
+    const statusButtons = document.querySelectorAll('.status-chip');
+    const searchInput = document.getElementById('equipmentSearch');
+    const typeSelect = document.getElementById('typeFilter');
+    const cards = document.querySelectorAll('.equipment-card');
+
+    function applyFilters() {
+      cards.forEach(card => {
+        const branchMatch = (currentBranch === 'all') || (card.dataset.branch === currentBranch);
+        const statusMatch = (currentStatus === 'all') || (card.dataset.status === currentStatus);
+        const typeMatch = (currentType === 'all') || (card.dataset.type === currentType);
+        
+        const cardText = card.innerText.toLowerCase();
+        const searchMatch = !currentSearch || cardText.includes(currentSearch);
+
+        if (branchMatch && statusMatch && typeMatch && searchMatch) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    branchButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        branchButtons.forEach(b => {
+          b.classList.remove('bg-primary', 'text-on-primary');
+          b.classList.add('bg-surface-container-low', 'text-on-surface');
+        });
+        btn.classList.add('bg-primary', 'text-on-primary');
+        btn.classList.remove('bg-surface-container-low', 'text-on-surface');
+
+        currentBranch = btn.dataset.branch;
+        applyFilters();
+      });
+    });
+
+    statusButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        statusButtons.forEach(b => b.classList.remove('ring-2', 'ring-primary', 'shadow-sm'));
+        btn.classList.add('ring-2', 'ring-primary', 'shadow-sm');
+
+        currentStatus = btn.dataset.status;
+        applyFilters();
+      });
+    });
+
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        currentSearch = e.target.value.toLowerCase().trim();
+        applyFilters();
+      });
+    }
+
+    if (typeSelect) {
+      typeSelect.addEventListener('change', (e) => {
+        currentType = e.target.value;
+        applyFilters();
+      });
+    }
+  })();
+</script></main></div>
+
+</body></html>

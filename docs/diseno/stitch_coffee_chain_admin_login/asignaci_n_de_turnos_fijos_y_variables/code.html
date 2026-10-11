@@ -1,0 +1,729 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-tertiary-fixed-variant":"#613f26","outline-variant":"#d6c3b6","on-primary-container":"#fffbff","tertiary-container":"#946c4f","error-container":"#ffdad6","surface-container-lowest":"#ffffff","tertiary":"#795439","secondary-container":"#fed4c2","error":"#ba1a1a","tertiary-fixed":"#ffdcc5","on-error":"#ffffff","on-tertiary":"#ffffff","primary-fixed":"#ffdcc2","secondary-fixed-dim":"#e6bead","surface-tint":"#875221","on-secondary-fixed":"#2c160b","primary":"#84501f","inverse-primary":"#feb87e","secondary":"#765749","outline":"#847469","background":"#fff8f5","surface-bright":"#fff8f5","inverse-surface":"#3c2d25","primary-fixed-dim":"#feb87e","surface-container-low":"#fff1ea","on-tertiary-fixed":"#2e1502","surface":"#fff8f5","on-primary":"#ffffff","primary-container":"#a16835","inverse-on-surface":"#ffede4","secondary-fixed":"#ffdbcc","surface-container":"#ffeadf","on-secondary-container":"#795a4c","on-primary-fixed-variant":"#6a3b0b","surface-container-highest":"#f6ded1","on-background":"#251911","on-primary-fixed":"#2e1500","on-error-container":"#93000a","on-tertiary-container":"#fffbff","surface-variant":"#f6ded1","on-secondary-fixed-variant":"#5c4033","on-secondary":"#ffffff","surface-container-high":"#fce3d6","surface-dim":"#edd5c8","on-surface-variant":"#52443a","tertiary-fixed-dim":"#eebd9b","on-surface":"#251911"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"space-xs":"0.25rem","space-sm":"0.5rem","gutter-sm":"1rem","space-lg":"1.5rem",gutter:"1.5rem","margin-sm":"1rem","space-2xl":"3rem","space-xl":"2rem",margin:"2rem","space-md":"1rem"},fontFamily:{"body-sm":["Plus Jakarta Sans"],"headline-lg-mobile":["Plus Jakarta Sans"],"title-lg":["Plus Jakarta Sans"],"title-md":["Plus Jakarta Sans"],"headline-md":["Plus Jakarta Sans"],"headline-xl":["Plus Jakarta Sans"],"label-md":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"],"headline-xl-mobile":["Plus Jakarta Sans"],"tabular-data":["Plus Jakarta Sans"],"headline-lg":["Plus Jakarta Sans"],"label-lg":["Plus Jakarta Sans"],"body-lg":["Plus Jakarta Sans"]},fontSize:{"body-sm":["12px",{lineHeight:"18px",letterSpacing:"0.005em",fontWeight:"400"}],"headline-lg-mobile":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"600"}],"title-lg":["16px",{lineHeight:"24px",letterSpacing:"-0.005em",fontWeight:"600"}],"title-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"600"}],"headline-md":["18px",{lineHeight:"26px",letterSpacing:"-0.01em",fontWeight:"600"}],"headline-xl":["32px",{lineHeight:"40px",letterSpacing:"-0.02em",fontWeight:"700"}],"label-md":["11px",{lineHeight:"14px",letterSpacing:"0.04em",fontWeight:"600"}],"body-md":["14px",{lineHeight:"20px",letterSpacing:"0em",fontWeight:"400"}],"headline-xl-mobile":["26px",{lineHeight:"34px",letterSpacing:"-0.01em",fontWeight:"700"}],"tabular-data":["13px",{lineHeight:"18px",letterSpacing:"-0.01em",fontWeight:"500"}],"headline-lg":["24px",{lineHeight:"32px",letterSpacing:"-0.015em",fontWeight:"600"}],"label-lg":["13px",{lineHeight:"16px",letterSpacing:"0.02em",fontWeight:"600"}],"body-lg":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"400"}]}}}};</script></head><body class="bg-background font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col"><div class="h-16 px-space-md flex flex-col justify-center bg-surface-container"><div class="flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="material-symbols-outlined text-primary text-[22px]">coffee</span><span class="font-headline-md text-headline-md tracking-tight text-on-surface font-bold">Sistema de Gestión — Cadena de Cafeterías</span></div><span class="material-symbols-outlined text-on-surface-variant cursor-pointer text-[18px]">menu_open</span></div><div class="flex items-center gap-space-xs mt-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span><span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Red de 3 Sucursales</span></div></div><div class="px-space-md py-space-sm"><span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant px-space-xs">Operaciones</span></div><nav class="flex flex-col gap-space-xs px-space-sm" data-active-classes="bg-primary-container text-on-primary-container font-title-md"><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="inicio" href="#"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="">Inicio</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="ventas" href="#"><span class="material-symbols-outlined text-[20px]">point_of_sale</span><span class="">Ventas</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="inventario" href="#"><span class="material-symbols-outlined text-[20px]">inventory_2</span><span class="">Inventario</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="productos" href="#"><span class="material-symbols-outlined text-[20px]">local_cafe</span><span class="">Productos</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="empleados" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="">Empleados</span></a><a aria-current="page" class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg transition-colors bg-primary-container text-on-primary-container font-title-md" data-path="turnos" href="#"><span class="material-symbols-outlined text-[20px]">schedule</span><span class="">Turnos</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="asistencia" href="#"><span class="material-symbols-outlined text-[20px]">how_to_reg</span><span class="">Asistencia</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="equipos" href="#"><span class="material-symbols-outlined text-[20px]">precision_manufacturing</span><span class="">Equipos</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="reportes" href="#"><span class="material-symbols-outlined text-[20px]">monitoring</span><span class="">Reportes</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="usuarios" href="#"><span class="material-symbols-outlined text-[20px]">manage_accounts</span><span class="">Usuarios</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-title-md text-title-md" data-path="sucursales" href="#"><span class="material-symbols-outlined text-[20px]">storefront</span><span class="">Sucursales</span></a></nav></div><div class="p-space-sm bg-surface-container m-space-sm rounded-xl flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-primary"></span><span class="font-label-md text-label-md text-on-surface-variant font-medium">En línea - HTTPS</span></div><span class="font-label-md text-label-md text-primary font-semibold">v2.4.0</span></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-md"><div class="flex items-center bg-surface-container-low px-space-sm py-space-xs rounded-lg gap-space-xs"><span class="material-symbols-outlined text-primary text-[18px]">store</span><select class="bg-transparent font-title-md text-title-md text-on-surface focus:outline-none cursor-pointer pr-space-xs"><option>Todas las sucursales - Vista Global Admin</option><option>Sucursal A</option><option>Sucursal B</option><option>Sucursal C</option></select></div><div class="hidden xl:flex items-center bg-surface-container-lowest px-space-sm py-space-xs rounded-lg gap-space-xs shadow-[0_1px_3px_rgba(43,30,22,0.04)]"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">search</span><input class="bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none w-56" placeholder="Buscar pedidos, stock, barista..." type="text"><kbd class="font-label-md text-label-md bg-surface-container px-1.5 py-0.5 rounded text-on-surface-variant">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><div class="flex items-center bg-secondary-container/40 px-space-sm py-space-xs rounded-lg gap-space-xs"><span class="material-symbols-outlined text-secondary text-[16px]">shield_person</span><span class="font-label-md text-label-md uppercase tracking-wider text-on-secondary-fixed-variant">Rol demo:</span><select class="bg-transparent font-title-md text-title-md text-on-secondary-fixed font-semibold focus:outline-none cursor-pointer"><option>Admin General</option><option>Gerente Sucursal A</option><option>Empleado / Barista</option></select></div><div class="hidden lg:flex items-center gap-space-xs text-on-surface-variant font-label-lg text-label-lg"><span class="material-symbols-outlined text-[16px]">calendar_today</span><span class="font-tabular-data text-tabular-data">18 Mayo, 2025</span></div><button class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">notifications</span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="hidden sm:flex flex-col text-right"><span class="font-title-md text-title-md text-on-surface font-semibold leading-tight">Empleado 1</span><span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Administrador General</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface min-h-screen px-space-lg py-space-lg"><div class="flex flex-col w-full">
+<!-- Micro-decoración ambiental superior -->
+<div class="relative w-full mb-space-lg">
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
+<div>
+<div class="flex items-center gap-space-xs mb-space-xs">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary-container/50 text-on-secondary-fixed text-label-md font-label-md tracking-wider uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+            Gestión Operativa de Personal
+          </span>
+<span class="text-outline-variant font-label-md">/</span>
+<span class="text-on-surface-variant text-label-md font-label-md">Semana 15 - Ciclo Q2</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight font-bold">
+          Planificación y Asignación de Turnos
+        </h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+          Supervisión de cuadrantes por colaborador, matrices de rotación y concordancia horaria legal.
+        </p>
+</div>
+<!-- Barra de Acciones Globales -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<button class="flex items-center gap-space-xs px-space-md py-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface transition-all shadow-sm font-title-md text-title-md">
+<span class="material-symbols-outlined text-[18px] text-tertiary">picture_as_pdf</span>
+<span class="">Exportar Cuadrante PDF</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-2.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all shadow-md font-title-md text-title-md" id="btnOpenNewShift">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span class="">+ Asignar Nuevo Turno</span>
+</button>
+</div>
+</div>
+<!-- Barra de Filtros, Período y Selector de Vistas -->
+<div class="mt-space-lg p-space-md rounded-xl bg-surface-container-low shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+<!-- Selector de Sucursal y Semanas -->
+<div class="flex flex-wrap items-center gap-space-md">
+<!-- Sucursal Picker -->
+<div class="flex items-center gap-space-xs bg-surface-container-lowest px-3 py-2 rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">storefront</span>
+<span class="font-label-md text-label-md uppercase text-on-surface-variant">Sede:</span>
+<select class="bg-transparent font-title-md text-title-md text-on-surface font-semibold focus:outline-none cursor-pointer pr-2" id="branchFilter"><option selected="" value="sucursal_a">Sucursal A</option><option value="sucursal_b">Sucursal B</option><option value="sucursal_c">Sucursal C</option></select>
+</div>
+<!-- Navegador de Semana Calendario -->
+<div class="flex items-center bg-surface-container-lowest px-2 py-1.5 rounded-lg shadow-sm">
+<button class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Semana Anterior">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<div class="px-space-sm flex items-center gap-space-xs text-center">
+<span class="material-symbols-outlined text-[18px] text-primary">date_range</span>
+<span class="font-title-md text-title-md font-bold text-on-surface tracking-tight">Semana del 07 al 13 de Abril, 2025</span>
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-label-md font-label-md text-tertiary font-semibold ml-1">Actual</span>
+</div>
+<button class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Semana Siguiente">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Segmented Control de Modo de Vista -->
+<div class="flex items-center self-start lg:self-auto bg-surface-container p-1 rounded-lg">
+<button class="flex items-center gap-space-xs px-3.5 py-1.5 rounded-lg bg-surface-container-lowest text-primary shadow-sm font-title-md text-title-md transition-all" id="viewEmployeeBtn">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+<span class="">Vista por Empleado</span>
+</button>
+<button class="flex items-center gap-space-xs px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-title-md text-title-md transition-all" id="viewCalendarBtn">
+<span class="material-symbols-outlined text-[18px]">calendar_view_week</span>
+<span class="">Calendario Semanal</span>
+</button>
+</div>
+</div>
+</div>
+<!-- SECCIÓN CENTRAL: MATRIZ DE DISTINCIÓN DE TURNO (LEYENDA VISUAL CLARA) -->
+<div class="mb-space-lg grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- Bloque Informativo: Turno Fijo -->
+<div class="relative overflow-hidden p-space-md rounded-xl bg-inverse-surface text-inverse-on-surface shadow-md">
+<div class="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-primary/20 blur-xl pointer-events-none"></div>
+<div class="flex items-start gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-md">
+<span class="material-symbols-outlined text-on-primary text-[24px]">lock</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md font-bold tracking-tight text-primary-fixed">TURNO FIJO CONTRATADO</span>
+<span class="px-2 py-0.5 rounded text-label-md font-label-md uppercase bg-primary-fixed/20 text-primary-fixed-dim">Estructural</span>
+</div>
+<p class="font-body-md text-body-md text-surface-container-high leading-relaxed">
+            Horario recurrente preestablecido por contrato laboral permanente. Garantiza la apertura central, gestión de tostado y cierres clave con vigencia continua o largo plazo (sin caducidad semanal).
+          </p>
+<div class="flex items-center gap-space-md mt-2 pt-2 border-t border-surface-variant/20 font-label-md text-label-md text-inverse-on-surface/80">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary-fixed"></span> Aperturas maestras</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary-fixed"></span> Jornada ordinaria 40h</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary-fixed"></span> Vigencia indefinida</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bloque Informativo: Turno Variable / Rotativo -->
+<div class="relative overflow-hidden p-space-md rounded-xl bg-secondary-container text-on-secondary-fixed shadow-md">
+<div class="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-primary-container/20 blur-xl pointer-events-none"></div>
+<div class="flex items-start gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-tertiary-container flex items-center justify-center shrink-0 shadow-md">
+<span class="material-symbols-outlined text-on-tertiary-container text-[24px]">autorenew</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md font-bold tracking-tight text-on-secondary-fixed">TURNO VARIABLE / ROTATIVO</span>
+<span class="px-2 py-0.5 rounded text-label-md font-label-md uppercase bg-tertiary-fixed text-on-tertiary-fixed">Dinámico</span>
+</div>
+<p class="font-body-md text-body-md text-on-secondary-fixed-variant leading-relaxed">
+            Asignación flexible calculada para amortiguar picos de afluencia, horas de degustación y eventos de barra. Sujeto a rotación quincenal o mensual y cuenta con <strong class="text-on-secondary-fixed">fecha perentoria de vigencia</strong>.
+          </p>
+<div class="flex items-center gap-space-md mt-2 pt-2 border-t border-on-secondary-container/20 font-label-md text-label-md text-on-secondary-fixed-variant">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary"></span> Refuerzo horario pico</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary"></span> Rotación fin de semana</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary"></span> Caducidad programada</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SECCIÓN PRINCIPAL: LISTADO DE EMPLEADOS Y ASIGNACIÓN DETALLADA -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-sm p-space-lg mb-space-lg">
+<!-- Encabezado de la Sección de Lista -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-md mb-space-md border-b border-surface-container-highest">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-md text-on-surface font-bold">Colaboradores Activos en Sucursal Centro</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-primary font-tabular-data text-tabular-data font-bold">5 Registrados</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Control de cumplimiento horario, tipología de turno y ventanas de vigencia contractual.
+        </p>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center bg-surface-container-low px-3 py-1.5 rounded-lg text-body-sm font-body-sm">
+<span class="text-on-surface-variant mr-2">Filtro tipo:</span>
+<button class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-semibold text-label-md mr-1">Todos (5)</button>
+<button class="px-2 py-0.5 rounded text-on-surface-variant hover:text-on-surface font-medium text-label-md mr-1">Fijos (3)</button>
+<button class="px-2 py-0.5 rounded text-on-surface-variant hover:text-on-surface font-medium text-label-md">Variables (2)</button>
+</div>
+</div>
+</div>
+<!-- Lista de Empleados con sus Turnos -->
+<div class="space-y-space-md">
+<!-- Empleado 1: Martín Vargas -->
+<div class="p-space-md rounded-xl bg-surface hover:bg-surface-container-low/60 transition-colors shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md border-l-4 border-inverse-surface">
+<div class="flex items-center gap-space-md min-w-[280px]">
+<div class="relative">
+<img class="w-13 h-13 w-12 h-12 rounded-full object-cover shadow-sm" data-alt="Martín Vargas, store general manager of the specialty coffee shop, mid 30s man wearing clean apron with warm ambient cafe lighting in espresso and amber tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdj4IEKGwSf5Ev74Zv80vpF28e1Ztv1TZVBxRZCMwit2QE8HsnryHghmj9pBBaUFWCVCgYhPaFN6etHYas07Vg7k8BoBjRahqRWx1aKU2_d8jkiIEOYrm6rmh8Fr-SoH3_VD10pL8PvGR6j33Vq51abbXflbbfck19OGQ7Ht6yVB0viG_tJp2V643lUqnnsWQsARgT6No6QLfD7DBMLy5Jt_UfuMd_MWph_t-j_AQoXqKU1fL43PRM">
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-600 ring-2 ring-surface-container-lowest" title="Actualmente en sucursal"></span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title-lg text-title-lg text-on-surface font-bold">Empleado 1</span>
+<span class="font-label-md text-label-md text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">ID: EMP-0102</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Gerente de Sucursal Centro</span>
+</div>
+</div>
+<!-- Insignia del Tipo de Turno -->
+<div class="flex items-center">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-inverse-surface text-inverse-on-surface shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-primary-fixed">lock</span>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md font-bold tracking-tight text-primary-fixed leading-tight">TURNO FIJO</span>
+<span class="font-label-md text-label-md text-surface-container-high leading-none">Contrato Pleno</span>
+</div>
+</div>
+</div>
+<!-- Horario Asignado -->
+<div class="flex flex-col min-w-[240px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Pauta Semanal</span>
+<div class="flex items-center gap-1.5 text-on-surface font-title-md text-title-md font-semibold mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-primary">schedule</span>
+<span class="">Lun a Vie: 07:30 - 16:00 hrs</span>
+</div>
+<span class="font-body-sm text-body-sm text-tertiary">Apertura de local, calibración de espresso &amp; gestión</span>
+</div>
+<!-- Vigencia y Estatus -->
+<div class="flex flex-col min-w-[200px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Ventana de Vigencia</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">event_available</span>
+<span class="font-tabular-data text-tabular-data font-semibold text-on-surface">Desde: 01 Ene 2024</span>
+</div>
+<div class="flex items-center gap-1.5 text-label-md text-label-md mt-1">
+<span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+<span class="text-emerald-800 font-bold uppercase tracking-wider">Vigencia Indefinida</span>
+</div>
+</div>
+<!-- Acciones Fila -->
+<div class="flex items-center gap-2 self-end lg:self-center">
+<button class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Editar asignación">
+<span class="material-symbols-outlined text-[18px]">edit_calendar</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Historial de turnos">
+<span class="material-symbols-outlined text-[18px]">history</span>
+</button>
+</div>
+</div>
+<!-- Empleada 2: Camila Silva -->
+<div class="p-space-md rounded-xl bg-surface hover:bg-surface-container-low/60 transition-colors shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md border-l-4 border-inverse-surface">
+<div class="flex items-center gap-space-md min-w-[280px]">
+<div class="relative">
+<img class="w-12 h-12 rounded-full object-cover shadow-sm" data-alt="Camila Silva, female barista senior in her late 20s smiling softly, professional dark apron, in a craft roastery environment with pour over coffee drippers in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZf4nHeAmBaIxTEraVI47ugDLSZNJe2uv_30plnfK2gu1MTJA-8lm9ljqj_GROKU6hyv--50ppfmsZD0citLBKBQORklh8rGEYe5K3Asf5dGolaagaKGGkWBE6_vKwtMJ3G-HCvCyl_gaRC1VJhpSWAHqhjLjZE2nj4bdQbyebGFI9GZzOglbX--9lmVHw86oztTgteLg65q9Nkb6yn3R1GrxeYVI8lf-_pbYR5ZNKUtde4FrQgR8A">
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-600 ring-2 ring-surface-container-lowest"></span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title-lg text-title-lg text-on-surface font-bold">Empleado 2</span>
+<span class="font-label-md text-label-md text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">ID: EMP-0189</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista Senior &amp; Control de Extracción</span>
+</div>
+</div>
+<!-- Insignia del Tipo de Turno -->
+<div class="flex items-center">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-inverse-surface text-inverse-on-surface shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-primary-fixed">lock</span>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md font-bold tracking-tight text-primary-fixed leading-tight">TURNO FIJO</span>
+<span class="font-label-md text-label-md text-surface-container-high leading-none">Contrato Anual</span>
+</div>
+</div>
+</div>
+<!-- Horario Asignado -->
+<div class="flex flex-col min-w-[240px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Pauta Semanal</span>
+<div class="flex items-center gap-1.5 text-on-surface font-title-md text-title-md font-semibold mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-primary">schedule</span>
+<span class="">Mar a Sáb: 08:00 - 16:30 hrs</span>
+</div>
+<span class="font-body-sm text-body-sm text-tertiary">Control de calidad en barra principal &amp; tueste</span>
+</div>
+<!-- Vigencia y Estatus -->
+<div class="flex flex-col min-w-[200px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Ventana de Vigencia</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">calendar_month</span>
+<span class="font-tabular-data text-tabular-data font-semibold text-on-surface">01 Mar 2025 → 31 Dic 2025</span>
+</div>
+<div class="flex items-center gap-1.5 text-label-md text-label-md mt-1">
+<span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+<span class="text-emerald-800 font-bold uppercase tracking-wider">Turno Vigente</span>
+</div>
+</div>
+<!-- Acciones Fila -->
+<div class="flex items-center gap-2 self-end lg:self-center">
+<button class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Editar asignación">
+<span class="material-symbols-outlined text-[18px]">edit_calendar</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Historial de turnos">
+<span class="material-symbols-outlined text-[18px]">history</span>
+</button>
+</div>
+</div>
+<!-- Empleado 3: Diego Morales (VARIABLE) -->
+<div class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md border-l-4 border-primary-container">
+<div class="flex items-center gap-space-md min-w-[280px]">
+<div class="relative">
+<img class="w-12 h-12 rounded-full object-cover shadow-sm" data-alt="Diego Morales, young male barista in his early 20s concentrating while texturing milk for flat white in a cozy warm cafe with wooden counter." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5GTZROE6joKiTKCP6sWC3tQiQCU17Gzd36dFkpjegbQT3-moUitKWNfilI9l9FaBuyHR_XiVcPjE6SjC-LECLqdRq0rA-Atf0jS3zF-R3G3qudMJktbCdJLExniwvahtjlgGA8ShehtBAZyThPGtq-QYbzd06wt0hHPGiGNhjKQAz_z4QR0X94oTp_RV2a7W4JNQ3uBMamB7NXQnztb5f5UpviV9Mt9LsksvFTgfjJdYQ_4sciadQ">
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-amber-500 ring-2 ring-surface-container-lowest"></span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title-lg text-title-lg text-on-surface font-bold">Empleado 3</span>
+<span class="font-label-md text-label-md text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">ID: EMP-0214</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Barista Junior</span>
+</div>
+</div>
+<!-- Insignia del Tipo de Turno (Variable / Rotativo) -->
+<div class="flex items-center">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary-container text-on-secondary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-tertiary">autorenew</span>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md font-bold tracking-tight text-on-secondary-fixed leading-tight">TURNO VARIABLE</span>
+<span class="font-label-md text-label-md text-on-secondary-fixed-variant leading-none">Rotación Quincenal</span>
+</div>
+</div>
+</div>
+<!-- Horario Asignado -->
+<div class="flex flex-col min-w-[240px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Pauta Semanal</span>
+<div class="text-on-surface font-title-md text-title-md font-semibold mt-0.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">dark_mode</span>
+<span class="">Lun a Mié: 14:00 - 22:00 hrs (Cierre)</span>
+</div>
+<div class="flex items-center gap-1.5 text-body-sm font-body-sm text-on-surface-variant mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">wb_sunny</span>
+<span class="">Jue y Vie: 10:00 - 18:30 hrs</span>
+</div>
+</div>
+</div>
+<!-- Vigencia y Estatus -->
+<div class="flex flex-col min-w-[200px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Ventana de Vigencia</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">timelapse</span>
+<span class="font-tabular-data text-tabular-data font-semibold text-on-surface">07 Abr 2025 → 20 Abr 2025</span>
+</div>
+<div class="flex items-center gap-1.5 text-label-md text-label-md mt-1">
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-bold uppercase tracking-wider">
+              Caduca en 7 días (Semana Par)
+            </span>
+</div>
+</div>
+<!-- Acciones Fila -->
+<div class="flex items-center gap-2 self-end lg:self-center">
+<button class="px-3 py-1.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container font-title-md text-title-md flex items-center gap-1 transition-colors" title="Reasignar o extender turno">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span class="">Reasignar</span>
+</button>
+</div>
+</div>
+<!-- Empleada 4: Lucía Fernández (VARIABLE) -->
+<div class="p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md border-l-4 border-primary-container">
+<div class="flex items-center gap-space-md min-w-[280px]">
+<div class="relative">
+<img class="w-12 h-12 rounded-full object-cover shadow-sm" data-alt="Lucía Fernández, smiling young cashier and customer service attendant in an artisanal bakery and coffee roastery, natural ambient daylight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4Eq1wF2mPF6KQutfkpXF05oXQJB1nC0NtV4cdzfYkXeVCNRSGjaOaVzvUg3LElVrVQ6gNl9HcEc8nwYuZL3vXAe6bzQateCv2a7Wrxncfo-Jm00ior-wR9B_Ec-CPVyxO5CPJGUfmyz9zOWM0xPJYCS9ui-iiOo5cpR7osfMjT6ylQKn_nJGJdRfXkuceKDMokDavc0F-WB3RKTdJ5F9qHVLNZsVvmg4IsuC1CSytLxDrp1xphCVk">
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-600 ring-2 ring-surface-container-lowest"></span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title-lg text-title-lg text-on-surface font-bold">Empleado 4</span>
+<span class="font-label-md text-label-md text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">ID: EMP-0245</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cajera / Atención a Clientes</span>
+</div>
+</div>
+<!-- Insignia del Tipo de Turno -->
+<div class="flex items-center">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-secondary-container text-on-secondary-fixed shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-tertiary">autorenew</span>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md font-bold tracking-tight text-on-secondary-fixed leading-tight">TURNO VARIABLE</span>
+<span class="font-label-md text-label-md text-on-secondary-fixed-variant leading-none">Refuerzo Mensual</span>
+</div>
+</div>
+</div>
+<!-- Horario Asignado -->
+<div class="flex flex-col min-w-[240px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Pauta Semanal</span>
+<div class="flex items-center gap-1.5 text-on-surface font-title-md text-title-md font-semibold mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-tertiary">weekend</span>
+<span class="">Vie a Dom: 12:00 - 20:30 hrs</span>
+</div>
+<span class="font-body-sm text-body-sm text-tertiary">Refuerzo horas de alta rotación y terraza fin de semana</span>
+</div>
+<!-- Vigencia y Estatus -->
+<div class="flex flex-col min-w-[200px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Ventana de Vigencia</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-tertiary">calendar_month</span>
+<span class="font-tabular-data text-tabular-data font-semibold text-on-surface">01 Abr 2025 → 30 Abr 2025</span>
+</div>
+<div class="flex items-center gap-1.5 text-label-md text-label-md mt-1">
+<span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+<span class="text-emerald-800 font-bold uppercase tracking-wider">Activo (Vigencia Mensual)</span>
+</div>
+</div>
+<!-- Acciones Fila -->
+<div class="flex items-center gap-2 self-end lg:self-center">
+<button class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Editar asignación">
+<span class="material-symbols-outlined text-[18px]">edit_calendar</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Historial">
+<span class="material-symbols-outlined text-[18px]">history</span>
+</button>
+</div>
+</div>
+<!-- Empleado 5: Andrés Castro -->
+<div class="p-space-md rounded-xl bg-surface hover:bg-surface-container-low/60 transition-colors shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md border-l-4 border-inverse-surface">
+<div class="flex items-center gap-space-md min-w-[280px]">
+<div class="relative">
+<img class="w-12 h-12 rounded-full object-cover shadow-sm" data-alt="Andrés Castro, head of bar and roaster, focused man in his 30s standing by a professional dual-boiler espresso machine in an earthy styled café." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQdyp_LnUOHq66r8BgmgP1TJBH2AxCZz_4QEzUGybODl1hLjYCkLtvVLM5a27oIQFyheQAGSpQSZlzzX2qx64MeKa4z_hNQh_rlJUehTNBpLNHTmCnrQoM9zLiFXe08XUGJKO3o_1WBa75haitjsWiK0PeGz9PUfDTq-cm6FhuEun7QHAXMFSZFlX2Wy3YbK6X4UpOOwNevW2URsLxIOYscUmZZ1WY8aKGwO7frxPYjNB89zbhhul8">
+<span class="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-600 ring-2 ring-surface-container-lowest"></span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title-lg text-title-lg text-on-surface font-bold">Empleado 5</span>
+<span class="font-label-md text-label-md text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">ID: EMP-0098</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Jefe de Barra &amp; Head Barista</span>
+</div>
+</div>
+<!-- Insignia del Tipo de Turno -->
+<div class="flex items-center">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-inverse-surface text-inverse-on-surface shadow-sm">
+<span class="material-symbols-outlined text-[18px] text-primary-fixed">lock</span>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md font-bold tracking-tight text-primary-fixed leading-tight">TURNO FIJO</span>
+<span class="font-label-md text-label-md text-surface-container-high leading-none">Contrato Pleno</span>
+</div>
+</div>
+</div>
+<!-- Horario Asignado -->
+<div class="flex flex-col min-w-[240px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Pauta Semanal</span>
+<div class="flex items-center gap-1.5 text-on-surface font-title-md text-title-md font-semibold mt-0.5">
+<span class="material-symbols-outlined text-[18px] text-primary">schedule</span>
+<span class="">Lun a Vie: 07:00 - 15:30 hrs</span>
+</div>
+<span class="font-body-sm text-body-sm text-tertiary">Apertura matinal, calibración de molienda &amp; stock diario</span>
+</div>
+<!-- Vigencia y Estatus -->
+<div class="flex flex-col min-w-[200px]">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Ventana de Vigencia</span>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="material-symbols-outlined text-[16px] text-outline">event_available</span>
+<span class="font-tabular-data text-tabular-data font-semibold text-on-surface">Desde: 15 Oct 2024</span>
+</div>
+<div class="flex items-center gap-1.5 text-label-md text-label-md mt-1">
+<span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+<span class="text-emerald-800 font-bold uppercase tracking-wider">Vigencia Indefinida</span>
+</div>
+</div>
+<!-- Acciones Fila -->
+<div class="flex items-center gap-2 self-end lg:self-center">
+<button class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Editar asignación">
+<span class="material-symbols-outlined text-[18px]">edit_calendar</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Historial">
+<span class="material-symbols-outlined text-[18px]">history</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- SECCIÓN 4: GRILLA VISUAL DE COBERTURA DIARIA (LUNES A DOMINGO) -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-sm p-space-lg">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-sm mb-space-md">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">stacked_bar_chart</span>
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold">Matriz de Cobertura Diaria por Franja</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Balance de dotación de personal por bloques operacionales críticos en Sucursal Centro.
+        </p>
+</div>
+<!-- Leyenda de Cobertura -->
+<div class="flex items-center gap-space-md text-label-md font-label-md">
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-700"></span> Óptima (&gt;3 baristas)</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-primary"></span> Adecuada (2 baristas)</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-amber-500"></span> Ajustada (1 barista)</span>
+</div>
+</div>
+<!-- Tabla Grilla de Cobertura Semanal -->
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+<th class="py-3 px-space-md rounded-l-lg">Franja Operativa</th>
+<th class="py-3 px-space-sm text-center">Lun 07</th>
+<th class="py-3 px-space-sm text-center">Mar 08</th>
+<th class="py-3 px-space-sm text-center">Mié 09</th>
+<th class="py-3 px-space-sm text-center">Jue 10</th>
+<th class="py-3 px-space-sm text-center">Vie 11</th>
+<th class="py-3 px-space-sm text-center bg-surface-container-high">Sáb 12</th>
+<th class="py-3 px-space-sm text-center rounded-r-lg bg-surface-container-high">Dom 13</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-surface-container-low">
+<!-- Bloque Apertura -->
+<tr class="hover:bg-surface-container-low/40">
+<td class="py-3.5 px-space-md font-title-md text-title-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-amber-700">wb_sunny</span>
+<div>
+<div class="font-bold text-on-surface">Apertura y Calibración</div>
+<div class="text-on-surface-variant text-label-md">07:00 - 11:00 hrs</div>
+</div>
+</div>
+</td>
+<!-- Lunes -->
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                3 pers.
+              </span>
+</td>
+<!-- Martes -->
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                3 pers.
+              </span>
+</td>
+<!-- Miércoles -->
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                3 pers.
+              </span>
+</td>
+<!-- Jueves -->
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-surface-container-high text-primary font-bold font-tabular-data text-tabular-data">
+                2 pers.
+              </span>
+</td>
+<!-- Viernes -->
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                3 pers.
+              </span>
+</td>
+<!-- Sábado -->
+<td class="py-3 px-space-sm text-center bg-surface-container-low/50">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-surface-container-high text-primary font-bold font-tabular-data text-tabular-data">
+                2 pers.
+              </span>
+</td>
+<!-- Domingo -->
+<td class="py-3 px-space-sm text-center bg-surface-container-low/50">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-amber-50 text-amber-800 font-bold font-tabular-data text-tabular-data">
+                1 pers.
+              </span>
+</td>
+</tr>
+<!-- Bloque Hora Pico Almuerzo -->
+<tr class="hover:bg-surface-container-low/40">
+<td class="py-3.5 px-space-md font-title-md text-title-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">local_cafe</span>
+<div>
+<div class="font-bold text-on-surface">Pico Medio Día / Almuerzo</div>
+<div class="text-on-surface-variant text-label-md">12:00 - 15:30 hrs</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                4 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                4 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                4 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                3 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                4 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center bg-surface-container-low/50">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                3 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center bg-surface-container-low/50">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-surface-container-high text-primary font-bold font-tabular-data text-tabular-data">
+                2 pers.
+              </span>
+</td>
+</tr>
+<!-- Bloque Tarde y Cierre -->
+<tr class="hover:bg-surface-container-low/40">
+<td class="py-3.5 px-space-md font-title-md text-title-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-tertiary">bedtime</span>
+<div>
+<div class="font-bold text-on-surface">Cierre y Limpieza Máquinas</div>
+<div class="text-on-surface-variant text-label-md">18:00 - 22:30 hrs</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-surface-container-high text-primary font-bold font-tabular-data text-tabular-data">
+                2 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-surface-container-high text-primary font-bold font-tabular-data text-tabular-data">
+                2 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-surface-container-high text-primary font-bold font-tabular-data text-tabular-data">
+                2 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-amber-50 text-amber-800 font-bold font-tabular-data text-tabular-data">
+                1 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                3 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center bg-surface-container-low/50">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-emerald-50 text-emerald-800 font-bold font-tabular-data text-tabular-data">
+                3 pers.
+              </span>
+</td>
+<td class="py-3 px-space-sm text-center bg-surface-container-low/50">
+<span class="inline-flex items-center justify-center px-2 py-1 rounded bg-surface-container-high text-primary font-bold font-tabular-data text-tabular-data">
+                2 pers.
+              </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Alerta Operativa Contextual -->
+<div class="mt-space-md p-space-sm rounded-xl bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">info</span>
+<span class="font-body-sm text-body-sm text-on-surface"><strong>Aviso de Planificación:</strong> El Jueves en turno noche cuenta con dotación ajustada (1 barista). Se sugiere asignar refuerzo rotativo.</span>
+</div>
+<button class="px-3 py-1 rounded bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-colors shrink-0">
+        Cubrir Vacante
+      </button>
+</div>
+</div>
+<!-- MODAL / DIÁLOGO DE ASIGNAR NUEVO TURNO (Oculto por defecto, activable con JS) -->
+<div class="hidden fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-space-md" id="newShiftModal">
+<div class="bg-surface-container-lowest rounded-2xl max-w-lg w-full p-space-lg shadow-xl relative animate-in fade-in zoom-in-95 duration-150">
+<div class="flex items-center justify-between pb-space-sm mb-space-md border-b border-surface-container">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]">calendar_add_on</span>
+<h3 class="font-headline-md text-headline-md font-bold text-on-surface">Asignar Cuadrante de Turno</h3>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg" id="btnCloseModal">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<form class="space-y-space-md" onsubmit="event.preventDefault(); document.getElementById('newShiftModal').classList.add('hidden');">
+<div>
+<label class="block font-label-md text-label-md uppercase text-on-surface-variant mb-1">Colaborador / Empleado</label>
+<select class="w-full bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface focus:outline-none"><option>Empleado 3 (Barista Junior)</option><option>Empleado 4 (Atención)</option><option>Empleado 2 (Barista Senior)</option><option>Empleado 5 (Head Barista)</option><option>Nuevo ingreso barista en inducción</option></select>
+</div>
+<div>
+<label class="block font-label-md text-label-md uppercase text-on-surface-variant mb-1">Naturaleza del Turno</label>
+<div class="grid grid-cols-2 gap-space-sm">
+<label class="flex items-center gap-2 p-2 rounded-lg bg-inverse-surface text-inverse-on-surface cursor-pointer">
+<input class="accent-primary" name="modal_shift_type" type="radio" value="fijo">
+<span class="font-title-md text-title-md font-bold text-primary-fixed">Turno Fijo</span>
+</label>
+<label class="flex items-center gap-2 p-2 rounded-lg bg-secondary-container text-on-secondary-fixed cursor-pointer">
+<input checked="" class="accent-primary" name="modal_shift_type" type="radio" value="variable">
+<span class="font-title-md text-title-md font-bold">Turno Variable</span>
+</label>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm">
+<div>
+<label class="block font-label-md text-label-md uppercase text-on-surface-variant mb-1">Hora Inicio</label>
+<input class="w-full bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface" type="time" value="08:00">
+</div>
+<div>
+<label class="block font-label-md text-label-md uppercase text-on-surface-variant mb-1">Hora Término</label>
+<input class="w-full bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface" type="time" value="16:30">
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm">
+<div>
+<label class="block font-label-md text-label-md uppercase text-on-surface-variant mb-1">Vigencia Desde</label>
+<input class="w-full bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface" type="date" value="2025-04-07">
+</div>
+<div>
+<label class="block font-label-md text-label-md uppercase text-on-surface-variant mb-1">Vigencia Hasta</label>
+<input class="w-full bg-surface-container-low px-3 py-2 rounded-lg font-body-md text-body-md text-on-surface" type="date" value="2025-04-20">
+</div>
+</div>
+<div class="flex justify-end gap-space-sm pt-space-sm border-t border-surface-container">
+<button class="px-4 py-2 rounded-lg bg-surface-container text-on-surface font-title-md text-title-md" id="btnCancelModal" type="button">
+            Cancelar
+          </button>
+<button class="px-4 py-2 rounded-lg bg-primary text-on-primary font-title-md text-title-md hover:bg-primary-container transition-colors" type="submit">
+            Guardar y Notificar
+          </button>
+</div>
+</form>
+</div>
+</div>
+<!-- SCRIPT PARA INTERACCIONES DE FILTRO Y MODAL -->
+<script>
+    const btnOpenModal = document.getElementById('btnOpenNewShift');
+    const modal = document.getElementById('newShiftModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelModal = document.getElementById('btnCancelModal');
+    const viewEmp = document.getElementById('viewEmployeeBtn');
+    const viewCal = document.getElementById('viewCalendarBtn');
+
+    if (btnOpenModal && modal) {
+      btnOpenModal.addEventListener('click', () => modal.classList.remove('hidden'));
+    }
+    if (btnCloseModal && modal) {
+      btnCloseModal.addEventListener('click', () => modal.classList.add('hidden'));
+    }
+    if (btnCancelModal && modal) {
+      btnCancelModal.addEventListener('click', () => modal.classList.add('hidden'));
+    }
+
+    if (viewEmp && viewCal) {
+      viewCal.addEventListener('click', () => {
+        viewCal.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        viewCal.classList.remove('text-on-surface-variant');
+        viewEmp.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        viewEmp.classList.add('text-on-surface-variant');
+      });
+      viewEmp.addEventListener('click', () => {
+        viewEmp.classList.add('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        viewEmp.classList.remove('text-on-surface-variant');
+        viewCal.classList.remove('bg-surface-container-lowest', 'text-primary', 'shadow-sm');
+        viewCal.classList.add('text-on-surface-variant');
+      });
+    }
+  </script>
+</div></main></div>
+
+
+
+
+
+</body></html>
