@@ -168,14 +168,19 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   `RequirePermission` (guard por permiso), el menú por rol, `DataTable`,
   `ConfirmDialog`, las reglas del sistema de diseño, el módulo de ventas
   (`NewSalePage`, `SalesListPage`, `AnnulSaleDialog` y un flujo de rutas y
-  permisos sobre `App`) y el panel de control (`DashboardPage`).
+  permisos sobre `App`), el panel de control (`DashboardPage`) y el catálogo de
+  productos y precios (`ProductsPage` y la carta por sucursal).
 - **Integración ligera con MSW**: se mockean `POST /api/auth/login`,
   `GET /api/auth/me`, la carta (`GET /api/branches/:id/products`), las
   sucursales (`GET /api/branches`), las ventas (`GET/POST /api/sales`,
-  `GET /api/sales/:id`, `POST /api/sales/:id/anular`), las alertas
-  (`GET /api/inventario/alertas`), la asistencia (`GET /api/attendance/records`),
-  los equipos (`GET /api/equipment`) y el reporte comparativo
-  (`GET /api/reports/comparativo`), incluidos los escenarios de error 403/409.
+  `GET /api/sales/:id`, `POST /api/sales/:id/anular`), el catálogo de productos
+  (`GET/POST/PATCH/DELETE /api/products`), las categorías
+  (`/api/product-categories`), las variantes (`/api/variants`), el upsert de
+  precios (`PUT /api/branches/:sucursalId/products/:productoId/variants/:varianteId`),
+  las alertas (`GET /api/inventario/alertas`), la asistencia
+  (`GET /api/attendance/records`), los equipos (`GET /api/equipment`) y el
+  reporte comparativo (`GET /api/reports/comparativo`), incluidos los escenarios
+  de error 400/403/404/409.
 
 ### Herramientas
 
@@ -196,8 +201,8 @@ npm run test:watch
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 19
-- **Total de tests**: **109 passed**
+- **Archivos de prueba**: 21
+- **Total de tests**: **119 passed**
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/format/money.spec.ts`, `lib/format/dates.spec.ts`,
@@ -207,8 +212,10 @@ Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `components/shared/DataTable.test.tsx`, `components/shared/ConfirmDialog.test.tsx`,
 `design-rules.test.ts`, `theme-contrast.test.ts`, el módulo de ventas
 (`features/sales/NewSalePage.test.tsx`, `features/sales/SalesListPage.test.tsx`,
-`features/sales/AnnulSaleDialog.test.tsx` y `features/sales/SalesFlujo.test.tsx`) y
-el panel de control (`features/dashboard/DashboardPage.test.tsx`).
+`features/sales/AnnulSaleDialog.test.tsx` y `features/sales/SalesFlujo.test.tsx`), el
+panel de control (`features/dashboard/DashboardPage.test.tsx`) y el catálogo de
+productos y la carta (`features/products/CatalogoProductos.test.tsx`,
+`features/products/CartaPrecios.test.tsx`).
 
 Casos de ventas cubiertos: registrar y mostrar la confirmación del servidor,
 doble clic sin segunda petición, carrito vacío deshabilita el botón, oferta
@@ -226,6 +233,13 @@ por rol usadas en estas pruebas (`PERMISOS_ADMIN`/`PERMISOS_GERENTE`/
 `PERMISOS_EMPLEADO` en `src/test/handlers.ts`) reflejan la matriz real de
 `docs/seguridad-y-permisos.md`.
 
+Casos de productos cubiertos: crear un producto (201) y verlo en el catálogo,
+nombre duplicado (409), borrado bloqueado por dependencias (409), estados vacío
+y de error del listado; el Gerente fija un precio válido, un precio fuera de
+rango devuelve el 400 del servidor, una sucursal fuera de alcance devuelve 404;
+el Admin (sin `productos.precio.editar`) y el Empleado solo consultan la carta,
+sin acciones de edición (y el Empleado no ve el filtro de estado).
+
 ### Detalles relevantes
 
 - `renderConProveedores` envuelve con `QueryClientProvider`, `MemoryRouter` y
@@ -238,6 +252,11 @@ por rol usadas en estas pruebas (`PERMISOS_ADMIN`/`PERMISOS_GERENTE`/
   `window.matchMedia` (lo exige `sonner`), `hasPointerCapture`/
   `setPointerCapture`/`releasePointerCapture` y `scrollIntoView` (los exige
   Radix Select al abrir y desplazar el menú).
+- El **catálogo de productos** mockeado es estado mutable (fixtures
+  `CATEGORIAS_PRUEBA`/`VARIANTES_PRUEBA`/`PRODUCTOS_PRUEBA` en
+  `src/test/handlers.ts`); `reiniciarCatalogoPrueba()` lo restaura tras cada test
+  y los handlers replican las reglas del backend (unicidad 409, borrado con
+  dependencias 409, precio fuera de rango 400).
 - El **menú por rol** se prueba con los permisos reales de Admin/Gerente/Empleado
   (tomados del seed del backend) y con un caso de permiso revocado.
 - El **panel de control** se prueba sobre `DashboardPage` con los permisos
