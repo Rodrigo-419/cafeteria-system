@@ -2,12 +2,15 @@ import { http, HttpResponse } from 'msw'
 import type {
   AlertaStockApi,
   CartaOferta,
+  CategoriaProductoApi,
   EquipoApi,
+  ProductoApi,
   RegistroAsistenciaApi,
   ReporteComparativoApi,
   RespuestaLogin,
   SucursalApi,
   UsuarioApi,
+  VarianteApi,
   VentaCompletaApi,
 } from '@/types/api'
 
@@ -134,6 +137,113 @@ export const CARTA_PRUEBA: CartaOferta[] = [
     variante: { id: 'v-2', nombre: 'Grande' },
   },
 ]
+
+// Catálogo de productos: fixtures base y estado mutable para las pruebas.
+// El estado se reinicia entre pruebas con `reiniciarCatalogoPrueba`.
+export const CATEGORIAS_PRUEBA: CategoriaProductoApi[] = [
+  {
+    id: 'c-1',
+    nombre: 'Cafés',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'c-2',
+    nombre: 'Bebidas',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+]
+
+export const VARIANTES_PRUEBA: VarianteApi[] = [
+  {
+    id: 'v-0',
+    nombre: 'Única',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'v-1',
+    nombre: 'Mediano',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'v-2',
+    nombre: 'Grande',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+]
+
+export const PRODUCTOS_PRUEBA: ProductoApi[] = [
+  {
+    id: 'p-1',
+    nombre: 'Café Americano',
+    categoriaId: 'c-1',
+    descripcion: 'Espresso con agua caliente',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+    categoria: { id: 'c-1', nombre: 'Cafés' },
+  },
+  {
+    id: 'p-2',
+    nombre: 'Té Verde',
+    categoriaId: 'c-2',
+    descripcion: null,
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+    categoria: { id: 'c-2', nombre: 'Bebidas' },
+  },
+]
+
+interface EstadoCatalogo {
+  categorias: CategoriaProductoApi[]
+  variantes: VarianteApi[]
+  productos: ProductoApi[]
+  carta: CartaOferta[]
+}
+
+function crearEstadoCatalogo(): EstadoCatalogo {
+  return {
+    categorias: CATEGORIAS_PRUEBA.map((c) => ({ ...c })),
+    variantes: VARIANTES_PRUEBA.map((v) => ({ ...v })),
+    productos: PRODUCTOS_PRUEBA.map((p) => ({
+      ...p,
+      categoria: { ...p.categoria },
+    })),
+    carta: CARTA_PRUEBA.map((o) => ({
+      ...o,
+      producto: { ...o.producto, categoria: { ...o.producto.categoria } },
+      variante: { ...o.variante },
+    })),
+  }
+}
+
+let catalogo: EstadoCatalogo = crearEstadoCatalogo()
+
+/** Restaura el catálogo mockeado a su estado inicial. */
+export function reiniciarCatalogoPrueba(): void {
+  catalogo = crearEstadoCatalogo()
+}
+
+function errorApi(status: number, mensaje: string, error: string) {
+  return HttpResponse.json({ statusCode: status, message: mensaje, error }, { status })
+}
+
+function mensajePrecioInvalido(precio: unknown): string | null {
+  if (typeof precio !== 'number' || !Number.isFinite(precio)) {
+    return 'El precio debe ser un numero'
+  }
+  if (precio < 0.01 || precio > 100000) {
+    return 'El precio debe estar entre 0.01 y 100000'
+  }
+  const decimales = (String(precio).split('.')[1] ?? '').length
+  if (decimales > 2) {
+    return 'El precio no puede tener mas de 2 decimales'
+  }
+  return null
+}
 
 export function ventaCompleta(
   parciales: Partial<VentaCompletaApi> = {},
@@ -319,9 +429,304 @@ export const handlers = [
 
   http.get(`${BASE_API}/auth/me`, () => HttpResponse.json(USUARIO_PRUEBA)),
 
-  http.get(`${BASE_API}/branches/:sucursalId/products`, () =>
-    HttpResponse.json(CARTA_PRUEBA),
+  http.get(`${BASE_API}/branches/:sucursalId/products`, ({ request }) => {
+    const url = new URL(request.url)
+    const estado = url.searchParams.get('estado')
+    let carta = catalogo.carta
+    if (estado) carta = carta.filter((o) => o.estado === estado)
+    return HttpResponse.json(carta)
+  }),
+
+  http.put(
+    `${BASE_API}/branches/:sucursalId/products/:productoId/variants/:varianteId`,
+    async ({ request, params }) => {
+      const cuerpo = (await request.json()) as {
+        precio?: unknown
+        estado?: 'activo' | 'inactivo'
+      }
+      const problema = mensajePrecioInvalido(cuerpo.precio)
+      if (problema) {
+        return errorApi(400, problema, 'Bad Request')
+      }
+      const precio = cuerpo.precio as number
+      const estadoFinal = cuerpo.estado ?? 'activo'
+      const productoId = String(params.productoId)
+      const varianteId = String(params.varianteId)
+      const existente = catalogo.carta.find(
+        (o) => o.productoId === productoId && o.varianteId === varianteId,
+      )
+      const producto =
+        catalogo.productos.find((p) => p.id === productoId) ??
+        existente?.producto
+      const variante =
+        catalogo.variantes.find((v) => v.id === varianteId) ??
+        existente?.variante
+
+      if (!producto || !variante) {
+        return errorApi(404, 'El producto o la variante no existe', 'Not Found')
+      }
+
+      const precioTexto = precio.toFixed(2)
+      catalogo.carta = [
+        ...catalogo.carta.filter((o) => o !== existente),
+        {
+          id: existente?.id ?? `pv-${productoId}-${varianteId}`,
+          productoId,
+          varianteId,
+          precio: precioTexto,
+          estado: estadoFinal,
+          producto: {
+            id: producto.id,
+            nombre: producto.nombre,
+            categoriaId: producto.categoriaId,
+            categoria: { ...producto.categoria },
+          },
+          variante: { id: variante.id, nombre: variante.nombre },
+        },
+      ]
+
+      return HttpResponse.json({ precio: precioTexto, estado: estadoFinal })
+    },
   ),
+
+  http.get(`${BASE_API}/product-categories`, () =>
+    HttpResponse.json(catalogo.categorias),
+  ),
+
+  http.post(`${BASE_API}/product-categories`, async ({ request }) => {
+    const cuerpo = (await request.json()) as { nombre?: string }
+    const nombre = (cuerpo.nombre ?? '').trim()
+    if (
+      catalogo.categorias.some(
+        (c) => c.nombre.toLowerCase() === nombre.toLowerCase(),
+      )
+    ) {
+      return errorApi(409, 'Ya existe una categoria con ese nombre', 'Conflict')
+    }
+    const ahora = new Date().toISOString()
+    const categoria: CategoriaProductoApi = {
+      id: `c-${catalogo.categorias.length + 1}`,
+      nombre,
+      createdAt: ahora,
+      updatedAt: ahora,
+    }
+    catalogo.categorias = [...catalogo.categorias, categoria]
+    return HttpResponse.json(categoria, { status: 201 })
+  }),
+
+  http.patch(`${BASE_API}/product-categories/:id`, async ({ request, params }) => {
+    const cuerpo = (await request.json()) as { nombre?: string }
+    const nombre = (cuerpo.nombre ?? '').trim()
+    const categoria = catalogo.categorias.find((c) => c.id === params.id)
+    if (!categoria) {
+      return errorApi(404, 'La categoria no existe', 'Not Found')
+    }
+    if (
+      catalogo.categorias.some(
+        (c) =>
+          c.id !== categoria.id && c.nombre.toLowerCase() === nombre.toLowerCase(),
+      )
+    ) {
+      return errorApi(409, 'Ya existe una categoria con ese nombre', 'Conflict')
+    }
+    categoria.nombre = nombre
+    catalogo.productos = catalogo.productos.map((p) =>
+      p.categoriaId === categoria.id
+        ? { ...p, categoria: { id: categoria.id, nombre } }
+        : p,
+    )
+    return HttpResponse.json(categoria)
+  }),
+
+  http.delete(`${BASE_API}/product-categories/:id`, ({ params }) => {
+    const categoria = catalogo.categorias.find((c) => c.id === params.id)
+    if (!categoria) {
+      return errorApi(404, 'La categoria no existe', 'Not Found')
+    }
+    if (catalogo.productos.some((p) => p.categoriaId === categoria.id)) {
+      return errorApi(
+        409,
+        'No se puede eliminar una categoria con productos',
+        'Conflict',
+      )
+    }
+    catalogo.categorias = catalogo.categorias.filter(
+      (c) => c.id !== categoria.id,
+    )
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get(`${BASE_API}/variants`, () => HttpResponse.json(catalogo.variantes)),
+
+  http.post(`${BASE_API}/variants`, async ({ request }) => {
+    const cuerpo = (await request.json()) as { nombre?: string }
+    const nombre = (cuerpo.nombre ?? '').trim()
+    if (
+      catalogo.variantes.some(
+        (v) => v.nombre.toLowerCase() === nombre.toLowerCase(),
+      )
+    ) {
+      return errorApi(409, 'Ya existe una variante con ese nombre', 'Conflict')
+    }
+    const ahora = new Date().toISOString()
+    const variante: VarianteApi = {
+      id: `v-${catalogo.variantes.length + 10}`,
+      nombre,
+      createdAt: ahora,
+      updatedAt: ahora,
+    }
+    catalogo.variantes = [...catalogo.variantes, variante]
+    return HttpResponse.json(variante, { status: 201 })
+  }),
+
+  http.patch(`${BASE_API}/variants/:id`, async ({ request, params }) => {
+    const cuerpo = (await request.json()) as { nombre?: string }
+    const nombre = (cuerpo.nombre ?? '').trim()
+    const variante = catalogo.variantes.find((v) => v.id === params.id)
+    if (!variante) {
+      return errorApi(404, 'La variante no existe', 'Not Found')
+    }
+    if (variante.nombre.toLowerCase() === 'única') {
+      return errorApi(409, 'La variante base no se puede modificar', 'Conflict')
+    }
+    if (
+      catalogo.variantes.some(
+        (v) =>
+          v.id !== variante.id && v.nombre.toLowerCase() === nombre.toLowerCase(),
+      )
+    ) {
+      return errorApi(409, 'Ya existe una variante con ese nombre', 'Conflict')
+    }
+    variante.nombre = nombre
+    return HttpResponse.json(variante)
+  }),
+
+  http.delete(`${BASE_API}/variants/:id`, ({ params }) => {
+    const variante = catalogo.variantes.find((v) => v.id === params.id)
+    if (!variante) {
+      return errorApi(404, 'La variante no existe', 'Not Found')
+    }
+    if (variante.nombre.toLowerCase() === 'única') {
+      return errorApi(409, 'La variante base no se puede eliminar', 'Conflict')
+    }
+    if (catalogo.carta.some((o) => o.varianteId === variante.id)) {
+      return errorApi(
+        409,
+        'No se puede eliminar una variante con precios',
+        'Conflict',
+      )
+    }
+    catalogo.variantes = catalogo.variantes.filter((v) => v.id !== variante.id)
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.get(`${BASE_API}/products`, ({ request }) => {
+    const url = new URL(request.url)
+    const q = url.searchParams.get('q')?.toLowerCase()
+    const categoriaId = url.searchParams.get('categoriaId')
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+    let items = catalogo.productos
+    if (categoriaId) items = items.filter((p) => p.categoriaId === categoriaId)
+    if (q) items = items.filter((p) => p.nombre.toLowerCase().includes(q))
+    const total = items.length
+    const inicio = (page - 1) * limit
+    const data = items.slice(inicio, inicio + limit)
+    return HttpResponse.json({
+      data,
+      total,
+      page,
+      limit,
+      totalPaginas: Math.max(1, Math.ceil(total / limit)),
+    })
+  }),
+
+  http.post(`${BASE_API}/products`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      nombre?: string
+      categoriaId?: string
+      descripcion?: string | null
+    }
+    const nombre = (cuerpo.nombre ?? '').trim()
+    if (
+      catalogo.productos.some(
+        (p) => p.nombre.toLowerCase() === nombre.toLowerCase(),
+      )
+    ) {
+      return errorApi(
+        409,
+        'Ya existe un producto con ese nombre en la categoria',
+        'Conflict',
+      )
+    }
+    const categoria = catalogo.categorias.find((c) => c.id === cuerpo.categoriaId)
+    if (!categoria) {
+      return errorApi(400, 'La categoria no existe', 'Bad Request')
+    }
+    const ahora = new Date().toISOString()
+    const producto: ProductoApi = {
+      id: `p-${catalogo.productos.length + 10}`,
+      nombre,
+      categoriaId: categoria.id,
+      descripcion: cuerpo.descripcion ?? null,
+      createdAt: ahora,
+      updatedAt: ahora,
+      categoria: { id: categoria.id, nombre: categoria.nombre },
+    }
+    catalogo.productos = [...catalogo.productos, producto]
+    return HttpResponse.json(producto, { status: 201 })
+  }),
+
+  http.patch(`${BASE_API}/products/:id`, async ({ request, params }) => {
+    const cuerpo = (await request.json()) as {
+      nombre?: string
+      categoriaId?: string
+      descripcion?: string | null
+    }
+    const producto = catalogo.productos.find((p) => p.id === params.id)
+    if (!producto) {
+      return errorApi(404, 'Producto no encontrado', 'Not Found')
+    }
+    const nombre = (cuerpo.nombre ?? producto.nombre).trim()
+    if (
+      catalogo.productos.some(
+        (p) => p.id !== producto.id && p.nombre.toLowerCase() === nombre.toLowerCase(),
+      )
+    ) {
+      return errorApi(
+        409,
+        'Ya existe un producto con ese nombre en la categoria',
+        'Conflict',
+      )
+    }
+    const categoriaId = cuerpo.categoriaId ?? producto.categoriaId
+    const categoria = catalogo.categorias.find((c) => c.id === categoriaId)
+    producto.nombre = nombre
+    producto.categoriaId = categoriaId
+    producto.descripcion =
+      cuerpo.descripcion === undefined ? producto.descripcion : cuerpo.descripcion
+    if (categoria) {
+      producto.categoria = { id: categoria.id, nombre: categoria.nombre }
+    }
+    producto.updatedAt = new Date().toISOString()
+    return HttpResponse.json(producto)
+  }),
+
+  http.delete(`${BASE_API}/products/:id`, ({ params }) => {
+    const producto = catalogo.productos.find((p) => p.id === params.id)
+    if (!producto) {
+      return errorApi(404, 'Producto no encontrado', 'Not Found')
+    }
+    if (catalogo.carta.some((o) => o.productoId === producto.id)) {
+      return errorApi(
+        409,
+        'No se puede eliminar un producto con precios',
+        'Conflict',
+      )
+    }
+    catalogo.productos = catalogo.productos.filter((p) => p.id !== producto.id)
+    return new HttpResponse(null, { status: 204 })
+  }),
 
   http.get(`${BASE_API}/branches`, () => HttpResponse.json(SUCURSALES_PRUEBA)),
 

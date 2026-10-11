@@ -166,14 +166,16 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
 - **Unitarias y componentes**: utilidades (`money`, `dates`, `permissions`,
   `session`), componente `<Can>`, `LoginPage`, `ProtectedRoute`,
   `RequirePermission` (guard por permiso), el menú por rol, `DataTable`,
-  `ConfirmDialog`, las reglas del sistema de diseño y el módulo de ventas
+  `ConfirmDialog`, las reglas del sistema de diseño, el módulo de ventas
   (`NewSalePage`, `SalesListPage`, `AnnulSaleDialog` y un flujo de rutas y
-  permisos sobre `App`).
+  permisos sobre `App`) y el panel de control (`DashboardPage`).
 - **Integración ligera con MSW**: se mockean `POST /api/auth/login`,
   `GET /api/auth/me`, la carta (`GET /api/branches/:id/products`), las
-  sucursales (`GET /api/branches`) y las ventas (`GET/POST /api/sales`,
-  `GET /api/sales/:id`, `POST /api/sales/:id/anular`), incluidos los escenarios
-  de error 403/409.
+  sucursales (`GET /api/branches`), las ventas (`GET/POST /api/sales`,
+  `GET /api/sales/:id`, `POST /api/sales/:id/anular`), las alertas
+  (`GET /api/inventario/alertas`), la asistencia (`GET /api/attendance/records`),
+  los equipos (`GET /api/equipment`) y el reporte comparativo
+  (`GET /api/reports/comparativo`), incluidos los escenarios de error 403/409.
 
 ### Herramientas
 
@@ -194,8 +196,8 @@ npm run test:watch
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 18
-- **Total de tests**: **105 passed**
+- **Archivos de prueba**: 19
+- **Total de tests**: **109 passed**
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/format/money.spec.ts`, `lib/format/dates.spec.ts`,
@@ -203,9 +205,10 @@ Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/permissions/RequirePermission.test.tsx`, `lib/navigation/menu.spec.ts`,
 `features/auth/LoginPage.test.tsx`, `routes/ProtectedRoute.test.tsx`,
 `components/shared/DataTable.test.tsx`, `components/shared/ConfirmDialog.test.tsx`,
-`design-rules.test.ts`, `theme-contrast.test.ts` y el módulo de ventas:
-`features/sales/NewSalePage.test.tsx`, `features/sales/SalesListPage.test.tsx`,
-`features/sales/AnnulSaleDialog.test.tsx` y `features/sales/SalesFlujo.test.tsx`.
+`design-rules.test.ts`, `theme-contrast.test.ts`, el módulo de ventas
+(`features/sales/NewSalePage.test.tsx`, `features/sales/SalesListPage.test.tsx`,
+`features/sales/AnnulSaleDialog.test.tsx` y `features/sales/SalesFlujo.test.tsx`) y
+el panel de control (`features/dashboard/DashboardPage.test.tsx`).
 
 Casos de ventas cubiertos: registrar y mostrar la confirmación del servidor,
 doble clic sin segunda petición, carrito vacío deshabilita el botón, oferta
@@ -214,6 +217,14 @@ inactiva (409), falta de `productos.ver` sin cargar la carta, Empleado sin
 detalle de venta completada y anulada, anular con motivo vacío, 403 al anular
 venta ajena, 409 al anular de otro día, filtro de sucursal solo para Admin y
 filtro de estado que viaja como parámetro a la API.
+
+Casos del panel cubiertos: Admin ve todos los bloques; el Gerente no ve el
+reporte comparativo y su ruta `GET /reports/comparativo` no se llama; un Empleado
+con permisos mínimos ve solo su bloque y no se llama a las rutas de los demás; y
+el error de un bloque (500) no rompe los otros bloques. Las listas de permisos
+por rol usadas en estas pruebas (`PERMISOS_ADMIN`/`PERMISOS_GERENTE`/
+`PERMISOS_EMPLEADO` en `src/test/handlers.ts`) reflejan la matriz real de
+`docs/seguridad-y-permisos.md`.
 
 ### Detalles relevantes
 
@@ -229,6 +240,15 @@ filtro de estado que viaja como parámetro a la API.
   Radix Select al abrir y desplazar el menú).
 - El **menú por rol** se prueba con los permisos reales de Admin/Gerente/Empleado
   (tomados del seed del backend) y con un caso de permiso revocado.
+- El **panel de control** se prueba sobre `DashboardPage` con los permisos
+  reales de cada rol; el bloque del reporte comparativo no debe montar su
+  consulta cuando falta el permiso (se afirma que la ruta no se llamó), y el
+  fallo aislado de un bloque no debe romper los demás.
+- El **login** tiene ahora un botón para mostrar/ocultar la contraseña: las
+  pruebas localizan el campo con
+  `getByLabelText(/contraseña/i, { selector: 'input' })` para no confundirlo con
+  el `aria-label` del botón, y el botón de envío por nombre (`/ingresar/i`, o
+  `/ingresando/i` mientras la petición está en curso).
 - `design-rules.test.ts` usa `import.meta.glob` para verificar: una sola hoja CSS
   global (`index.css`), ausencia de `style={{}}` y ausencia de colores hex/rgb
   crudos fuera de `components/ui`.

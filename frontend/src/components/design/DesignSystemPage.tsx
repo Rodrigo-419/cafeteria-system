@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { StatCard } from '@/components/shared/StatCard'
 import { StatusPill } from '@/components/shared/StatusPill'
+import { EstadoOfertaBadge } from '@/features/products/EstadoOfertaBadge'
 import {
   Card,
   CardContent,
@@ -577,6 +578,8 @@ export function DesignSystemPage() {
                 <StatusPill tono="error">Dañado</StatusPill>
                 <StatusPill tono="info">Nuevo</StatusPill>
                 <StatusPill>Retirado</StatusPill>
+                <EstadoOfertaBadge estado="activo" />
+                <EstadoOfertaBadge estado="inactivo" />
               </div>
             </CardContent>
           </Card>

@@ -219,3 +219,37 @@ export interface ReporteComparativoApi {
   generadoEn: string
   sucursales: ReporteSucursalApi[]
 }
+
+/** Una categoría del catálogo global (`GET /product-categories`). */
+export interface CategoriaProductoApi {
+  id: string
+  nombre: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** Una variante del catálogo global (`GET /variants`). */
+export interface VarianteApi {
+  id: string
+  nombre: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** Un producto del catálogo global (`GET /products`), con su categoría. */
+export interface ProductoApi {
+  id: string
+  nombre: string
+  categoriaId: string
+  descripcion: string | null
+  createdAt: string
+  updatedAt: string
+  categoria: { id: string; nombre: string }
+}
+
+/** Respuesta del upsert de una oferta de sucursal (precio y estado). */
+export interface OfertaRespuestaApi {
+  /** Precio decimal como texto ("12.50"). */
+  precio: string
+  estado: EstadoOferta
+}

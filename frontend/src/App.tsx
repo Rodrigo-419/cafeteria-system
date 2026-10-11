@@ -16,6 +16,7 @@ import { MENU_ITEMS } from '@/lib/navigation/menu'
 import { SalesHome } from '@/features/sales/SalesHome'
 import { NewSalePage } from '@/features/sales/NewSalePage'
 import { SaleDetailPage } from '@/features/sales/SaleDetailPage'
+import { ProductsPage } from '@/features/products/ProductsPage'
 
 function crearQueryClient() {
   return new QueryClient({
@@ -32,7 +33,7 @@ export function App() {
   const [queryClient] = useState(crearQueryClient)
 
   const rutasModulo = MENU_ITEMS.filter(
-    (item) => item.to !== '/' && item.to !== '/sales',
+    (item) => item.to !== '/' && item.to !== '/sales' && item.to !== '/products',
   )
 
   return (
@@ -88,6 +89,21 @@ export function App() {
                 element={
                   <RequirePermission permiso="ventas.ver">
                     <SaleDetailPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="products"
+                element={
+                  <RequirePermission
+                    permiso={[
+                      'productos.ver',
+                      'productos.catalogo.editar',
+                      'productos.precio.editar',
+                    ]}
+                    modo="any"
+                  >
+                    <ProductsPage />
                   </RequirePermission>
                 }
               />
