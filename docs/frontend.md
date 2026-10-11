@@ -12,10 +12,19 @@ El frontend es independiente (sin workspaces), basado en Vite + React + TypeScri
 - TypeScript ~6.0.2
 Nota: plantilla Vite 9.2.1 traía oxlint; se reemplazó por ESLint+Prettier (desviación documentada).
 ## Estructura
-frontend/src: App, main, components/ui (6), features/auth, lib/{api,auth,format,permissions}, routes, test, types.
+frontend/src: App, main; components/{ui,shared,layout,design}; features/{auth,system}; lib/{api,auth,format,permissions,navigation}; routes; test; types; tools/eslint-rules (reglas locales del sistema de diseño).
 ## Configuración
 - Proxy: `/api` → `http://localhost:3000`. Base URL: `import.meta.env.VITE_API_BASE_URL ?? '/api'`. En tests: `http://localhost/api`.
 - `.env.example`: `VITE_API_BASE_URL=/api`. Sin secretos.
+## Sistema de diseño (E2)
+- Tokens en `src/index.css` (`:root` y `.dark`), en OKLCH y con contraste orientado a WCAG AA. Semánticos: `success`, `warning`, `info`, `destructive` (+ foregrounds). `@theme inline` expone `--color-*`.
+- Componentes shadcn: button, card, input, label, checkbox, select, textarea, table, tabs, badge, skeleton, dialog, alert-dialog, dropdown-menu, sheet, sonner.
+- Componentes de composición en `components/shared`: `PageHeader`, `MoneyText`, `DataTable` (carga/vacío/error/paginación), `FormField`, `ConfirmDialog`, `EmptyState`, `ErrorState`.
+- Layout: `components/layout/AppLayout` (sidebar filtrado por permisos, toggle móvil con `Sheet`, menú de cuenta) y `TerminalLayout`. Catálogo de componentes en `/design-system` (solo `import.meta.env.DEV`).
+- Reglas de estilo forzadas por ESLint local (`tools/eslint-rules`): `@local/no-inline-style` (error) prohíbe `style={{}}`; `@local/no-hardcoded-color` (warn) prohíbe hex/rgb. Pruebas de reglas en `src/design-rules.test.ts` (una sola hoja CSS, sin estilos inline, sin colores crudos).
+## Navegación y permisos
+- `lib/navigation/menu.ts` define `MENU_ITEMS` con los 24 códigos de permiso reales; `filtrarMenu(permisos)` deriva el menú de los permisos efectivos.
+- `lib/permissions/RequirePermission` es el guard por permiso (`modo: 'all' | 'any'`), redirige a `/login` sin sesión y muestra 403 sin permiso.
 ## Scripts
 `build`: `tsc -b && vite build`. `test`: `vitest run`. `lint`: `eslint .`. `format`: `prettier --write .`.
 ## Decisiones clave
@@ -25,4 +34,4 @@ frontend/src: App, main, components/ui (6), features/auth, lib/{api,auth,format,
 - Token en memoria + respaldo en `sessionStorage` (clave `cafeteria.sesion`); **nunca `localStorage`**. Riesgo XSS documentado.
 - Cliente API a mano; Tailwind+shadcn en versiones soportadas hoy (documentadas); ESLint+Prettier; frontend independiente sin workspaces; PEN `es-PE` ("S/ 12.50"); fechas `America/Lima`; idioma español.
 ## Testing
-MSW 3.0.3, helpers `renderConProveedores` + `iniciarSesionDePrueba`, 32 tests pasando (unit + componentes).
+MSW 3.0.3, helpers `renderConProveedores` + `iniciarSesionDePrueba`, **55 tests pasando** (13 archivos: api, sesión, formatos, permisos, guards, menú por rol, DataTable, ConfirmDialog, reglas de diseño).
