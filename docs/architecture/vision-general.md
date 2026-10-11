@@ -54,7 +54,7 @@ Se eligió un **monolito modular** en lugar de microservicios:
 | Limitación de tráfico | `@nestjs/throttler`.                                           |
 | Lenguaje        | TypeScript con compilación de Nest (`npm run build`).               |
 | Lint            | oxlint (`npm run lint`).                                            |
-| CI              | GitHub Actions (ver `backend/.github/workflows/ci.yml`).            |
+| CI              | GitHub Actions (ver `.github/workflows/ci.yml`).                    |
 
 ## 4. Organización en capas
 

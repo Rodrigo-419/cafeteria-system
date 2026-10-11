@@ -54,9 +54,16 @@ El archivo `backend/.env` define, como mínimo:
 | `SEED_ADMIN_PASSWORD` | Contraseña del administrador (mínimo 12 caracteres).        |
 | `JWT_SECRET`          | Secreto para firmar tokens (mínimo 32 caracteres).          |
 | `JWT_EXPIRES_IN`      | Vigencia del token; el valor por defecto es `8h`.           |
+| `TRUST_PROXY`         | Confianza en `X-Forwarded-For`; desactivado por defecto.    |
 
 > El `.env` del backend **no está versionado** (ver `backend/.gitignore`). Nunca
 > se suben secretos al repositorio.
+
+`TRUST_PROXY` controla si la IP del cliente para el límite de intentos de login
+se toma de la cabecera `X-Forwarded-For`. Por defecto vale `false`: **solo debe
+activarse cuando la aplicación está detrás de un proxy inverso propio** (por
+ejemplo con `TRUST_PROXY=true`, un número de saltos o una lista de subredes como
+`loopback`). Activarlo sin proxy permite falsear la IP y esquivar el límite.
 
 Para generar un secreto seguro, la plantilla sugiere algo como:
 

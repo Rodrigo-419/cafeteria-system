@@ -46,13 +46,14 @@ Documentos destacados:
 | `inventory`  | Implementado | Insumos, stock, entradas, recuentos, movimientos y alertas automáticas. |
 | `sales`      | Implementado | Registro (precios congelados), consulta y anulación del mismo día. |
 | `equipment`  | Implementado | Equipos por sucursal con historial de estado y observaciones. |
-| `employees`  | Esqueleto   | Archivos base sin lógica (pendiente). |
-| `shifts`     | Esqueleto   | Archivos base sin lógica (pendiente). |
-| `attendance` | Esqueleto   | Sin lógica; la tabla `registro_asistencia` ya existe y es inmutable. |
-| `reports`    | Esqueleto   | Archivos base sin lógica (pendiente). |
+| `employees`  | Implementado | Empleados vinculados a un usuario, cargo, cese y PIN de marcación. |
+| `shifts`     | Implementado | Turnos fijos/variables y asignaciones con control de solapamiento. |
+| `attendance` | Implementado | Registro de asistencia (marcas inmutables), correcciones, justificaciones y faltas. |
+| `reports`    | Implementado | Reporte comparativo entre sucursales (ventas, inventario y asistencia). |
 
-Módulos esqueleto: tienen archivos base y permisos ya sembrados, pero **sin rutas
-ni lógica**. Sus reglas de negocio están por definir (ver [Decisiones de diseño](docs/architecture/decisiones-de-diseno.md#11-pendiente-de-implementar)).
+Todos los módulos del backend están implementados. Ver
+[Decisiones de diseño](docs/architecture/decisiones-de-diseno.md) para las reglas
+de negocio y [Referencia de la API](docs/referencia-api.md) para las rutas.
 
 ## Puesta en marcha
 
@@ -72,6 +73,9 @@ servidor de desarrollo) está en [docs/guia-de-inicio.md](docs/guia-de-inicio.md
 
 La estrategia, las cifras actuales y el detalle de las suites están en
 [docs/estrategia-de-pruebas.md](docs/estrategia-de-pruebas.md).
+
+GitHub Actions (`.github/workflows/ci.yml`) ejecuta en cada push/PR a `main` el
+build, el lint, las pruebas unitarias y las e2e contra un servicio PostgreSQL 17.
 
 ### Unitarias
 

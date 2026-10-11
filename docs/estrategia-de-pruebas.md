@@ -64,7 +64,9 @@ alta de usuario cuesta algo de tiempo; es intencional.
 
 > El almacenamiento del throttler se sustituye en las pruebas
 > (`test/utils/crear-app-pruebas.ts`): el guard global se mantiene, pero el
-> almacenamiento nunca bloquea, para no interferir con decenas de logins.
+> almacenamiento nunca bloquea, para no interferir con decenas de logins. La
+> única excepción es `trust-proxy.e2e-spec.ts`, que construye su propia app y
+> conserva el throttler real porque su comportamiento es lo que se prueba.
 
 ## 4. Suites e2e
 
@@ -84,6 +86,7 @@ Cada módulo tiene su suite en `backend/test/`:
 | `shifts`              | `shifts.e2e-spec.ts`       | Turnos fijos/variables, asignaciones, solapamiento y retiro. |
 | `attendance`          | `attendance.e2e-spec.ts`   | Marcación con PIN, doble marcaje, correcciones, cierre administrativo, justificación de faltas, lecturas y terminal. |
 | `reports`             | `reports.e2e-spec.ts`      | Reporte comparativo entre sucursales: contrato, ventas, inventario, asistencia, estado actual, validaciones y autorización. |
+| `trust proxy`         | `trust-proxy.e2e-spec.ts`  | `TRUST_PROXY`: con el valor por defecto `X-Forwarded-For` no evade el límite de login; activado, cada IP declarada tiene su propio límite. Usa el throttler real (sin el override de `crearAppDePruebas`). |
 
 Helpers compartidos en `backend/test/utils/`:
 
@@ -108,8 +111,8 @@ ejecutando los comandos de la sección 2.
 
 | Nivel     | Suites | Casos |
 | --------- | ------ | ----- |
-| Unitarias | 53     | 757   |
-| E2E       | 12     | 396   |
+| Unitarias | 54     | 762   |
+| E2E       | 13     | 399   |
 
 > La tabla no incluye un % de cobertura de código: el repo no define el comando
 > `coverage` como parte del flujo estándar.
@@ -139,10 +142,15 @@ Consideraciones:
 
 ## 7. Integración continua
 
-El flujo de GitHub Actions (`backend/.github/workflows/ci.yml`) valida en cada
-push/PR a `main`: `npm ci`, `prisma generate` (con una URL ficticia), `npm run
-build`, `npm run lint` y `npm test`.
+El flujo de GitHub Actions (`.github/workflows/ci.yml`, en la raíz del
+repositorio) valida en cada push/PR a `main`, dentro de `backend/`: `npm ci`,
+`prisma generate`, `npm run build`, `npm run lint`, `npm test` (unitarias) y
+`npm run test:e2e`.
 
-**El job e2e no está en CI** (limitación conocida): para validar el contrato
-completo hay que ejecutar `npm run test:e2e` en local con la base de pruebas
-disponible.
+El job levanta un **servicio PostgreSQL 17** (misma major que
+`docker-compose.yml`) con una base `cafeteria_test` y un usuario `cafeteria`,
+espera a que el contenedor esté sano (`pg_isready`) y define el entorno con un
+`JWT_SECRET` **ficticio** (nunca el real). Antes de las pruebas e2e se crea
+`backend/.env` (gitignored) con la URL del servicio, porque el harness deriva de
+ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
+`globalSetup` de e2e aplica `prisma migrate deploy` sobre la base de pruebas.
