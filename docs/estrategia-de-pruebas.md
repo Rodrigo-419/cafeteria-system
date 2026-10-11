@@ -201,8 +201,8 @@ npm run test:watch
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 21
-- **Total de tests**: **119 passed**
+- **Archivos de prueba**: 25
+- **Total de tests**: **144 passed**
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/format/money.spec.ts`, `lib/format/dates.spec.ts`,
@@ -213,9 +213,13 @@ Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `design-rules.test.ts`, `theme-contrast.test.ts`, el módulo de ventas
 (`features/sales/NewSalePage.test.tsx`, `features/sales/SalesListPage.test.tsx`,
 `features/sales/AnnulSaleDialog.test.tsx` y `features/sales/SalesFlujo.test.tsx`), el
-panel de control (`features/dashboard/DashboardPage.test.tsx`) y el catálogo de
+panel de control (`features/dashboard/DashboardPage.test.tsx`), el catálogo de
 productos y la carta (`features/products/CatalogoProductos.test.tsx`,
-`features/products/CartaPrecios.test.tsx`).
+`features/products/CartaPrecios.test.tsx`) y el inventario
+(`features/inventory/InsumosPage.test.tsx`,
+`features/inventory/InventarioPage.test.tsx`,
+`features/inventory/AlertasPage.test.tsx` y
+`features/inventory/inventory.api.test.ts`).
 
 Casos de ventas cubiertos: registrar y mostrar la confirmación del servidor,
 doble clic sin segunda petición, carrito vacío deshabilita el botón, oferta
@@ -239,6 +243,19 @@ y de error del listado; el Gerente fija un precio válido, un precio fuera de
 rango devuelve el 400 del servidor, una sucursal fuera de alcance devuelve 404;
 el Admin (sin `productos.precio.editar`) y el Empleado solo consultan la carta,
 sin acciones de edición (y el Empleado no ve el filtro de estado).
+
+Casos de inventario cubiertos (pantallas): crear un insumo (201) y verlo en el
+catálogo, nombre duplicado (409), borrado bloqueado por stock (409), estados
+vacío y de error; en `InventarioPage`, el Admin debe elegir sucursal y luego ve
+KPIs y tabla, registrar una entrada actualiza el stock en pantalla, dar de alta
+un insumo en una sucursal vacía (upsert), el usuario sin permisos de edición no
+ve las acciones y el estado de error; en `AlertasPage`, el listado con el banner
+de "alertas automáticas" y **sin** botón "Resolver", la columna de sucursal solo
+para el Admin, y los estados vacío y de error. `inventory.api.test.ts` verifica
+los contratos directos: 201 de insumo, 409 duplicado, 400 de presentación
+inválida, 409 de borrado con stock, 400 de entrada con cantidad 0, 409 de
+entrada a insumo descontinuado, 404 de entrada a insumo no dado de alta, 404 de
+sucursal fuera de alcance (Gerente) y 201 de entrada válida.
 
 ### Detalles relevantes
 
