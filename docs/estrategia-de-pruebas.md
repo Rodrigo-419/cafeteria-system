@@ -57,8 +57,8 @@ Base de pruebas: crea `cafeteria_test` (o el nombre derivado que termine en
 docker exec cafeteria-db psql -U cafeteria -d cafeteria_db -c 'CREATE DATABASE cafeteria_test;'
 ```
 
-Constantes del entorno (`test/utils/constantes-pruebas.ts`): correo y contraseña
-del administrador de pruebas, contraseñas válida/débil y el secreto JWT de
+Constantes del entorno (`test/utils/constantes-pruebas.ts`): nombre de usuario y
+contraseña del administrador de pruebas, contraseñas válida/débil y el secreto JWT de
 pruebas. El hash bcrypt usa 12 rondas reales (como producción), por lo que cada
 alta de usuario cuesta algo de tiempo; es intencional.
 
@@ -166,9 +166,14 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
 - **Unitarias y componentes**: utilidades (`money`, `dates`, `permissions`,
   `session`), componente `<Can>`, `LoginPage`, `ProtectedRoute`,
   `RequirePermission` (guard por permiso), el menú por rol, `DataTable`,
-  `ConfirmDialog` y las reglas del sistema de diseño.
-- **Integración ligera con MSW**: se mockea `POST /api/auth/login` y
-  `GET /api/auth/me` para cubrir autenticación y expiración de sesión.
+  `ConfirmDialog`, las reglas del sistema de diseño y el módulo de ventas
+  (`NewSalePage`, `SalesListPage`, `AnnulSaleDialog` y un flujo de rutas y
+  permisos sobre `App`).
+- **Integración ligera con MSW**: se mockean `POST /api/auth/login`,
+  `GET /api/auth/me`, la carta (`GET /api/branches/:id/products`), las
+  sucursales (`GET /api/branches`) y las ventas (`GET/POST /api/sales`,
+  `GET /api/sales/:id`, `POST /api/sales/:id/anular`), incluidos los escenarios
+  de error 403/409.
 
 ### Herramientas
 
@@ -189,16 +194,26 @@ npm run test:watch
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 13
-- **Total de tests**: **55 passed**
+- **Archivos de prueba**: 18
+- **Total de tests**: **105 passed**
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/format/money.spec.ts`, `lib/format/dates.spec.ts`,
 `lib/permissions/permissions.spec.ts`, `lib/permissions/Can.test.tsx`,
 `lib/permissions/RequirePermission.test.tsx`, `lib/navigation/menu.spec.ts`,
 `features/auth/LoginPage.test.tsx`, `routes/ProtectedRoute.test.tsx`,
-`components/shared/DataTable.test.tsx`, `components/shared/ConfirmDialog.test.tsx`
-y `design-rules.test.ts`.
+`components/shared/DataTable.test.tsx`, `components/shared/ConfirmDialog.test.tsx`,
+`design-rules.test.ts`, `theme-contrast.test.ts` y el módulo de ventas:
+`features/sales/NewSalePage.test.tsx`, `features/sales/SalesListPage.test.tsx`,
+`features/sales/AnnulSaleDialog.test.tsx` y `features/sales/SalesFlujo.test.tsx`.
+
+Casos de ventas cubiertos: registrar y mostrar la confirmación del servidor,
+doble clic sin segunda petición, carrito vacío deshabilita el botón, oferta
+inactiva (409), falta de `productos.ver` sin cargar la carta, Empleado sin
+`ventas.ver` que no llama al listado, Admin sin acciones de registrar/anular,
+detalle de venta completada y anulada, anular con motivo vacío, 403 al anular
+venta ajena, 409 al anular de otro día, filtro de sucursal solo para Admin y
+filtro de estado que viaja como parámetro a la API.
 
 ### Detalles relevantes
 
@@ -208,7 +223,10 @@ y `design-rules.test.ts`.
   `GET /auth/me` a devolver ese usuario (evita efectos no deterministas del
   refresco al arranque).
 - `setup.ts`: `server.listen({ onUnhandledFrame: 'error' })` y limpieza de
-  handlers/storage/URL tras cada test.
+  handlers/storage/URL tras cada test. Incluye polyfills de jsdom para
+  `window.matchMedia` (lo exige `sonner`), `hasPointerCapture`/
+  `setPointerCapture`/`releasePointerCapture` y `scrollIntoView` (los exige
+  Radix Select al abrir y desplazar el menú).
 - El **menú por rol** se prueba con los permisos reales de Admin/Gerente/Empleado
   (tomados del seed del backend) y con un caso de permiso revocado.
 - `design-rules.test.ts` usa `import.meta.glob` para verificar: una sola hoja CSS

@@ -12,7 +12,7 @@ El frontend es independiente (sin workspaces), basado en Vite + React + TypeScri
 - TypeScript ~6.0.2
 Nota: plantilla Vite 9.2.1 traía oxlint; se reemplazó por ESLint+Prettier (desviación documentada).
 ## Estructura
-frontend/src: App, main; components/{ui,shared,layout,design}; features/{auth,system}; lib/{api,auth,format,permissions,navigation}; routes; test; types; tools/eslint-rules (reglas locales del sistema de diseño).
+frontend/src: App, main; components/{ui,shared,layout,design}; features/{auth,sales,system}; lib/{api,auth,format,permissions,navigation}; routes; test; types; tools/eslint-rules (reglas locales del sistema de diseño).
 ## Configuración
 - Proxy: `/api` → `http://localhost:3000`. Base URL: `import.meta.env.VITE_API_BASE_URL ?? '/api'`. En tests: `http://localhost/api`.
 - `.env.example`: `VITE_API_BASE_URL=/api`. Sin secretos.
@@ -30,13 +30,22 @@ frontend/src: App, main; components/{ui,shared,layout,design}; features/{auth,sy
 ## Navegación y permisos
 - `lib/navigation/menu.ts` define `MENU_ITEMS` con los 24 códigos de permiso reales; `filtrarMenu(permisos)` deriva el menú de los permisos efectivos.
 - `lib/permissions/RequirePermission` es el guard por permiso (`modo: 'all' | 'any'`), redirige a `/login` sin sesión y muestra 403 sin permiso.
+## Módulo de ventas (E3)
+- **Rutas** (`App.tsx`): `/sales` (índice) → `SalesHome`, `/sales/nueva` → `NewSalePage` (`ventas.registrar`), `/sales/:id` → `SaleDetailPage` (`ventas.ver`). `SalesHome` muestra el listado con `ventas.ver`; si solo hay `ventas.registrar` muestra directamente la nueva venta (un Empleado sin `ventas.ver` nunca monta el listado ni llama a `GET /sales`).
+- **Capa API** (`lib/api/sales.ts`, `lib/api/branches.ts`): `registrarVenta`, `listarVentas`, `obtenerVenta`, `anularVenta`; `listarCarta(sucursalId)` (`GET /branches/:id/products`) y `listarSucursales()`. Los precios no se envían al registrar: el servidor los congela.
+- **TanStack Query** (`features/sales/queries.ts`): claves `['ventas', ...]`; cada consulta se habilita con el permiso real de su ruta (`ventas.ver`, `productos.ver`, `sucursales.ver`). Registrar/anular invalidan el listado y actualizan el detalle en caché.
+- **Pantallas** (`features/sales`): `NewSalePage` (carta por categoría con búsqueda, carrito editable 1–9999 y máx. 100 líneas, total en céntimos solo referencial, método `efectivo`/`tarjeta`, botón deshabilitado si el carrito es inválido o hay petición en curso, y confirmación con los datos del POST sin recargar el listado); `SalesListPage` (DataTable con filtros estado/método/fecha y sucursal solo para Admin, `SaleStatusBadge` y `MoneyText`); `SaleDetailPage` (líneas con precio congelado y subtotales, quién registró y datos de la anulación); `AnnulSaleDialog` (motivo obligatorio 1–200 con contador; muestra 403/409).
+- **Errores** (`features/sales/mensajes.ts`): traduce 400/403/404/409 a mensajes de mostrador; 409 de anulación de otro día → "Solo se pueden anular ventas del mismo día".
+- **Componentes ampliados** (reutilizables): `ConfirmDialog` admite `children` y `confirmDisabled`, y **no cierra el diálogo al confirmar** (el consumidor decide cuándo cerrarlo, para poder mostrar carga y errores); `DataTable` admite `getRowId`.
+- **Reglas del backend respetadas:** sucursal del usuario (nunca seleccionable), solo ofertas activas, sin repetir oferta, Admin lista todas las sucursales pero no registra ni anula.
 ## Scripts
 `build`: `tsc -b && vite build`. `test`: `vitest run`. `lint`: `eslint .`. `format`: `prettier --write .`.
 ## Decisiones clave
-- Zod solo para formularios y parseo crítico (login, /auth/me). Resto: tipos TS que toleran campos extra.
+- Zod solo para formularios y parseo crítico (login con `nombreUsuario`, /auth/me). Resto: tipos TS que toleran campos extra.
+- El **identificador de acceso es el nombre de usuario** (`nombreUsuario`), no el correo: el login pide "Usuario" (`autoComplete="username"`) y el `user` de la sesión expone `nombreUsuario`. Una sesión en `sessionStorage` con la **forma antigua** (campo `email`) se descarta al arrancar y devuelve al login, sin romper la aplicación.
 - Botón de envío deshabilitado mientras petición crítica en curso (sin idempotencia en backend; limitación documentada).
 - Menú/guards derivados de `permisosEfectivos`, nunca del rol.
 - Token en memoria + respaldo en `sessionStorage` (clave `cafeteria.sesion`); **nunca `localStorage`**. Riesgo XSS documentado.
 - Cliente API a mano; Tailwind+shadcn en versiones soportadas hoy (documentadas); ESLint+Prettier; frontend independiente sin workspaces; PEN `es-PE` ("S/ 12.50"); fechas `America/Lima`; idioma español.
 ## Testing
-MSW 3.0.3, helpers `renderConProveedores` + `iniciarSesionDePrueba`, **86 tests pasando** (14 archivos: api, sesión, formatos, permisos, guards, menú por rol, DataTable, ConfirmDialog, reglas de diseño, contraste AA del tema). `src/test/setup.ts` incluye un polyfill de `window.matchMedia` para jsdom (requerido por `sonner`).
+MSW 3.0.3, helpers `renderConProveedores` + `iniciarSesionDePrueba`, **105 tests pasando** (18 archivos: api, sesión, formatos, permisos, guards, menú por rol, DataTable, ConfirmDialog, reglas de diseño, contraste AA del tema y el módulo de ventas: `NewSalePage`, `SalesListPage`, `AnnulSaleDialog` y un flujo de rutas/permisos). `src/test/setup.ts` incluye polyfills de jsdom para `window.matchMedia` (requerido por `sonner`), `hasPointerCapture`/`setPointerCapture`/`releasePointerCapture` y `scrollIntoView` (requeridos por Radix Select).

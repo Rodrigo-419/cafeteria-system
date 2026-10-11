@@ -32,6 +32,10 @@ bajo el prefijo global `/api`.
 `login` devuelve `{ accessToken, tokenType, expiresIn, user }`; `me` devuelve el
 usuario autenticado con sus permisos efectivos.
 
+El cuerpo de `login` es `{ nombreUsuario, password }`. El `user` devuelto incluye
+`nombreUsuario` y **no** un campo `email`. Los intentos con credenciales inválidas
+responden `401` con el **mismo mensaje**, exista o no el usuario.
+
 ### Usuarios (`/api/users`)
 
 | Método | Ruta                                    | Permiso | Códigos |

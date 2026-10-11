@@ -50,7 +50,7 @@ El archivo `backend/.env` define, como mínimo:
 | Variable              | Descripción                                                |
 | --------------------- | ----------------------------------------------------------- |
 | `DATABASE_URL`        | Cadena de conexión a PostgreSQL (defecto: localhost:5432).  |
-| `SEED_ADMIN_EMAIL`    | Correo del usuario administrador inicial.                   |
+| `SEED_ADMIN_USUARIO`  | Nombre de usuario del administrador inicial.                |
 | `SEED_ADMIN_PASSWORD` | Contraseña del administrador (mínimo 12 caracteres).        |
 | `JWT_SECRET`          | Secreto para firmar tokens (mínimo 32 caracteres).          |
 | `JWT_EXPIRES_IN`      | Vigencia del token; el valor por defecto es `8h`.           |
@@ -108,7 +108,7 @@ duplicar datos.
 npm run db:seed
 ```
 
-El administrador se crea con el correo y la contraseña de `SEED_ADMIN_EMAIL` y
+El administrador se crea con el nombre de usuario y la contraseña de `SEED_ADMIN_USUARIO` y
 `SEED_ADMIN_PASSWORD`. El seed aborta si no están definidas **sin imprimir sus
 valores**.
 
@@ -131,7 +131,7 @@ Por defecto escucha en `http://localhost:3000`.
 # Inicia sesión con el administrador y copia el token
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"<admin>","password":"<clave>"}'
+  -d '{"nombreUsuario":"<admin>","password":"<clave>"}'
 
 # Consulta el perfil autenticado
 curl http://localhost:3000/api/auth/me \

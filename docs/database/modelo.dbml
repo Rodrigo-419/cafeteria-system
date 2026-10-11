@@ -37,7 +37,7 @@ Table rol_permiso {
 Table usuario {
   id uuid [pk]
   nombre varchar
-  email varchar [unique]
+  nombre_usuario varchar [unique]
   password_hash varchar
   rol_id uuid
   sucursal_id uuid [note: 'NULLABLE — el Admin es central, no pertenece a una sucursal']

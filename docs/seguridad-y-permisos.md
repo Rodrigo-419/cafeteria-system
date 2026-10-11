@@ -12,10 +12,10 @@ permisos individuales y qué alcance tiene cada módulo.
 - **Login**: `POST /api/auth/login` es la única ruta pública. Está limitada a
   **5 intentos por minuto por IP** (`@Throttle` a nivel de controlador). El límite
   global de la API es de 100 peticiones/minuto (`ThrottlerModule` en `AppModule`).
-- **Misma respuesta para credenciales incorrectas**: cuando el correo no existe se
+- **Misma respuesta para credenciales incorrectas**: cuando el usuario no existe se
   compara la contraseña contra un *hash falso* fijo para no revelar, por el tiempo
-  de respuesta, si el correo está registrado. Correo inexistente y contraseña
-  errónea responden el mismo mensaje y `401`.
+  de respuesta, si el usuario está registrado. Usuario inexistente y contraseña
+  errónea responden el mismo mensaje (`Usuario o contraseña incorrectos`) y `401`.
 - **Cuenta bloqueada**: un usuario con `estado = bloqueado` no inicia sesión
   (responde `403 Cuenta bloqueada`). Si además la contraseña es incorrecta, el
   login responde `401` para no revelar el estado de la cuenta.

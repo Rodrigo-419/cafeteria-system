@@ -73,7 +73,7 @@ erDiagram
     USUARIO {
         uuid id PK
         string nombre
-        string email UK
+        string nombreUsuario UK
         string passwordHash
         uuid rolId FK
         uuid sucursalId FK "NULLABLE: Admin central"
