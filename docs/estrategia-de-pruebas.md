@@ -169,7 +169,9 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   `ConfirmDialog`, las reglas del sistema de diseño, el módulo de ventas
   (`NewSalePage`, `SalesListPage`, `AnnulSaleDialog` y un flujo de rutas y
   permisos sobre `App`), el panel de control (`DashboardPage`) y el catálogo de
-  productos y precios (`ProductsPage` y la carta por sucursal).
+  productos y precios (`ProductsPage` y la carta por sucursal), y el inventario
+  (`InsumosPage`, `InventarioPage`, `AlertasPage`, los recuentos
+  `RecuentoNuevoPage`/`RecuentosPage` y los movimientos `MovimientosPage`).
 - **Integración ligera con MSW**: se mockean `POST /api/auth/login`,
   `GET /api/auth/me`, la carta (`GET /api/branches/:id/products`), las
   sucursales (`GET /api/branches`), las ventas (`GET/POST /api/sales`,
@@ -177,7 +179,11 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   (`GET/POST/PATCH/DELETE /api/products`), las categorías
   (`/api/product-categories`), las variantes (`/api/variants`), el upsert de
   precios (`PUT /api/branches/:sucursalId/products/:productoId/variants/:varianteId`),
-  las alertas (`GET /api/inventario/alertas`), la asistencia
+  las alertas (`GET /api/inventario/alertas`), el stock y las entradas
+  (`GET .../stock`, `PUT .../insumos/:insumoId`, `POST .../entradas`), los
+  recuentos (`GET /api/inventario/recuentos`, `GET /api/inventario/recuentos/:id`,
+  `POST /api/inventario/sucursales/:sucursalId/recuentos`), los movimientos
+  (`GET /api/inventario/sucursales/:sucursalId/movimientos`), la asistencia
   (`GET /api/attendance/records`), los equipos (`GET /api/equipment`) y el
   reporte comparativo (`GET /api/reports/comparativo`), incluidos los escenarios
   de error 400/403/404/409.
@@ -201,8 +207,8 @@ npm run test:watch
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 25
-- **Total de tests**: **144 passed**
+- **Archivos de prueba**: 30
+- **Total de tests**: **168 passed**
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/format/money.spec.ts`, `lib/format/dates.spec.ts`,
@@ -215,11 +221,16 @@ Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `features/sales/AnnulSaleDialog.test.tsx` y `features/sales/SalesFlujo.test.tsx`), el
 panel de control (`features/dashboard/DashboardPage.test.tsx`), el catálogo de
 productos y la carta (`features/products/CatalogoProductos.test.tsx`,
-`features/products/CartaPrecios.test.tsx`) y el inventario
+`features/products/CartaPrecios.test.tsx`), el inventario
 (`features/inventory/InsumosPage.test.tsx`,
 `features/inventory/InventarioPage.test.tsx`,
-`features/inventory/AlertasPage.test.tsx` y
-`features/inventory/inventory.api.test.ts`).
+`features/inventory/AlertasPage.test.tsx`,
+`features/inventory/inventory.api.test.ts`,
+`features/inventory/RecuentoNuevoPage.test.tsx`,
+`features/inventory/RecuentosPage.test.tsx`,
+`features/inventory/MovimientosPage.test.tsx`), la regresión del inventario
+(`features/inventory/regresion.test.tsx`) y el landing autenticado
+(`features/auth/landing.test.tsx`).
 
 Casos de ventas cubiertos: registrar y mostrar la confirmación del servidor,
 doble clic sin segunda petición, carrito vacío deshabilita el botón, oferta
@@ -257,6 +268,17 @@ inválida, 409 de borrado con stock, 400 de entrada con cantidad 0, 409 de
 entrada a insumo descontinuado, 404 de entrada a insumo no dado de alta, 404 de
 sucursal fuera de alcance (Gerente) y 201 de entrada válida.
 
+Casos de recuentos y movimientos cubiertos: en `RecuentoNuevoPage` solo se envían
+las líneas con valor contado (el resumen del `ConfirmDialog` no dispara petición
+hasta confirmar) y el conteo `0` se acepta mostrando una diferencia negativa; un
+físico negativo bloquea "Revisar recuento" con el mensaje de validación y un
+recuento fuera de alcance devuelve 404. En `RecuentosPage`, el detalle muestra
+usuario, sucursal y la diferencia ("-1" / "Disminución"), el Admin ve la columna
+Sucursal y un usuario sin `inventario.recuento` no ve acciones (estado vacío). En
+`MovimientosPage`, la lista muestra la variación firmada (+5 / -1) y el tipo
+(Entrada/Ajuste), el filtro por tipo viaja a la API, el Admin debe elegir sucursal
+y un error del servidor (500) muestra el estado de error.
+
 ### Detalles relevantes
 
 - `renderConProveedores` envuelve con `QueryClientProvider`, `MemoryRouter` y
@@ -274,6 +296,12 @@ sucursal fuera de alcance (Gerente) y 201 de entrada válida.
   `src/test/handlers.ts`); `reiniciarCatalogoPrueba()` lo restaura tras cada test
   y los handlers replican las reglas del backend (unicidad 409, borrado con
   dependencias 409, precio fuera de rango 400).
+- El **inventario** mockeado también es estado mutable (stock, movimientos y
+  recuentos en `src/test/handlers.ts`); `reiniciarInventarioPrueba()` lo restaura
+  tras cada test y los handlers replican las reglas del backend (validación de
+  cantidades 400, sucursal/insumo fuera de alcance 404, solicitud sin líneas 400,
+  y el alta de un recuento fija el stock y genera un ajuste solo si hay
+  diferencia).
 - El **menú por rol** se prueba con los permisos reales de Admin/Gerente/Empleado
   (tomados del seed del backend) y con un caso de permiso revocado.
 - El **panel de control** se prueba sobre `DashboardPage` con los permisos
