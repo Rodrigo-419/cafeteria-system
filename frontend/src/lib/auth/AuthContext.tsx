@@ -66,6 +66,17 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
     tokenRef.current = sesion?.accessToken ?? null
   }, [sesion])
 
+  // Bandera de montaje: evita actualizar el estado si el proveedor se desmonta
+  // mientras una peticion asincrona estaba en vuelo (por ejemplo, al terminar
+  // una prueba). En StrictMode el montaje vuelve a ponerla a `true`.
+  const montadoRef = useRef(true)
+  useEffect(() => {
+    montadoRef.current = true
+    return () => {
+      montadoRef.current = false
+    }
+  }, [])
+
   // El cliente HTTP lee el token vigente a traves de este proveedor.
   useEffect(() => configurarToken(() => tokenRef.current), [])
 
@@ -100,8 +111,18 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
     if (!inicial.sesion) {
       return
     }
-    obtenerPerfil()
+    // Al desmontar se aborta la peticion y se ignora cualquier respuesta
+    // tardia: actualizar el estado de un componente ya desmontado (o de un
+    // entorno de prueba ya destruido) provoca errores como
+    // "window is not defined". La bandera se repone en la limpieza para que
+    // StrictMode (montaje doble) vuelva a relanzar la peticion al remontar.
+    const controlador = new AbortController()
+    let cancelado = false
+    obtenerPerfil(controlador.signal)
       .then((usuario) => {
+        if (cancelado) {
+          return
+        }
         setSesion((actual) => {
           if (!actual) {
             return actual
@@ -115,12 +136,25 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
       .catch(() => {
         // Nada que hacer: si fue un 401, el manejador ya limpio la sesion.
       })
-      .finally(() => setCargando(false))
+      .finally(() => {
+        if (!cancelado) {
+          setCargando(false)
+        }
+      })
+    return () => {
+      cancelado = true
+      controlador.abort()
+      refreshHecho.current = false
+    }
   }, [inicial.sesion])
 
   const iniciarSesion = useCallback(
     async (nombreUsuario: string, password: string) => {
       const respuesta = await apiIniciarSesion(nombreUsuario, password)
+      // Si el proveedor se desmonto durante la peticion, no se actualiza estado.
+      if (!montadoRef.current) {
+        return
+      }
       const nueva = crearSesion(
         respuesta.accessToken,
         respuesta.user,

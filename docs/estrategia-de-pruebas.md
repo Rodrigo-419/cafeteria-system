@@ -213,11 +213,12 @@ npm run test:watch
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 34
-- **Total de tests**: **194 passed**
+- **Archivos de prueba**: 35
+- **Total de tests**: **196 passed**
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
-`lib/format/money.spec.ts`, `lib/format/dates.spec.ts`,
+`lib/auth/AuthContext.test.tsx`, `lib/format/money.spec.ts`,
+`lib/format/dates.spec.ts`,
 `lib/permissions/permissions.spec.ts`, `lib/permissions/Can.test.tsx`,
 `lib/permissions/RequirePermission.test.tsx`, `lib/navigation/menu.spec.ts`,
 `features/auth/LoginPage.test.tsx`, `features/auth/cambio-de-cuenta.test.tsx`,
@@ -241,6 +242,32 @@ productos y la carta (`features/products/CatalogoProductos.test.tsx`,
 `features/equipment/EquipoDetallePage.test.tsx`,
 `features/equipment/equipment.api.test.ts`) y el landing autenticado
 (`features/auth/landing.test.tsx`).
+
+### Nada de `setState` tras desmontar (regla)
+
+Ningún efecto debe actualizar estado después de que el componente se haya
+desmontado. Los efectos que dependen de una **petición asíncrona** (por ejemplo la
+validación de la sesión guardada con `GET /auth/me` en
+`lib/auth/AuthContext.tsx`) **deben cancelarse en la limpieza del efecto**:
+`AbortController` sobre la petición y una **bandera de cancelación** que ignore
+respuestas tardías. `iniciarSesion` también comprueba una bandera de montaje antes
+de tocar el estado.
+
+**Causa exacta** (corregida): la promesa de `GET /auth/me` no se cancelaba al
+desmontar y su `.then`/`.finally` hacían `setSesion`/`setCargando` después del
+desmontaje. Al terminar el archivo de prueba, Vitest destruía el entorno jsdom
+mientras el worker seguía vivo (pool de workers reutilizados); la respuesta tardía
+hacía que React leyera `window` y lanzara `ReferenceError: window is not defined`
+(`resolveUpdatePriority` → `dispatchSetState` → `AuthContext.tsx`), una
+*Unhandled Rejection* que provocaba `exit code 1` en el job de frontend aunque los
+tests aparecieran en verde. Era una carrera dependiente de tiempos (se reproducía
+con `--pool=threads`, no siempre con el pool por defecto). Regresión cubierta por
+`lib/auth/AuthContext.test.tsx`: monta el proveedor con sesión guardada, captura el
+`AbortSignal` de la petición, desmonta antes de que responda y comprueba que el
+signal queda abortado y que una respuesta tardía no rompe nada. Además, cada prueba
+espera a que se asiente la carga inicial de la sesión (`findBy`/`waitFor`) antes de
+terminar, y `test/setup.ts` ejecuta `server.resetHandlers()` en `afterEach` y
+`server.close()` en `afterAll`.
 
 Casos de ventas cubiertos: registrar y mostrar la confirmación del servidor,
 doble clic sin segunda petición, carrito vacío deshabilita el botón, oferta

@@ -183,12 +183,16 @@ describe('Gestión de equipos', () => {
     expect(await screen.findByText('Error al cargar datos')).toBeInTheDocument()
   })
 
-  it('muestra el estado de carga mientras llega el listado', () => {
+  it('muestra el estado de carga mientras llega el listado', async () => {
     server.use(http.get(`${BASE_API}/equipment`, () => new Promise(() => {})))
     renderComoAdmin()
 
-    expect(
-      document.querySelectorAll('[data-slot="skeleton"]').length,
-    ).toBeGreaterThan(0)
+    // `waitFor` deja que se asiente la carga inicial de la sesion (GET /auth/me)
+    // antes de cerrar la prueba, para no dejar promesas pendientes.
+    await waitFor(() =>
+      expect(
+        document.querySelectorAll('[data-slot="skeleton"]').length,
+      ).toBeGreaterThan(0),
+    )
   })
 })

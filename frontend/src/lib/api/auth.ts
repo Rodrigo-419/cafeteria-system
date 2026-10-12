@@ -15,6 +15,6 @@ export function iniciarSesion(
 }
 
 /** `GET /api/auth/me`: refresca los permisos efectivos del token vigente. */
-export function obtenerPerfil(): Promise<UsuarioApi> {
-  return peticionApi<UsuarioApi>('/auth/me')
+export function obtenerPerfil(signal?: AbortSignal): Promise<UsuarioApi> {
+  return peticionApi<UsuarioApi>('/auth/me', { signal })
 }
