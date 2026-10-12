@@ -6,25 +6,28 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { SkipThrottle } from '@nestjs/throttler';
 import { LoginDto } from './dto/login.dto';
 import { LoginUseCase } from '../application/use-cases/login.use-case';
 import { Public } from '../../../common/decorators/public.decorator';
 import type { UsuarioAutenticado } from '../infrastructure/jwt/jwt.strategy';
 import { User } from '../../../common/decorators/user.decorator';
+import { LoginThrottleInterceptor } from './interceptors/login-throttle.interceptor';
 
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
 @ApiTags('auth')
 export class AuthController {
   constructor(private readonly loginUseCase: LoginUseCase) {}
 
   @Post('login')
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 intentos por minuto
+  // El login no se cuenta en el throttler generico (que cuenta todas las
+  // peticiones); su control propio solo penaliza intentos FALLIDOS.
+  @SkipThrottle()
+  @UseInterceptors(LoginThrottleInterceptor)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Inicia sesion y devuelve un token de acceso JWT' })
   login(@Body() loginDto: LoginDto) {

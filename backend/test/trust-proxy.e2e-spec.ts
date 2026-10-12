@@ -1,13 +1,14 @@
 // Pruebas end-to-end de la configuracion `trust proxy`.
 //
 // Comprueban la consecuencia real de `TRUST_PROXY`: si el limite de intentos
-// del login identifica al cliente por la IP del socket (por defecto) o por
-// `X-Forwarded-For` (cuando se confia en el proxy).
+// fallidos del login identifica al cliente por la IP del socket (por defecto) o
+// por `X-Forwarded-For` (cuando se confia en el proxy).
 //
-// A diferencia del resto de suites, aqui NO se usa `crearAppDePruebas`: esa
-// funcion sustituye el almacenamiento del throttler por uno que nunca bloquea,
-// y justamente se necesita el throttler real. Por eso cada app se construye a
-// mano, sin el override, pasando el valor de `TRUST_PROXY` a `configureApp`.
+// A diferencia del resto de suites, aqui NO se usa `crearAppDePruebas` en su
+// forma neutra: esa funcion sustituye el control de intentos de login por uno
+// que nunca bloquea, y justamente se necesita el real. Por eso cada app se
+// construye a mano, sin el override, pasando el valor de `TRUST_PROXY` a
+// `configureApp`.
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -19,11 +20,12 @@ const RUTA_LOGIN = '/api/auth/login';
 const USUARIO_INEXISTENTE = 'nadie';
 
 /**
- * Levanta la app real conservando el throttler (sin el override de las demas
- * suites) y con el valor de `TRUST_PROXY` indicado. El entorno (base y secreto
- * JWT) ya lo fijo `test/entorno-pruebas.ts` via `setupFiles`.
+ * Levanta la app real conservando el control de intentos de login (sin el
+ * override de las demas suites) y con el valor de `TRUST_PROXY` indicado. El
+ * entorno (base y secreto JWT) ya lo fijo `test/entorno-pruebas.ts` via
+ * `setupFiles`.
  */
-async function crearAppConThrottlerReal(
+async function crearAppConLimiteLoginReal(
   trustProxy: string,
 ): Promise<INestApplication> {
   const moduleFixture = await Test.createTestingModule({
@@ -68,7 +70,7 @@ describe('trust proxy (e2e)', () => {
     let app: INestApplication;
 
     beforeAll(async () => {
-      app = await crearAppConThrottlerReal('false');
+      app = await crearAppConLimiteLoginReal('false');
     });
 
     afterAll(async () => {
@@ -95,7 +97,7 @@ describe('trust proxy (e2e)', () => {
     let app: INestApplication;
 
     beforeAll(async () => {
-      app = await crearAppConThrottlerReal('true');
+      app = await crearAppConLimiteLoginReal('true');
     });
 
     afterAll(async () => {

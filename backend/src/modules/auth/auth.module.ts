@@ -4,6 +4,11 @@ import { JwtModule, JwtModuleOptions, JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './presentation/auth.controller';
 import { LoginUseCase } from './application/use-cases/login.use-case';
+import {
+  LoginThrottleService,
+  RELOJ_LOGIN,
+} from './application/login-throttle.service';
+import { LoginThrottleInterceptor } from './presentation/interceptors/login-throttle.interceptor';
 import { AuthRepository } from './infrastructure/auth.repository';
 import { JwtStrategy } from './infrastructure/jwt/jwt.strategy';
 
@@ -24,7 +29,14 @@ import { JwtStrategy } from './infrastructure/jwt/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [LoginUseCase, AuthRepository, JwtStrategy],
+  providers: [
+    LoginUseCase,
+    AuthRepository,
+    JwtStrategy,
+    LoginThrottleService,
+    LoginThrottleInterceptor,
+    { provide: RELOJ_LOGIN, useValue: () => Date.now() },
+  ],
   exports: [AuthRepository, JwtStrategy, JwtModule],
 })
 export class AuthModule {}

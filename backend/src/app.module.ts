@@ -32,7 +32,11 @@ import { PermissionsGuard } from './modules/auth/presentation/guards/permissions
       {
         name: 'default',
         ttl: 60000,
-        limit: 100, // limite global generoso
+        // Limite general por IP. Se sube de 100 a 300 porque varias personas de
+        // una misma sucursal comparten la IP saliente y el panel dispara varias
+        // peticiones por carga. El login queda FUERA de este contador (tiene su
+        // propio control que solo penaliza intentos fallidos).
+        limit: 300,
       },
     ]),
     PrismaModule,

@@ -4,10 +4,13 @@
 // `main.ts`, para que cada suite no tenga que recordarla:
 //
 //   1. El limite de intentos del throttler se sustituye por un almacenamiento
-//      que nunca bloquea. Las pruebas hacen decenas de POST /auth/login y sin
-//      esto la de 5 intentos/minuto del propio login las haria fallar entre
-//      suites por motivos que no tienen que ver con lo que se prueba.
-//   2. Se usa `configureApp`, el mismo que usa `main.ts`, para que el prefijo
+//      que nunca bloquea. Las pruebas hacen decenas de peticiones y sin esto el
+//      limite general por IP las haria fallar entre suites por motivos que no
+//      tienen que ver con lo que se prueba.
+//   2. El control propio de intentos de login se sustituye, por defecto, por uno
+//      que nunca bloquea: solo la suite que lo prueba lo usa de verdad (pasando
+//      `neutroLoginThrottle: false` y un reloj simulado).
+//   3. Se usa `configureApp`, el mismo que usa `main.ts`, para que el prefijo
 //      global y el ValidationPipe sean los reales en vez de una copia.
 //
 // El entorno de pruebas (base de datos y secreto JWT) lo fija
@@ -19,6 +22,10 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getStorageToken, type ThrottlerStorage } from '@nestjs/throttler';
 import { AppModule } from '../../src/app.module';
 import { configureApp } from '../../src/app.setup';
+import {
+  LoginThrottleService,
+  RELOJ_LOGIN,
+} from '../../src/modules/auth/application/login-throttle.service';
 import { exigirBaseDePruebas, urlBaseDePruebas } from './url-base-pruebas';
 
 /**
@@ -28,7 +35,7 @@ import { exigirBaseDePruebas, urlBaseDePruebas } from './url-base-pruebas';
  * `APP_GUARD`, que en `app.module.ts` esta registrado tres veces (jwt,
  * permisos y throttler) y no se puede sustituir de forma no ambigua.
  */
-class AlmacenamientoSinLimites implements ThrottlerStorage {
+export class AlmacenamientoSinLimites implements ThrottlerStorage {
   increment(): Promise<{
     totalHits: number;
     timeToExpire: number;
@@ -42,6 +49,33 @@ class AlmacenamientoSinLimites implements ThrottlerStorage {
       timeToBlockExpire: 0,
     });
   }
+}
+
+/** Control de intentos de login que nunca bloquea, para las suites genericas. */
+class LoginThrottleSinLimites {
+  verificar(): null {
+    return null;
+  }
+
+  registrarFallo(): void {
+    // Sin efecto.
+  }
+
+  registrarExito(): void {
+    // Sin efecto.
+  }
+}
+
+export interface OpcionesAppDePruebas {
+  /** Reloj simulado que usara el control de intentos de login. */
+  reloj?: () => number;
+  /**
+   * Si es `true` (por defecto) el control de intentos de login no bloquea
+   * nunca. La suite que prueba el limite pasa `false` para usar el real.
+   */
+  neutroLoginThrottle?: boolean;
+  /** Valor crudo de `TRUST_PROXY` que se aplicara a la app de pruebas. */
+  trustProxy?: string;
 }
 
 /**
@@ -58,18 +92,27 @@ class AlmacenamientoSinLimites implements ThrottlerStorage {
  * peticion (eso podia fallar con ECONNREFUSED en los tests de concurrencia).
  * Cada suite es responsable de cerrar la app en su `afterAll`.
  */
-export async function crearAppDePruebas(): Promise<INestApplication> {
+export async function crearAppDePruebas(
+  opciones: OpcionesAppDePruebas = {},
+): Promise<INestApplication> {
   exigirBaseDePruebas(urlBaseDePruebas());
 
-  const moduleFixture: TestingModule = await Test.createTestingModule({
-    imports: [AppModule],
-  })
+  let builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(getStorageToken())
     .useClass(AlmacenamientoSinLimites)
-    .compile();
+    .overrideProvider(RELOJ_LOGIN)
+    .useValue(opciones.reloj ?? (() => Date.now()));
+
+  if (opciones.neutroLoginThrottle ?? true) {
+    builder = builder
+      .overrideProvider(LoginThrottleService)
+      .useValue(new LoginThrottleSinLimites());
+  }
+
+  const moduleFixture: TestingModule = await builder.compile();
 
   const app = moduleFixture.createNestApplication();
-  configureApp(app);
+  configureApp(app, { trustProxy: opciones.trustProxy });
 
   await app.init();
   await app.listen(0);
