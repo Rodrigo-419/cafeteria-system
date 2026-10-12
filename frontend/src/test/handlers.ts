@@ -6,9 +6,11 @@ import type {
   EquipoApi,
   EstadoStockInsumo,
   InsumoApi,
+  LineaRecuentoApi,
   MovimientoInventarioApi,
   PresentacionInsumo,
   ProductoApi,
+  RecuentoDetalleApi,
   RegistroAsistenciaApi,
   ReporteComparativoApi,
   RespuestaLogin,
@@ -352,6 +354,8 @@ interface EstadoInventario {
   insumos: InsumoApi[]
   stock: StockInsumoApi[]
   alertas: AlertaStockApi[]
+  movimientos: MovimientoInventarioApi[]
+  recuentos: RecuentoDetalleApi[]
 }
 
 function crearFilaStock(
@@ -377,27 +381,71 @@ function crearFilaStock(
 function crearEstadoInventario(): EstadoInventario {
   const insumos = INSUMOS_PRUEBA.map((insumo) => ({ ...insumo }))
   const porId = new Map(insumos.map((insumo) => [insumo.id, insumo]))
+  const stock: StockInsumoApi[] = [
+    crearFilaStock(porId.get('i-1')!, 'sucursal-1', {
+      id: 'is-1',
+      stockActual: '2.00',
+      stockMinimo: '5.00',
+    }),
+    crearFilaStock(porId.get('i-2')!, 'sucursal-1', {
+      id: 'is-2',
+      stockActual: '20.00',
+      stockMinimo: '10.00',
+    }),
+    crearFilaStock(porId.get('i-3')!, 'sucursal-1', {
+      id: 'is-3',
+      stockActual: '3.00',
+      stockMinimo: '0.00',
+      estado: 'descontinuado',
+    }),
+  ]
+  const fila1 = stock[0]!
   const estado: EstadoInventario = {
     insumos,
-    stock: [
-      crearFilaStock(porId.get('i-1')!, 'sucursal-1', {
-        id: 'is-1',
-        stockActual: '2.00',
-        stockMinimo: '5.00',
-      }),
-      crearFilaStock(porId.get('i-2')!, 'sucursal-1', {
-        id: 'is-2',
-        stockActual: '20.00',
-        stockMinimo: '10.00',
-      }),
-      crearFilaStock(porId.get('i-3')!, 'sucursal-1', {
-        id: 'is-3',
-        stockActual: '3.00',
-        stockMinimo: '0.00',
-        estado: 'descontinuado',
-      }),
-    ],
+    stock,
     alertas: [],
+    movimientos: [
+      {
+        id: 'mov-1',
+        insumoSucursalId: 'is-2',
+        tipo: 'entrada',
+        cantidad: '5.00',
+        usuarioId: 'usuario-1',
+        motivo: 'Compra semanal',
+        createdAt: '2026-10-10T09:00:00.000Z',
+      },
+      {
+        id: 'mov-2',
+        insumoSucursalId: 'is-1',
+        tipo: 'ajuste',
+        cantidad: '-1.00',
+        usuarioId: 'usuario-1',
+        motivo: 'Recuento físico',
+        createdAt: '2026-10-10T12:00:00.000Z',
+      },
+    ],
+    recuentos: [
+      {
+        id: 'rec-1',
+        sucursalId: 'sucursal-1',
+        usuarioId: 'usuario-1',
+        createdAt: '2026-10-10T12:00:00.000Z',
+        usuario: { id: 'usuario-1', nombre: 'Ada Pruebas' },
+        sucursal: { id: 'sucursal-1', nombre: 'Sucursal Centro' },
+        detalles: [
+          {
+            id: 'rec-1-d1',
+            recuentoId: 'rec-1',
+            insumoSucursalId: 'is-1',
+            stockSistema: '3.00',
+            stockFisico: '2.00',
+            diferencia: '-1.00',
+            createdAt: '2026-10-10T12:00:00.000Z',
+            insumoSucursal: { ...fila1, insumo: { ...fila1.insumo } },
+          },
+        ],
+      },
+    ],
   }
   sincronizarAlertas(estado)
   return estado
@@ -435,6 +483,61 @@ function sincronizarAlertas(estado: EstadoInventario): void {
 }
 
 let inventario: EstadoInventario = crearEstadoInventario()
+
+/** Registra un recuento: fija el stock, genera ajustes y devuelve el detalle. */
+function crearRecuentoDetalle(
+  estado: EstadoInventario,
+  sucursalId: string,
+  items: { insumoId: string; stockFisico: number }[],
+): RecuentoDetalleApi {
+  const ahora = new Date().toISOString()
+  const id = `rec-${estado.recuentos.length + 1}`
+  const sucursal = SUCURSALES_PRUEBA.find((s) => s.id === sucursalId)
+  const detalles: LineaRecuentoApi[] = []
+  items.forEach((item, indice) => {
+    const fila = estado.stock.find(
+      (f) => f.sucursalId === sucursalId && f.insumoId === item.insumoId,
+    )!
+    const stockSistema = fila.stockActual
+    const stockFisico = item.stockFisico.toFixed(2)
+    const diferencia = (Number(stockFisico) - Number(stockSistema)).toFixed(2)
+    fila.stockActual = stockFisico
+    fila.updatedAt = ahora
+    if (diferencia !== '0.00') {
+      estado.movimientos.push({
+        id: `mov-${id}-${indice}`,
+        insumoSucursalId: fila.id,
+        tipo: 'ajuste',
+        cantidad: diferencia,
+        usuarioId: 'usuario-1',
+        motivo: 'Recuento físico',
+        createdAt: ahora,
+      })
+    }
+    detalles.push({
+      id: `${id}-d${indice}`,
+      recuentoId: id,
+      insumoSucursalId: fila.id,
+      stockSistema,
+      stockFisico,
+      diferencia,
+      createdAt: ahora,
+      insumoSucursal: { ...fila, insumo: { ...fila.insumo } },
+    })
+  })
+  const recuento: RecuentoDetalleApi = {
+    id,
+    sucursalId,
+    usuarioId: 'usuario-1',
+    createdAt: ahora,
+    usuario: { id: 'usuario-1', nombre: 'Ada Pruebas' },
+    sucursal: { id: sucursalId, nombre: sucursal?.nombre ?? 'Sucursal' },
+    detalles,
+  }
+  estado.recuentos.push(recuento)
+  sincronizarAlertas(estado)
+  return recuento
+}
 
 /** Restaura el inventario mockeado (insumos, stock y alertas) a su inicio. */
 export function reiniciarInventarioPrueba(): void {
@@ -1270,6 +1373,137 @@ export const handlers = [
         createdAt: ahora,
       }
       return HttpResponse.json({ stock: fila, movimiento }, { status: 201 })
+    },
+  ),
+
+  http.get(
+    `${BASE_API}/inventario/sucursales/:sucursalId/movimientos`,
+    ({ request, params }) => {
+      const sucursalId = String(params.sucursalId)
+      if (!sucursalValida(sucursalId)) {
+        return errorApi(404, 'La sucursal no existe', 'Not Found')
+      }
+      const url = new URL(request.url)
+      const insumoId = url.searchParams.get('insumoId')
+      const tipo = url.searchParams.get('tipo')
+      const desde = url.searchParams.get('desde')
+      const hasta = url.searchParams.get('hasta')
+      const page = Number(url.searchParams.get('page') ?? '1')
+      const limit = Number(url.searchParams.get('limit') ?? '20')
+
+      const idsSucursal = new Set(
+        inventario.stock
+          .filter((fila) => fila.sucursalId === sucursalId)
+          .map((fila) => fila.id),
+      )
+      let items = inventario.movimientos.filter((mov) =>
+        idsSucursal.has(mov.insumoSucursalId),
+      )
+      if (insumoId) {
+        const idsInsumo = new Set(
+          inventario.stock
+            .filter(
+              (fila) =>
+                fila.sucursalId === sucursalId && fila.insumoId === insumoId,
+            )
+            .map((fila) => fila.id),
+        )
+        items = items.filter((mov) => idsInsumo.has(mov.insumoSucursalId))
+      }
+      if (tipo) items = items.filter((mov) => mov.tipo === tipo)
+      if (desde) {
+        items = items.filter((mov) => mov.createdAt.slice(0, 10) >= desde)
+      }
+      if (hasta) {
+        items = items.filter((mov) => mov.createdAt.slice(0, 10) <= hasta)
+      }
+      return HttpResponse.json(paginar(items, page, limit))
+    },
+  ),
+
+  http.get(`${BASE_API}/inventario/recuentos`, ({ request }) => {
+    const url = new URL(request.url)
+    const sucursalId = url.searchParams.get('sucursalId')
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+    let items = inventario.recuentos.map((recuento) => ({
+      id: recuento.id,
+      sucursalId: recuento.sucursalId,
+      usuarioId: recuento.usuarioId,
+      createdAt: recuento.createdAt,
+    }))
+    if (sucursalId) items = items.filter((r) => r.sucursalId === sucursalId)
+    return HttpResponse.json(paginar(items, page, limit))
+  }),
+
+  http.get(`${BASE_API}/inventario/recuentos/:id`, ({ params }) => {
+    const recuento = inventario.recuentos.find((r) => r.id === params.id)
+    if (!recuento) {
+      return errorApi(404, 'El recuento no existe', 'Not Found')
+    }
+    return HttpResponse.json(recuento)
+  }),
+
+  http.post(
+    `${BASE_API}/inventario/sucursales/:sucursalId/recuentos`,
+    async ({ request, params }) => {
+      const sucursalId = String(params.sucursalId)
+      if (!sucursalValida(sucursalId)) {
+        return errorApi(404, 'La sucursal no existe', 'Not Found')
+      }
+      const cuerpo = (await request.json()) as { items?: unknown }
+      const items = cuerpo.items
+      if (!Array.isArray(items) || items.length < 1) {
+        return errorApi(
+          400,
+          'El recuento debe incluir al menos un insumo',
+          'Bad Request',
+        )
+      }
+      if (items.length > 500) {
+        return errorApi(
+          400,
+          'El recuento no puede incluir mas de 500 insumos',
+          'Bad Request',
+        )
+      }
+      const limpios: { insumoId: string; stockFisico: number }[] = []
+      for (const bruto of items as {
+        insumoId?: unknown
+        stockFisico?: unknown
+      }[]) {
+        const insumoId = bruto.insumoId
+        if (
+          typeof insumoId !== 'string' ||
+          !inventario.insumos.some((insumo) => insumo.id === insumoId)
+        ) {
+          return errorApi(404, 'El insumo no existe', 'Not Found')
+        }
+        const fila = inventario.stock.find(
+          (item) =>
+            item.sucursalId === sucursalId && item.insumoId === insumoId,
+        )
+        if (!fila) {
+          return errorApi(
+            404,
+            'El insumo no esta dado de alta en la sucursal',
+            'Not Found',
+          )
+        }
+        const problema = mensajeCantidadInvalida(bruto.stockFisico, 'cantidad')
+        if (problema) return errorApi(400, problema, 'Bad Request')
+        limpios.push({ insumoId, stockFisico: bruto.stockFisico as number })
+      }
+      const recuento = crearRecuentoDetalle(inventario, sucursalId, limpios)
+      return HttpResponse.json(
+        {
+          id: recuento.id,
+          sucursalId: recuento.sucursalId,
+          usuarioId: recuento.usuarioId,
+          createdAt: recuento.createdAt,
+        },
+        { status: 201 },
+      )
     },
   ),
 

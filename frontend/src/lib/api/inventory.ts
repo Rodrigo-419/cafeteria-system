@@ -1,11 +1,13 @@
 // Llamadas del módulo de inventario: catálogo de insumos, stock por sucursal,
-// entradas y alertas.
+// entradas, movimientos, recuentos y alertas.
 //
 // Rutas y permisos según `docs/referencia-api.md`:
 // - Catálogo global de insumos: lo edita el Admin (`insumos.catalogo.editar`),
 //   lo ven el Admin y el Gerente (`insumos.ver`).
 // - Stock por sucursal: `inventario.minimo.editar` para configurar el mínimo y
-//   dar de alta; `inventario.registrar` para las entradas.
+//   dar de alta; `inventario.registrar` para las entradas y los movimientos.
+// - Recuentos: `inventario.recuento` (Admin y Gerente); el listado se acota al
+//   alcance y el detalle de otra sucursal responde 404.
 // - Alertas: solo listado (`alertas.ver_resolver`); las abre y cierra el backend.
 import { peticionApi } from './client'
 import { construirQueryString } from './query'
@@ -14,10 +16,14 @@ import type {
   EstadoAlertaStock,
   EstadoStockInsumo,
   InsumoApi,
+  MovimientoInventarioApi,
   PaginadoApi,
   PresentacionInsumo,
+  RecuentoApi,
+  RecuentoDetalleApi,
   ResultadoEntradaApi,
   StockInsumoApi,
+  TipoMovimientoInventario,
 } from '@/types/api'
 
 // ------------------------------------------------------------------ insumos
@@ -126,13 +132,85 @@ export function registrarEntrada(
   )
 }
 
-// ---------------------------------------------------------------- alertas
+// ------------------------------------------------- movimientos y recuentos
+
+export interface FiltrosMovimientos {
+  page?: number
+  limit?: number
+  tipo?: TipoMovimientoInventario
+  insumoId?: string
+  /** Día inicial (inclusive) en `America/Lima`, `YYYY-MM-DD`. */
+  desde?: string
+  /** Día final (inclusive) en `America/Lima`, `YYYY-MM-DD`. */
+  hasta?: string
+}
+
+export interface FiltrosRecuentos {
+  page?: number
+  limit?: number
+  sucursalId?: string
+}
+
+/** Una línea del cuerpo de un recuento: se identifica por `insumoId` del catálogo. */
+export interface ItemRecuentoCrear {
+  insumoId: string
+  /** Físico contado: no negativo, hasta 2 decimales, admite 0. */
+  stockFisico: number
+}
+
+export interface EntradaCrearRecuento {
+  items: ItemRecuentoCrear[]
+}
+
+/**
+ * `GET /api/inventario/sucursales/:sucursalId/movimientos`: historial de
+ * variaciones de stock de la sucursal (`inventario.registrar`), con filtros
+ * `insumoId`, `tipo` y rango `desde`/`hasta`.
+ */
+export function listarMovimientos(
+  sucursalId: string,
+  filtros: FiltrosMovimientos = {},
+): Promise<PaginadoApi<MovimientoInventarioApi>> {
+  return peticionApi<PaginadoApi<MovimientoInventarioApi>>(
+    `/inventario/sucursales/${sucursalId}/movimientos${construirQueryString(filtros)}`,
+  )
+}
+
+/** `GET /api/inventario/recuentos`: listado acotado al alcance (`inventario.recuento`). */
+export function listarRecuentos(
+  filtros: FiltrosRecuentos = {},
+): Promise<PaginadoApi<RecuentoApi>> {
+  return peticionApi<PaginadoApi<RecuentoApi>>(
+    `/inventario/recuentos${construirQueryString(filtros)}`,
+  )
+}
+
+/** `GET /api/inventario/recuentos/:id`: detalle con líneas, usuario y sucursal. */
+export function obtenerRecuento(id: string): Promise<RecuentoDetalleApi> {
+  return peticionApi<RecuentoDetalleApi>(`/inventario/recuentos/${id}`)
+}
+
+/**
+ * `POST /api/inventario/sucursales/:sucursalId/recuentos`: fija el stock al
+ * valor contado. Devuelve la cabecera del recuento creado (201).
+ */
+export function crearRecuento(
+  sucursalId: string,
+  entrada: EntradaCrearRecuento,
+): Promise<RecuentoApi> {
+  return peticionApi<RecuentoApi>(
+    `/inventario/sucursales/${sucursalId}/recuentos`,
+    { method: 'POST', body: entrada },
+  )
+}
+
+// ------------------------------------------------------------------ alertas
 
 export interface FiltrosAlertas {
   page?: number
   limit?: number
-  sucursalId?: string
   estado?: EstadoAlertaStock
+  sucursalId?: string
 }
 
 /** `GET /api/inventario/alertas`: listado paginado acotado al alcance. */

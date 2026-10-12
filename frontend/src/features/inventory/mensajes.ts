@@ -15,6 +15,8 @@ export type ContextoInventario =
   | 'configurar'
   | 'entrada'
   | 'alertas'
+  | 'recuento'
+  | 'movimiento'
 
 const GENERICO = 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
 
@@ -41,6 +43,12 @@ export function mensajeDeError(
       if (contexto === 'crear' || contexto === 'editar' || contexto === 'eliminar') {
         return delServidor ?? 'No tienes permiso para editar el catálogo de insumos.'
       }
+      if (contexto === 'recuento') {
+        return delServidor ?? 'No tienes permiso para gestionar recuentos.'
+      }
+      if (contexto === 'movimiento') {
+        return delServidor ?? 'No tienes permiso para ver los movimientos.'
+      }
       return delServidor ?? 'No tienes permiso para gestionar el inventario.'
     case 404:
       if (
@@ -49,6 +57,9 @@ export function mensajeDeError(
         contexto === 'entrada'
       ) {
         return delServidor ?? 'La sucursal o el insumo no está dentro de tu alcance.'
+      }
+      if (contexto === 'recuento') {
+        return delServidor ?? 'El recuento no existe o está fuera de tu alcance.'
       }
       return 'El recurso ya no existe o está fuera de tu alcance.'
     case 409:

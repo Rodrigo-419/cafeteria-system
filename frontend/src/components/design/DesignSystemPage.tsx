@@ -10,6 +10,7 @@ import { StatusPill } from '@/components/shared/StatusPill'
 import { EstadoOfertaBadge } from '@/features/products/EstadoOfertaBadge'
 import { EstadoStockBadge } from '@/features/inventory/EstadoStockBadge'
 import { NivelStock } from '@/features/inventory/NivelStock'
+import { VariacionStock } from '@/features/inventory/VariacionStock'
 import {
   Card,
   CardContent,
@@ -604,6 +605,21 @@ export function DesignSystemPage() {
                 <NivelStock stock="5.00" minimo="5.00" estado="activo" />
                 <NivelStock stock="0.00" minimo="5.00" estado="descontinuado" />
               </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Variación de stock</CardTitle>
+              <CardDescription>
+                Movimientos y diferencias de recuento: signo, color y palabra,
+                para no depender solo del color.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-6">
+              <VariacionStock cantidad="10.00" />
+              <VariacionStock cantidad="-1.50" />
+              <VariacionStock cantidad="0.00" />
+              <VariacionStock cantidad="-2.00" conEtiqueta={false} />
             </CardContent>
           </Card>
         </TabsContent>

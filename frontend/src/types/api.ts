@@ -296,11 +296,14 @@ export interface StockInsumoApi {
   insumo: InsumoApi
 }
 
+/** Tipo de un movimiento de stock. */
+export type TipoMovimientoInventario = 'entrada' | 'ajuste'
+
 /** Un movimiento de inventario: la cantidad es la variación, no el saldo. */
 export interface MovimientoInventarioApi {
   id: string
   insumoSucursalId: string
-  tipo: 'entrada' | 'ajuste'
+  tipo: TipoMovimientoInventario
   /** Variación decimal como texto; puede ser negativa en ajustes. */
   cantidad: string
   usuarioId: string
@@ -312,4 +315,31 @@ export interface MovimientoInventarioApi {
 export interface ResultadoEntradaApi {
   stock: StockInsumoApi
   movimiento: MovimientoInventarioApi
+}
+
+/** Línea de un recuento con el stock de sistema, el contado y la diferencia. */
+export interface LineaRecuentoApi {
+  id: string
+  recuentoId: string
+  insumoSucursalId: string
+  stockSistema: string
+  stockFisico: string
+  diferencia: string
+  createdAt: string
+  insumoSucursal: StockInsumoApi
+}
+
+/** Cabecera de un recuento (`GET /inventario/recuentos`). */
+export interface RecuentoApi {
+  id: string
+  sucursalId: string
+  usuarioId: string
+  createdAt: string
+}
+
+/** Recuento con sus líneas, el usuario y la sucursal (`GET /recuentos/:id`). */
+export interface RecuentoDetalleApi extends RecuentoApi {
+  usuario: { id: string; nombre: string }
+  sucursal: { id: string; nombre: string }
+  detalles: LineaRecuentoApi[]
 }

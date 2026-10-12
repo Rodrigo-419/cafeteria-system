@@ -141,3 +141,53 @@ export function porcentajeNivel(stock: string, minimo: string): number {
   const bruto = Math.round((stockC * 100) / minimoC)
   return Math.max(0, Math.min(100, bruto))
 }
+
+// ----------------------------------------------------- variaciones (con signo)
+
+/** Signo de una variación: sube, baja o no cambia. */
+export type SignoVariacion = 'aumento' | 'disminucion' | 'sin-cambio'
+
+/** Clasifica una variación decimal ("-1.00", "0.00", "5.00"). */
+export function signoVariacion(cantidad: string): SignoVariacion {
+  const centimos = aCentimos(cantidad)
+  if (centimos > 0) return 'aumento'
+  if (centimos < 0) return 'disminucion'
+  return 'sin-cambio'
+}
+
+export const ETIQUETA_VARIACION: Record<SignoVariacion, string> = {
+  aumento: 'Aumento',
+  disminucion: 'Disminución',
+  'sin-cambio': 'Sin cambio',
+}
+
+/** Texto decimal con dos decimales a partir de céntimos enteros ("-1.50"). */
+function centimosATexto(centimos: number): string {
+  const signo = centimos < 0 ? '-' : ''
+  const absoluto = Math.abs(centimos)
+  const entero = Math.floor(absoluto / 100)
+  const decimales = String(absoluto % 100).padStart(2, '0')
+  return `${signo}${entero}.${decimales}`
+}
+
+/**
+ * Formatea una variación con signo explícito ("+10", "-1.5", "0"). La magnitud
+ * se recorta sin ceros sobrantes, como el resto de cantidades.
+ */
+export function formatearVariacion(cantidad: string): string {
+  const centimos = aCentimos(cantidad)
+  if (centimos === 0) return '0'
+  const magnitud = formatearCantidad(centimosATexto(Math.abs(centimos)))
+  return centimos > 0 ? `+${magnitud}` : `-${magnitud}`
+}
+
+/**
+ * Diferencia entre el stock contado y el de sistema ("-1.50"), calculada en
+ * céntimos enteros. Solo es una previsualización: la autoridad es el servidor.
+ */
+export function diferenciaContada(
+  stockFisico: string,
+  stockSistema: string,
+): string {
+  return centimosATexto(aCentimos(stockFisico) - aCentimos(stockSistema))
+}

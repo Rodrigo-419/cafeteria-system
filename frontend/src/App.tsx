@@ -20,6 +20,9 @@ import { ProductsPage } from '@/features/products/ProductsPage'
 import { InsumosPage } from '@/features/inventory/InsumosPage'
 import { InventarioPage } from '@/features/inventory/InventarioPage'
 import { AlertasPage } from '@/features/inventory/AlertasPage'
+import { RecuentosPage } from '@/features/inventory/RecuentosPage'
+import { RecuentoNuevoPage } from '@/features/inventory/RecuentoNuevoPage'
+import { MovimientosPage } from '@/features/inventory/MovimientosPage'
 
 function crearQueryClient() {
   return new QueryClient({
@@ -42,6 +45,8 @@ export function App() {
       item.to !== '/products' &&
       item.to !== '/supplies' &&
       item.to !== '/inventory' &&
+      item.to !== '/inventory/recuentos' &&
+      item.to !== '/inventory/movimientos' &&
       item.to !== '/alerts',
   )
 
@@ -148,6 +153,30 @@ export function App() {
                 element={
                   <RequirePermission permiso="alertas.ver_resolver">
                     <AlertasPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="inventory/recuentos"
+                element={
+                  <RequirePermission permiso="inventario.recuento">
+                    <RecuentosPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="inventory/recuentos/nuevo"
+                element={
+                  <RequirePermission permiso="inventario.recuento">
+                    <RecuentoNuevoPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="inventory/movimientos"
+                element={
+                  <RequirePermission permiso="inventario.registrar">
+                    <MovimientosPage />
                   </RequirePermission>
                 }
               />

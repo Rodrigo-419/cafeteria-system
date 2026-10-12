@@ -16,22 +16,31 @@ import {
   actualizarInsumo,
   configurarStock,
   crearInsumo,
+  crearRecuento,
   eliminarInsumo,
   listarAlertas,
   listarInsumos,
+  listarMovimientos,
+  listarRecuentos,
   listarStock,
+  obtenerRecuento,
   registrarEntrada,
   type EntradaConfigurarStock,
+  type EntradaCrearRecuento,
   type EntradaInsumo,
   type EntradaRegistrarEntrada,
   type FiltrosAlertas,
   type FiltrosInsumos,
+  type FiltrosMovimientos,
+  type FiltrosRecuentos,
   type FiltrosStock,
 } from '@/lib/api/inventory'
 import { useAuth } from '@/lib/auth/useAuth'
 import { tienePermiso } from '@/lib/permissions/permissions'
 import type {
   InsumoApi,
+  RecuentoApi,
+  RecuentoDetalleApi,
   ResultadoEntradaApi,
   StockInsumoApi,
 } from '@/types/api'
@@ -48,6 +57,12 @@ export const clavesInventario = {
     ['inventario', 'stock-resumen', sucursalId] as const,
   alertas: (filtros: FiltrosAlertas) =>
     ['inventario', 'alertas', filtros] as const,
+  movimientos: (sucursalId: string | null, filtros: FiltrosMovimientos) =>
+    ['inventario', 'movimientos', sucursalId, filtros] as const,
+  recuentos: (filtros: FiltrosRecuentos) =>
+    ['inventario', 'recuentos', filtros] as const,
+  recuentoDetalle: (id: string) =>
+    ['inventario', 'recuentos', 'detalle', id] as const,
   sucursales: ['inventario', 'sucursales'] as const,
 }
 
@@ -188,8 +203,16 @@ function invalidarStock(queryClient: ReturnType<typeof useQueryClient>) {
   // bloques del panel de control que cuentan alertas (listado propio y columna
   // "Alertas" del comparativo de sucursales).
   void queryClient.invalidateQueries({ queryKey: ['inventario', 'alertas'] })
+  // Entradas y recuentos dejan movimientos de variación: el historial cambia.
+  void queryClient.invalidateQueries({ queryKey: ['inventario', 'movimientos'] })
   void queryClient.invalidateQueries({ queryKey: ['dashboard', 'alertas-abiertas'] })
   void queryClient.invalidateQueries({ queryKey: ['dashboard', 'reporte'] })
+}
+
+/** Un recuento cambia stock, deja movimientos y crea una entrada en el historial. */
+function invalidarRecuento(queryClient: ReturnType<typeof useQueryClient>) {
+  invalidarStock(queryClient)
+  void queryClient.invalidateQueries({ queryKey: ['inventario', 'recuentos'] })
 }
 
 /** Da de alta o ajusta el stock mínimo/estado de un insumo en una sucursal. */
@@ -241,5 +264,75 @@ export function useSucursales(habilitado: boolean) {
     queryKey: clavesInventario.sucursales,
     queryFn: listarSucursales,
     enabled: habilitado,
+  })
+}
+
+// ------------------------------------------------- movimientos y recuentos
+
+/**
+ * Historial de movimientos de una sucursal (solo lectura). Requiere
+ * `inventario.registrar` y una sucursal elegida.
+ */
+export function useMovimientos(
+  sucursalId: string | null,
+  filtros: FiltrosMovimientos,
+) {
+  const { permisos } = useAuth()
+  const permitido = tienePermiso(permisos, 'inventario.registrar')
+
+  return useQuery({
+    queryKey: clavesInventario.movimientos(sucursalId, filtros),
+    queryFn: () => {
+      if (!sucursalId) {
+        throw new Error('Falta la sucursal')
+      }
+      return listarMovimientos(sucursalId, filtros)
+    },
+    enabled: permitido && sucursalId !== null,
+    placeholderData: (anterior) => anterior,
+  })
+}
+
+/** Recuentos (solo lectura) acotados al alcance. Requiere `inventario.recuento`. */
+export function useRecuentos(filtros: FiltrosRecuentos) {
+  const { permisos } = useAuth()
+  const permitido = tienePermiso(permisos, 'inventario.recuento')
+
+  return useQuery({
+    queryKey: clavesInventario.recuentos(filtros),
+    queryFn: () => listarRecuentos(filtros),
+    enabled: permitido,
+    placeholderData: (anterior) => anterior,
+  })
+}
+
+/** Detalle de un recuento (con líneas, usuario y sucursal). Requiere `inventario.recuento`. */
+export function useRecuentoDetalle(id: string | null) {
+  const { permisos } = useAuth()
+  const permitido = tienePermiso(permisos, 'inventario.recuento')
+
+  return useQuery<RecuentoDetalleApi>({
+    queryKey: clavesInventario.recuentoDetalle(id ?? ''),
+    queryFn: () => {
+      if (!id) {
+        throw new Error('Falta el recuento')
+      }
+      return obtenerRecuento(id)
+    },
+    enabled: permitido && id !== null,
+  })
+}
+
+/** Registra un recuento físico e invalida stock, alertas, movimientos y recuentos. */
+export function useCrearRecuento(): UseMutationResult<
+  RecuentoApi,
+  unknown,
+  { sucursalId: string; entrada: EntradaCrearRecuento }
+> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ sucursalId, entrada }) =>
+      crearRecuento(sucursalId, entrada),
+    onSuccess: () => invalidarRecuento(queryClient),
   })
 }

@@ -54,6 +54,16 @@ export const MENU_ITEMS: readonly MenuItemConfig[] = [
       'insumos.ver',
     ],
   },
+  {
+    label: 'Recuentos',
+    to: '/inventory/recuentos',
+    permisos: ['inventario.recuento'],
+  },
+  {
+    label: 'Movimientos',
+    to: '/inventory/movimientos',
+    permisos: ['inventario.registrar'],
+  },
   { label: 'Alertas', to: '/alerts', permisos: ['alertas.ver_resolver'] },
   {
     label: 'Ventas',
@@ -116,12 +126,17 @@ export function puedeAccederRuta(
   ruta: string | null | undefined,
 ): boolean {
   if (!ruta || ruta === '/') return true
-  const item = MENU_ITEMS.find(
+  // Varias entradas pueden casar por prefijo (p. ej. `/inventory` y
+  // `/inventory/recuentos`); se toma la más específica (el `to` más largo) para
+  // no denegar una sub-ruta por quedarse con la entrada padre.
+  const coincidencias = MENU_ITEMS.filter(
     (config) =>
       config.to !== '/' &&
       (ruta === config.to || ruta.startsWith(`${config.to}/`)),
   )
-  return item ? puedeVerItem(item, permisos) : false
+  if (coincidencias.length === 0) return false
+  const item = coincidencias.reduce((a, b) => (b.to.length > a.to.length ? b : a))
+  return puedeVerItem(item, permisos)
 }
 
 /**
