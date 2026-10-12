@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom/vitest'
 import { afterAll, afterEach, beforeAll } from 'vitest'
-import { reiniciarCatalogoPrueba, reiniciarInventarioPrueba } from './handlers'
+import {
+  reiniciarCatalogoPrueba,
+  reiniciarEquiposPrueba,
+  reiniciarInventarioPrueba,
+} from './handlers'
 import { server } from './server'
 
 if (typeof window.matchMedia !== 'function') {
@@ -30,6 +34,7 @@ afterEach(() => {
   server.resetHandlers()
   reiniciarCatalogoPrueba()
   reiniciarInventarioPrueba()
+  reiniciarEquiposPrueba()
   sessionStorage.clear()
   localStorage.clear()
   window.history.pushState({}, '', '/')

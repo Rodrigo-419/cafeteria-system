@@ -4,7 +4,9 @@ import type {
   CartaOferta,
   CategoriaProductoApi,
   EquipoApi,
+  EstadoEquipo,
   EstadoStockInsumo,
+  HistorialEquipoApi,
   InsumoApi,
   LineaRecuentoApi,
   MovimientoInventarioApi,
@@ -591,6 +593,13 @@ export const REGISTROS_PRUEBA: RegistroAsistenciaApi[] = [
   },
 ]
 
+export const ESTADOS_EQUIPO_PRUEBA: EstadoEquipo[] = [
+  'funcionando',
+  'danado',
+  'en_mantenimiento',
+  'retirado',
+]
+
 export const EQUIPOS_PRUEBA: EquipoApi[] = [
   {
     id: 'equipo-1',
@@ -622,7 +631,108 @@ export const EQUIPOS_PRUEBA: EquipoApi[] = [
     createdAt: '2026-10-01T10:00:00.000Z',
     updatedAt: '2026-10-10T10:00:00.000Z',
   },
+  {
+    id: 'equipo-4',
+    sucursalId: 'sucursal-1',
+    nombre: 'Licuadora industrial',
+    tipo: 'licuadora',
+    estado: 'retirado',
+    observaciones: 'Dado de baja',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-09T09:00:00.000Z',
+  },
+  {
+    id: 'equipo-5',
+    sucursalId: 'sucursal-2',
+    nombre: 'Vitrina refrigerada',
+    tipo: 'vitrina',
+    estado: 'funcionando',
+    observaciones: null,
+    createdAt: '2026-10-02T10:00:00.000Z',
+    updatedAt: '2026-10-02T10:00:00.000Z',
+  },
 ]
+
+export const HISTORIAL_EQUIPOS_PRUEBA: HistorialEquipoApi[] = [
+  {
+    id: 'hist-equipo-2-1',
+    equipoId: 'equipo-2',
+    estadoAnterior: 'funcionando',
+    estadoNuevo: 'en_mantenimiento',
+    observacionesAnterior: null,
+    observacionesNuevas: 'Revisión programada',
+    usuarioId: 'usuario-1',
+    createdAt: '2026-10-10T10:00:00.000Z',
+    usuario: { id: 'usuario-1', nombre: 'Ada Pruebas' },
+  },
+  {
+    id: 'hist-equipo-3-1',
+    equipoId: 'equipo-3',
+    estadoAnterior: 'funcionando',
+    estadoNuevo: 'danado',
+    observacionesAnterior: null,
+    observacionesNuevas: null,
+    usuarioId: 'usuario-1',
+    createdAt: '2026-10-10T11:00:00.000Z',
+    usuario: { id: 'usuario-1', nombre: 'Ada Pruebas' },
+  },
+  {
+    id: 'hist-equipo-4-1',
+    equipoId: 'equipo-4',
+    estadoAnterior: 'danado',
+    estadoNuevo: 'retirado',
+    observacionesAnterior: null,
+    observacionesNuevas: 'Dado de baja',
+    usuarioId: 'usuario-1',
+    createdAt: '2026-10-09T09:00:00.000Z',
+    usuario: { id: 'usuario-1', nombre: 'Ada Pruebas' },
+  },
+]
+
+interface EstadoEquipos {
+  equipos: EquipoApi[]
+  historial: HistorialEquipoApi[]
+}
+
+function crearEstadoEquipos(): EstadoEquipos {
+  return {
+    equipos: EQUIPOS_PRUEBA.map((equipo) => ({ ...equipo })),
+    historial: HISTORIAL_EQUIPOS_PRUEBA.map((entrada) => ({
+      ...entrada,
+      usuario: entrada.usuario ? { ...entrada.usuario } : null,
+    })),
+  }
+}
+
+let equipos: EstadoEquipos = crearEstadoEquipos()
+
+// Actor vigente para el alcance de equipos. Si es `null` no se aplica alcance
+// (útil para pruebas que no inician sesión); `iniciarSesionDePrueba` lo fija.
+let actorEquipos: UsuarioApi | null = null
+
+export function establecerActorEquipos(usuario: UsuarioApi | null): void {
+  actorEquipos = usuario
+}
+
+/** Restaura los equipos y su historial, y limpia el actor de alcance. */
+export function reiniciarEquiposPrueba(): void {
+  equipos = crearEstadoEquipos()
+  actorEquipos = null
+}
+
+function actorEsAdmin(): boolean {
+  if (!actorEquipos) return true
+  return (actorEquipos.rol ?? '').toLowerCase() === 'admin'
+}
+
+function equipoVisible(equipo: EquipoApi): boolean {
+  if (actorEsAdmin()) return true
+  return equipo.sucursalId === (actorEquipos?.sucursalId ?? null)
+}
+
+function equipoFueraDeAlcance() {
+  return errorApi(404, 'El equipo no existe', 'Not Found')
+}
 
 export const REPORTE_COMPARATIVO_PRUEBA: ReporteComparativoApi = {
   desde: '2026-10-11',
@@ -1541,15 +1651,196 @@ export const handlers = [
   http.get(`${BASE_API}/equipment`, ({ request }) => {
     const url = new URL(request.url)
     const estado = url.searchParams.get('estado')
-    let equipos = EQUIPOS_PRUEBA
-    if (estado) equipos = equipos.filter((e) => e.estado === estado)
-    return HttpResponse.json({
-      data: equipos,
-      total: equipos.length,
-      page: 1,
-      limit: 20,
-      totalPaginas: 1,
-    })
+    const busqueda = url.searchParams.get('busqueda')?.trim().toLowerCase()
+    const sucursalId = url.searchParams.get('sucursalId')
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '10')
+
+    let items = equipos.equipos
+    if (!actorEsAdmin()) {
+      items = items.filter(
+        (equipo) => equipo.sucursalId === (actorEquipos?.sucursalId ?? null),
+      )
+    } else if (sucursalId) {
+      items = items.filter((equipo) => equipo.sucursalId === sucursalId)
+    }
+    if (estado) items = items.filter((equipo) => equipo.estado === estado)
+    if (busqueda) {
+      items = items.filter(
+        (equipo) =>
+          equipo.nombre.toLowerCase().includes(busqueda) ||
+          equipo.tipo.toLowerCase().includes(busqueda),
+      )
+    }
+    return HttpResponse.json(paginar(items, page, limit))
+  }),
+
+  http.get(`${BASE_API}/equipment/:id/history`, ({ request, params }) => {
+    const equipo = equipos.equipos.find((item) => item.id === params.id)
+    if (!equipo || !equipoVisible(equipo)) {
+      return equipoFueraDeAlcance()
+    }
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '10')
+    const items = equipos.historial
+      .filter((entrada) => entrada.equipoId === equipo.id)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    return HttpResponse.json(paginar(items, page, limit))
+  }),
+
+  http.get(`${BASE_API}/equipment/:id`, ({ params }) => {
+    const equipo = equipos.equipos.find((item) => item.id === params.id)
+    if (!equipo || !equipoVisible(equipo)) {
+      return equipoFueraDeAlcance()
+    }
+    return HttpResponse.json(equipo)
+  }),
+
+  http.post(`${BASE_API}/equipment`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      sucursalId?: string
+      nombre?: string
+      tipo?: string
+      observaciones?: string | null
+    }
+    const nombre = (cuerpo.nombre ?? '').trim()
+    const tipo = (cuerpo.tipo ?? '').trim()
+    if (nombre.length < 2 || nombre.length > 100) {
+      return errorApi(
+        400,
+        'El nombre debe tener entre 2 y 100 caracteres',
+        'Bad Request',
+      )
+    }
+    if (tipo.length < 2 || tipo.length > 50) {
+      return errorApi(
+        400,
+        'El tipo debe tener entre 2 y 50 caracteres',
+        'Bad Request',
+      )
+    }
+    const observaciones = (cuerpo.observaciones ?? '').trim()
+    if (observaciones.length > 500) {
+      return errorApi(
+        400,
+        'Las observaciones no pueden superar 500 caracteres',
+        'Bad Request',
+      )
+    }
+
+    let sucursalId: string
+    if (actorEsAdmin()) {
+      sucursalId = cuerpo.sucursalId ?? ''
+      if (!sucursalValida(sucursalId)) {
+        return errorApi(404, 'La sucursal no existe', 'Not Found')
+      }
+    } else {
+      const propia = actorEquipos?.sucursalId ?? null
+      if (!propia) {
+        return errorApi(403, 'Acceso denegado', 'Forbidden')
+      }
+      sucursalId = propia
+    }
+
+    const ahora = new Date().toISOString()
+    const equipo: EquipoApi = {
+      id: `equipo-${equipos.equipos.length + 1}`,
+      sucursalId,
+      nombre,
+      tipo,
+      estado: 'funcionando',
+      observaciones: observaciones === '' ? null : observaciones,
+      createdAt: ahora,
+      updatedAt: ahora,
+    }
+    equipos.equipos = [...equipos.equipos, equipo]
+    return HttpResponse.json(equipo, { status: 201 })
+  }),
+
+  http.patch(`${BASE_API}/equipment/:id`, async ({ request, params }) => {
+    const equipo = equipos.equipos.find((item) => item.id === params.id)
+    if (!equipo || !equipoVisible(equipo)) {
+      return equipoFueraDeAlcance()
+    }
+    const cuerpo = (await request.json()) as {
+      nombre?: string
+      tipo?: string
+      estado?: string
+      observaciones?: string | null
+    }
+
+    if (cuerpo.estado !== undefined) {
+      if (!ESTADOS_EQUIPO_PRUEBA.includes(cuerpo.estado as EstadoEquipo)) {
+        return errorApi(400, 'El estado no es valido', 'Bad Request')
+      }
+      if (equipo.estado === 'retirado' && cuerpo.estado !== 'retirado') {
+        return errorApi(409, 'El equipo ya esta retirado', 'Conflict')
+      }
+    }
+
+    const estadoAnterior = equipo.estado
+    const obsAnterior = equipo.observaciones
+
+    if (cuerpo.nombre !== undefined) {
+      const nombre = cuerpo.nombre.trim()
+      if (nombre.length < 2 || nombre.length > 100) {
+        return errorApi(
+          400,
+          'El nombre debe tener entre 2 y 100 caracteres',
+          'Bad Request',
+        )
+      }
+      equipo.nombre = nombre
+    }
+    if (cuerpo.tipo !== undefined) {
+      const tipo = cuerpo.tipo.trim()
+      if (tipo.length < 2 || tipo.length > 50) {
+        return errorApi(
+          400,
+          'El tipo debe tener entre 2 y 50 caracteres',
+          'Bad Request',
+        )
+      }
+      equipo.tipo = tipo
+    }
+    if (cuerpo.estado !== undefined) {
+      equipo.estado = cuerpo.estado as EstadoEquipo
+    }
+    if (cuerpo.observaciones !== undefined) {
+      const observaciones = (cuerpo.observaciones ?? '').trim()
+      if (observaciones.length > 500) {
+        return errorApi(
+          400,
+          'Las observaciones no pueden superar 500 caracteres',
+          'Bad Request',
+        )
+      }
+      equipo.observaciones = observaciones === '' ? null : observaciones
+    }
+    equipo.updatedAt = new Date().toISOString()
+
+    const estadoCambia = estadoAnterior !== equipo.estado
+    const obsCambia = (obsAnterior ?? '') !== (equipo.observaciones ?? '')
+    if (estadoCambia || obsCambia) {
+      equipos.historial = [
+        ...equipos.historial,
+        {
+          id: `hist-${equipo.id}-${equipos.historial.length + 1}`,
+          equipoId: equipo.id,
+          estadoAnterior,
+          estadoNuevo: equipo.estado,
+          observacionesAnterior: obsAnterior,
+          observacionesNuevas: equipo.observaciones,
+          usuarioId: actorEquipos?.id ?? 'usuario-1',
+          createdAt: equipo.updatedAt,
+          usuario: actorEquipos
+            ? { id: actorEquipos.id, nombre: actorEquipos.nombre }
+            : { id: 'usuario-1', nombre: 'Ada Pruebas' },
+        },
+      ]
+    }
+    return HttpResponse.json(equipo)
   }),
 
   http.get(`${BASE_API}/reports/comparativo`, () =>

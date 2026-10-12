@@ -19,11 +19,23 @@ export function RequirePermission({
   children,
   fallbackTo,
 }: RequirePermissionProps) {
-  const { permisos, autenticado } = useAuth()
+  const { permisos, autenticado, motivoSalida } = useAuth()
   const location = useLocation()
 
   if (!autenticado) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />
+    // Igual que en `ProtectedRoute`: la ruta de retorno solo se conserva si la
+    // sesion termino por vencimiento o por un 401, nunca en salida manual.
+    return (
+      <Navigate
+        to="/login"
+        state={
+          motivoSalida === 'expirada'
+            ? { from: location.pathname }
+            : undefined
+        }
+        replace
+      />
+    )
   }
 
   const requerido = Array.isArray(permiso) ? permiso : [permiso]

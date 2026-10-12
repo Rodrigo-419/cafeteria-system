@@ -75,6 +75,9 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
       eliminarSesion()
       setSesion(null)
       setMotivoSalida(motivo)
+      // Al salir de la sesion no debe quedar ningun dato del usuario anterior:
+      // se cancelan las peticiones en vuelo y se vacia por completo el cache.
+      void queryClient.cancelQueries()
       queryClient.clear()
     },
     [queryClient],
@@ -115,18 +118,26 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
       .finally(() => setCargando(false))
   }, [inicial.sesion])
 
-  const iniciarSesion = useCallback(async (nombreUsuario: string, password: string) => {
-    const respuesta = await apiIniciarSesion(nombreUsuario, password)
-    const nueva = crearSesion(
-      respuesta.accessToken,
-      respuesta.user,
-      respuesta.expiresIn,
-    )
-    tokenRef.current = nueva.accessToken
-    guardarSesion(nueva)
-    setMotivoSalida(null)
-    setSesion(nueva)
-  }, [])
+  const iniciarSesion = useCallback(
+    async (nombreUsuario: string, password: string) => {
+      const respuesta = await apiIniciarSesion(nombreUsuario, password)
+      const nueva = crearSesion(
+        respuesta.accessToken,
+        respuesta.user,
+        respuesta.expiresIn,
+      )
+      tokenRef.current = nueva.accessToken
+      guardarSesion(nueva)
+      // Defensa en profundidad: aunque el cierre de sesion ya limpio el cache,
+      // se vuelve a vaciar antes de navegar para no arrastrar datos de la
+      // cuenta anterior (por ejemplo, si la pestana se recargo sin login).
+      void queryClient.cancelQueries()
+      queryClient.clear()
+      setMotivoSalida(null)
+      setSesion(nueva)
+    },
+    [queryClient],
+  )
 
   const cerrarSesion = useCallback(() => {
     limpiarSesion(null)

@@ -175,6 +175,23 @@ export interface EquipoApi {
   updatedAt: string
 }
 
+/**
+ * Registro del historial de un equipo (`GET /equipment/:id/history`). Solo se
+ * crea cuando cambian el estado o las observaciones; incluye los valores
+ * anteriores, el autor y la fecha.
+ */
+export interface HistorialEquipoApi {
+  id: string
+  equipoId: string
+  estadoAnterior: EstadoEquipo
+  estadoNuevo: EstadoEquipo
+  observacionesAnterior: string | null
+  observacionesNuevas: string | null
+  usuarioId: string
+  createdAt: string
+  usuario: { id: string; nombre: string } | null
+}
+
 /** Importes por método de pago del reporte comparativo. */
 export interface ReporteVentasMetodoApi {
   /** Importe en texto con dos decimales. */

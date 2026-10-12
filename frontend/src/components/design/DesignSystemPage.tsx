@@ -8,6 +8,7 @@ import { DataTable, type Column } from '@/components/shared/DataTable'
 import { StatCard } from '@/components/shared/StatCard'
 import { StatusPill } from '@/components/shared/StatusPill'
 import { EstadoOfertaBadge } from '@/features/products/EstadoOfertaBadge'
+import { EstadoEquipoBadge } from '@/features/equipment/EstadoEquipoBadge'
 import { EstadoStockBadge } from '@/features/inventory/EstadoStockBadge'
 import { NivelStock } from '@/features/inventory/NivelStock'
 import { VariacionStock } from '@/features/inventory/VariacionStock'
@@ -583,6 +584,10 @@ export function DesignSystemPage() {
                 <StatusPill>Retirado</StatusPill>
                 <EstadoOfertaBadge estado="activo" />
                 <EstadoOfertaBadge estado="inactivo" />
+                <EstadoEquipoBadge estado="funcionando" />
+                <EstadoEquipoBadge estado="en_mantenimiento" />
+                <EstadoEquipoBadge estado="danado" />
+                <EstadoEquipoBadge estado="retirado" />
               </div>
             </CardContent>
           </Card>

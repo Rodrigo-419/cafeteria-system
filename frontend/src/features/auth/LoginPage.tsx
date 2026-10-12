@@ -48,8 +48,15 @@ function mensajeDeError(error: unknown): string {
         return 'Usuario o contraseña incorrectos.'
       case 403:
         return 'Tu cuenta está bloqueada. Contacta al administrador.'
-      case 429:
-        return 'Demasiados intentos. Espera un momento e inténtalo de nuevo.'
+      case 429: {
+        // El servidor ya responde en español indicando cuántos segundos hay
+        // que esperar; se prefiere ese texto y solo se usa el genérico si no
+        // viene ningún mensaje.
+        const delServidor = error.mensajes.join(' ').trim()
+        return delServidor.length > 0
+          ? delServidor
+          : 'Demasiados intentos. Espera un momento e inténtalo de nuevo.'
+      }
       default:
         return error.mensajes.join(' ')
     }

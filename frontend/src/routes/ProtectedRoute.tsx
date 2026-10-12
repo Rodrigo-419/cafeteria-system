@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth/useAuth'
 
 /** Envuelve las rutas privadas: exige sesion y espera a validarla. */
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { autenticado, cargando } = useAuth()
+  const { autenticado, cargando, motivoSalida } = useAuth()
   const location = useLocation()
 
   if (cargando) {
@@ -16,7 +16,19 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!autenticado) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    // La ruta de retorno solo se conserva si la sesion termino por vencimiento
+    // o por un 401; en una salida manual se entra al login sin destino.
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={
+          motivoSalida === 'expirada'
+            ? { from: location.pathname }
+            : undefined
+        }
+      />
+    )
   }
 
   return <>{children}</>

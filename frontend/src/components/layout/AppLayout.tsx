@@ -24,7 +24,9 @@ export function AppLayout() {
 
   const handleLogout = () => {
     cerrarSesion()
-    navigate('/login')
+    // Salida manual: no se conserva la ruta de retorno, y se reemplaza la
+    // entrada del historial para que "atras" no vuelva a la pantalla privada.
+    navigate('/login', { replace: true })
   }
 
   const Sidebar = (

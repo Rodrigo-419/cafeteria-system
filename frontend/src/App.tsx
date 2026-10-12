@@ -23,6 +23,8 @@ import { AlertasPage } from '@/features/inventory/AlertasPage'
 import { RecuentosPage } from '@/features/inventory/RecuentosPage'
 import { RecuentoNuevoPage } from '@/features/inventory/RecuentoNuevoPage'
 import { MovimientosPage } from '@/features/inventory/MovimientosPage'
+import { EquiposPage } from '@/features/equipment/EquiposPage'
+import { EquipoDetallePage } from '@/features/equipment/EquipoDetallePage'
 
 function crearQueryClient() {
   return new QueryClient({
@@ -35,8 +37,13 @@ function crearQueryClient() {
   })
 }
 
-export function App() {
-  const [queryClient] = useState(crearQueryClient)
+export function App({
+  queryClient: clienteInyectado,
+}: {
+  queryClient?: QueryClient
+} = {}) {
+  const [clienteInterno] = useState(crearQueryClient)
+  const queryClient = clienteInyectado ?? clienteInterno
 
   const rutasModulo = MENU_ITEMS.filter(
     (item) =>
@@ -47,7 +54,8 @@ export function App() {
       item.to !== '/inventory' &&
       item.to !== '/inventory/recuentos' &&
       item.to !== '/inventory/movimientos' &&
-      item.to !== '/alerts',
+      item.to !== '/alerts' &&
+      item.to !== '/equipment',
   )
 
   return (
@@ -177,6 +185,28 @@ export function App() {
                 element={
                   <RequirePermission permiso="inventario.registrar">
                     <MovimientosPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="equipment"
+                element={
+                  <RequirePermission
+                    permiso={['equipo.ver', 'equipo.registrar_editar']}
+                    modo="any"
+                  >
+                    <EquiposPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="equipment/:id"
+                element={
+                  <RequirePermission
+                    permiso={['equipo.ver', 'equipo.registrar_editar']}
+                    modo="any"
+                  >
+                    <EquipoDetallePage />
                   </RequirePermission>
                 }
               />

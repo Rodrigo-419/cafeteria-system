@@ -66,13 +66,14 @@ describe('LoginPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('avisa de demasiados intentos ante un 429', async () => {
+  it('muestra el mensaje del servidor con los segundos de espera ante un 429', async () => {
     server.use(
       http.post(`${BASE_API}/auth/login`, () =>
         HttpResponse.json(
           {
             statusCode: 429,
-            message: 'ThrottlerException: Too Many Requests',
+            message:
+              'Demasiados intentos. Espera 42 segundos e inténtalo de nuevo.',
             error: 'Too Many Requests',
           },
           { status: 429 },
@@ -86,7 +87,11 @@ describe('LoginPage', () => {
       CREDENCIALES_VALIDAS.password,
     )
 
-    expect(await screen.findByText(/Demasiados intentos/)).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        /Demasiados intentos\. Espera 42 segundos e inténtalo de nuevo\./,
+      ),
+    ).toBeInTheDocument()
   })
 
   it('deshabilita el botón mientras la petición está en curso', async () => {
