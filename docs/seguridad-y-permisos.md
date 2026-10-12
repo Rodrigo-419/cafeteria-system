@@ -9,13 +9,28 @@ permisos individuales y qué alcance tiene cada módulo.
   El token viaja en la cabecera `Authorization: Bearer <token>`.
 - **Vigencia**: `JWT_EXPIRES_IN`, por defecto `8h`. No hay token de refresco: al
   vencer, se vuelve a iniciar sesión.
-- **Login**: `POST /api/auth/login` es la única ruta pública. Está limitada a
-  **5 intentos por minuto por IP** (`@Throttle` a nivel de controlador). El límite
-  global de la API es de 100 peticiones/minuto (`ThrottlerModule` en `AppModule`).
+- **Login**: `POST /api/auth/login` es la única ruta pública. Su control de
+  intentos (`LoginThrottleInterceptor` sobre `LoginThrottleService`) **solo
+  penaliza los fallos**, con una ventana fija de 1 minuto en memoria:
+  - **5 fallos por par (usuario + IP)**: a partir de ahí ese par recibe `429`
+    (con cabecera `Retry-After`) hasta que la ventana caduque, incluso si luego
+    llega la contraseña correcta. Un login correcto reinicia este contador.
+  - **20 fallos por IP**: frena probar contraseñas contra muchos usuarios desde
+    el mismo origen. Un login correcto **no** reinicia este contador.
+  - El contador usa el usuario **enviado**, exista o no: un usuario inexistente
+    y una contraseña errónea cuentan igual y no se distinguen por el límite.
+  - Un login correcto no consume cupo, así que cambiar de cuenta varias veces
+    seguidas no dispara el `429`. El login queda **excluido** del límite global
+    (`@SkipThrottle()`).
+  El límite global del resto de la API es de 300 peticiones/minuto por IP
+  (`ThrottlerModule` en `AppModule`). Al vivir en memoria, los contadores se
+  reinician con el servidor y no se comparten entre instancias.
 - **Misma respuesta para credenciales incorrectas**: cuando el usuario no existe se
   compara la contraseña contra un *hash falso* fijo para no revelar, por el tiempo
   de respuesta, si el usuario está registrado. Usuario inexistente y contraseña
   errónea responden el mismo mensaje (`Usuario o contraseña incorrectos`) y `401`.
+  El `429` de la protección de fuerza bruta es la única respuesta distinta y
+  aplica por igual a usuarios existentes y no existentes.
 - **Cuenta bloqueada**: un usuario con `estado = bloqueado` no inicia sesión
   (responde `403 Cuenta bloqueada`). Si además la contraseña es incorrecta, el
   login responde `401` para no revelar el estado de la cuenta.

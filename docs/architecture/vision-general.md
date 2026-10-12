@@ -89,7 +89,9 @@ flowchart LR
 ```
 
 Los tres guards se registran como `APP_GUARD` en `AppModule`, en ese orden
-(JWT → permisos → throttling).
+(JWT → permisos → throttling). El login queda excluido del throttling global
+(`@SkipThrottle()`) y usa su propio control de intentos
+(`LoginThrottleInterceptor`, que solo cuenta los fallos).
 
 ## 5. Módulos
 

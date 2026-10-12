@@ -67,6 +67,11 @@ activarse cuando la aplicación está detrás de un proxy inverso propio** (por
 ejemplo con `TRUST_PROXY=true`, un número de saltos o una lista de subredes como
 `loopback`). Activarlo sin proxy permite falsear la IP y esquivar el límite.
 
+El login solo penaliza los **fallos**: con 5 fallos del mismo par usuario + IP (o
+20 fallos de la misma IP) responde `429` con `Retry-After` durante la ventana de
+1 minuto. Los contadores viven en memoria, así que se reinician al reiniciar el
+servidor; el resto de la API usa un límite global de 300 peticiones/minuto por IP.
+
 `CORS_ORIGIN` es la lista de orígenes autorizados a consumir la API desde un
 navegador, separados por comas (por ejemplo
 `CORS_ORIGIN=http://localhost:5173,http://localhost:4173`). Por defecto está

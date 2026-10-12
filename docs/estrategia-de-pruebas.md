@@ -62,11 +62,14 @@ contraseña del administrador de pruebas, contraseñas válida/débil y el secre
 pruebas. El hash bcrypt usa 12 rondas reales (como producción), por lo que cada
 alta de usuario cuesta algo de tiempo; es intencional.
 
-> El almacenamiento del throttler se sustituye en las pruebas
-> (`test/utils/crear-app-pruebas.ts`): el guard global se mantiene, pero el
-> almacenamiento nunca bloquea, para no interferir con decenas de logins. La
-> única excepción es `trust-proxy.e2e-spec.ts`, que construye su propia app y
-> conserva el throttler real porque su comportamiento es lo que se prueba.
+> El **límite de intentos de login** (`LoginThrottleService`) se neutraliza por
+> defecto en las pruebas (`test/utils/crear-app-pruebas.ts`, opción
+> `neutroLoginThrottle`), para no interferir con decenas de logins. Las suites que
+> prueban el comportamiento real (login y `trust-proxy`) lo reactivan con
+> `neutroLoginThrottle: false` e inyectan un **reloj simulado** por el token
+> `RELOJ_LOGIN`, de modo que avanzar la ventana de 1 minuto no implica esperas
+> reales. El `ThrottlerGuard` global también usa almacenamiento sin límite en las
+> pruebas.
 
 ## 4. Suites e2e
 
@@ -86,7 +89,8 @@ Cada módulo tiene su suite en `backend/test/`:
 | `shifts`              | `shifts.e2e-spec.ts`       | Turnos fijos/variables, asignaciones, solapamiento y retiro. |
 | `attendance`          | `attendance.e2e-spec.ts`   | Marcación con PIN, doble marcaje, correcciones, cierre administrativo, justificación de faltas, lecturas y terminal. |
 | `reports`             | `reports.e2e-spec.ts`      | Reporte comparativo entre sucursales: contrato, ventas, inventario, asistencia, estado actual, validaciones y autorización. |
-| `trust proxy`         | `trust-proxy.e2e-spec.ts`  | `TRUST_PROXY`: con el valor por defecto `X-Forwarded-For` no evade el límite de login; activado, cada IP declarada tiene su propio límite. Usa el throttler real (sin el override de `crearAppDePruebas`). |
+| `trust proxy`         | `trust-proxy.e2e-spec.ts`  | `TRUST_PROXY`: con el valor por defecto `X-Forwarded-For` no evade el límite de login; activado, cada IP declarada tiene su propio límite. Usa el límite de login real (`crearAppConLimiteLoginReal`, sin neutralizar el throttle). |
+| `login throttle`      | `login-throttle.e2e-spec.ts` | Solo cuentan los **fallos**: tras 5 fallos del mismo par usuario+IP (o 20 de la misma IP) responde `429` con `Retry-After` y mensaje, aunque llegue la contraseña correcta; el usuario inexistente cuenta igual; el bloqueo de una cuenta no afecta a otra; la ventana se reinicia al avanzar el **reloj simulado**. |
 
 Helpers compartidos en `backend/test/utils/`:
 
@@ -105,14 +109,14 @@ generado a su `.ts` (Node no lo resuelve solo).
 ## 5. Cobertura
 
 Las cifras siguientes corresponden a la última ejecución limpia, verificada en
-**2026-10-10** con `npm run build`, `npm run lint`, `npm test` y
+**2026-10-11** con `npm run build`, `npm run lint`, `npm test` y
 `npm run test:e2e` (Docker con la base de pruebas disponible). Se refrescan
 ejecutando los comandos de la sección 2.
 
 | Nivel     | Suites | Casos |
 | --------- | ------ | ----- |
-| Unitarias | 54     | 762   |
-| E2E       | 13     | 399   |
+| Unitarias | 58     | 806   |
+| E2E       | 15     | 415   |
 
 > La tabla no incluye un % de cobertura de código: el repo no define el comando
 > `coverage` como parte del flujo estándar.
@@ -184,7 +188,9 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   recuentos (`GET /api/inventario/recuentos`, `GET /api/inventario/recuentos/:id`,
   `POST /api/inventario/sucursales/:sucursalId/recuentos`), los movimientos
   (`GET /api/inventario/sucursales/:sucursalId/movimientos`), la asistencia
-  (`GET /api/attendance/records`), los equipos (`GET /api/equipment`) y el
+  (`GET /api/attendance/records`), los equipos (`GET /api/equipment`,
+  `GET/POST /api/equipment`, `GET/PATCH /api/equipment/:id` y
+  `GET /api/equipment/:id/history`) y el
   reporte comparativo (`GET /api/reports/comparativo`), incluidos los escenarios
   de error 400/403/404/409.
 
@@ -207,14 +213,15 @@ npm run test:watch
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 30
-- **Total de tests**: **168 passed**
+- **Archivos de prueba**: 34
+- **Total de tests**: **194 passed**
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/format/money.spec.ts`, `lib/format/dates.spec.ts`,
 `lib/permissions/permissions.spec.ts`, `lib/permissions/Can.test.tsx`,
 `lib/permissions/RequirePermission.test.tsx`, `lib/navigation/menu.spec.ts`,
-`features/auth/LoginPage.test.tsx`, `routes/ProtectedRoute.test.tsx`,
+`features/auth/LoginPage.test.tsx`, `features/auth/cambio-de-cuenta.test.tsx`,
+`routes/ProtectedRoute.test.tsx`,
 `components/shared/DataTable.test.tsx`, `components/shared/ConfirmDialog.test.tsx`,
 `design-rules.test.ts`, `theme-contrast.test.ts`, el módulo de ventas
 (`features/sales/NewSalePage.test.tsx`, `features/sales/SalesListPage.test.tsx`,
@@ -229,7 +236,10 @@ productos y la carta (`features/products/CatalogoProductos.test.tsx`,
 `features/inventory/RecuentoNuevoPage.test.tsx`,
 `features/inventory/RecuentosPage.test.tsx`,
 `features/inventory/MovimientosPage.test.tsx`), la regresión del inventario
-(`features/inventory/regresion.test.tsx`) y el landing autenticado
+(`features/inventory/regresion.test.tsx`), los equipos
+(`features/equipment/EquiposPage.test.tsx`,
+`features/equipment/EquipoDetallePage.test.tsx`,
+`features/equipment/equipment.api.test.ts`) y el landing autenticado
 (`features/auth/landing.test.tsx`).
 
 Casos de ventas cubiertos: registrar y mostrar la confirmación del servidor,
@@ -279,6 +289,22 @@ Sucursal y un usuario sin `inventario.recuento` no ve acciones (estado vacío). 
 (Entrada/Ajuste), el filtro por tipo viaja a la API, el Admin debe elegir sucursal
 y un error del servidor (500) muestra el estado de error.
 
+Casos de equipos cubiertos: el Admin ve la columna y el filtro de sucursal y
+equipos de todas las sucursales, mientras que el Gerente solo ve las suyas y
+sin columna/filtro de sucursal; el Admin registra eligiendo sucursal y el
+Gerente registra en la suya sin selector; la búsqueda filtra por nombre o tipo;
+un equipo retirado no ofrece "Cambiar estado" (pero sí "Editar"); un usuario
+con solo `equipo.ver` ve el listado y "Ver detalle" sin acciones de edición; y
+los estados vacío, de error y de carga del listado. En `EquipoDetallePage`, se
+muestran los datos y el historial, un cambio de estado + observaciones agrega una
+entrada a la línea de tiempo, un equipo retirado no ofrece "Cambiar estado" pero
+sí "Editar", un usuario sin permiso de edición no ve acciones, y un equipo fuera
+de alcance (Gerente → 404) muestra el error. `equipment.api.test.ts` verifica los
+contratos directos: 201 de creación en `funcionando`, el Gerente forzado a su
+sucursal aunque envíe otra, el Admin creando en la sucursal elegida, 400 de
+nombre corto, 409 al cambiar el estado de un equipo retirado, 404 al consultar
+fuera de alcance y el historial ordenado del más reciente al más antiguo.
+
 ### Detalles relevantes
 
 - `renderConProveedores` envuelve con `QueryClientProvider`, `MemoryRouter` y
@@ -302,6 +328,14 @@ y un error del servidor (500) muestra el estado de error.
   cantidades 400, sucursal/insumo fuera de alcance 404, solicitud sin líneas 400,
   y el alta de un recuento fija el stock y genera un ajuste solo si hay
   diferencia).
+- Los **equipos** mockeados son estado mutable (equipos e historial en
+  `src/test/handlers.ts`); `reiniciarEquiposPrueba()` los restaura tras cada test
+  y el alcance se acota por el actor de la sesión (`establecerActorEquipos`,
+  fijado por `iniciarSesionDePrueba`; sin sesión no aplica alcance). Los handlers
+  replican las reglas del backend: el Gerente crea siempre en su sucursal (aunque
+  envíe otra), un equipo retirado devuelve 409 al intentar cambiar su estado, una
+  sucursal ajena responde 404 y cada cambio de estado u observaciones agrega una
+  entrada al historial con el usuario de la sesión.
 - El **menú por rol** se prueba con los permisos reales de Admin/Gerente/Empleado
   (tomados del seed del backend) y con un caso de permiso revocado.
 - El **panel de control** se prueba sobre `DashboardPage` con los permisos

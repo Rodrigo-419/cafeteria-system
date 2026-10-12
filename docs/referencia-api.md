@@ -26,7 +26,7 @@ bajo el prefijo global `/api`.
 
 | Método | Ruta                    | Permiso / nota           | Códigos |
 | ------ | ----------------------- | ------------------------ | ------- |
-| POST   | `/api/auth/login`       | Pública; límite 5/min/IP | 200, 400, 401 |
+| POST   | `/api/auth/login`       | Pública; solo cuentan los fallos (429 + `Retry-After`) | 200, 400, 401, 429 |
 | GET    | `/api/auth/me`          | Autenticado              | 200, 401 |
 
 `login` devuelve `{ accessToken, tokenType, expiresIn, user }`; `me` devuelve el
@@ -35,6 +35,13 @@ usuario autenticado con sus permisos efectivos.
 El cuerpo de `login` es `{ nombreUsuario, password }`. El `user` devuelto incluye
 `nombreUsuario` y **no** un campo `email`. Los intentos con credenciales inválidas
 responden `401` con el **mismo mensaje**, exista o no el usuario.
+
+El control de fuerza bruta del login **solo cuenta los fallos**: tras **5 fallos**
+del mismo par usuario + IP (o **20 fallos** de la misma IP) responde `429` con la
+cabecera `Retry-After` en segundos y el mensaje
+`Demasiados intentos. Espera N segundos e inténtalo de nuevo.`; el bloqueo se
+mantiene aunque luego se envíe la contraseña correcta, hasta que caduque la
+ventana de 1 minuto. Un login correcto reinicia el contador del par.
 
 ### Usuarios (`/api/users`)
 
@@ -363,7 +370,7 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
 | 403    | Usuario autenticado pero sin el permiso (o sin alcance sobre la entidad). |
 | 404    | Recurso inexistente o fuera del alcance del usuario.         |
 | 409    | Conflicto con el estado (registro duplicado, dependencias, acción no permitida). |
-| 429    | Demasiados intentos (p. ej. protección de fuerza bruta del PIN de asistencia). |
+| 429    | Demasiados intentos (fuerza bruta del login, con `Retry-After`, o del PIN de asistencia). |
 
 ## Documentos relacionados
 
