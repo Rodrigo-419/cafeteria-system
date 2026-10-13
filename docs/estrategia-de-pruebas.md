@@ -314,7 +314,11 @@ usuario, sucursal y la diferencia ("-1" / "Disminución"), el Admin ve la column
 Sucursal y un usuario sin `inventario.recuento` no ve acciones (estado vacío). En
 `MovimientosPage`, la lista muestra la variación firmada (+5 / -1) y el tipo
 (Entrada/Ajuste), el filtro por tipo viaja a la API, el Admin debe elegir sucursal
-y un error del servidor (500) muestra el estado de error.
+y un error del servidor (500) muestra el estado de error. El `POST` de recuento no
+es idempotente en el servidor (limitación conocida de la Fase 1): un doble envío
+crearía dos recuentos, lo que se mitiga en el frontend deshabilitando el botón de
+confirmar (y el de cancelar) mientras la petición está en curso gracias al
+`loading` del `ConfirmDialog`.
 
 Casos de equipos cubiertos: el Admin ve la columna y el filtro de sucursal y
 equipos de todas las sucursales, mientras que el Gerente solo ve las suyas y
@@ -331,6 +335,33 @@ contratos directos: 201 de creación en `funcionando`, el Gerente forzado a su
 sucursal aunque envíe otra, el Admin creando en la sucursal elegida, 400 de
 nombre corto, 409 al cambiar el estado de un equipo retirado, 404 al consultar
 fuera de alcance y el historial ordenado del más reciente al más antiguo.
+
+Casos de usuarios y permisos cubiertos: el Admin ve la columna y el filtro de
+sucursal y usuarios de todas las sucursales, mientras que el Gerente solo ve los
+Empleados de su sucursal y sin columna/filtro de sucursal; la búsqueda filtra por
+nombre o nombre de usuario; el Admin crea un Empleado eligiendo sucursal y el
+Gerente crea en su sucursal sin selectores de rol ni sucursal; crear un Gerente
+exige elegir sucursal y un Admin no lleva sucursal (el selector queda
+deshabilitado); el 409 de nombre de usuario repetido muestra el mensaje del
+servidor; una contraseña corta deshabilita el alta; "Generar contraseña" produce
+una de 20 caracteres que **no se persiste** (ni en `sessionStorage`/`localStorage`
+ni en las claves del caché de consultas); la propia fila solo ofrece "Editar"
+(sin Permisos ni Bloquear); el Admin edita rol y sucursal de un Empleado; bloquear
+un Empleado confirma y cambia el estado en la tabla; y los estados vacío, de
+error y de carga del listado. En `PermisosUsuarioDialog`, un permiso revocado de
+un Empleado aparece como Inactivo con "Conceder" deshabilitado (regla de los 4
+concedibles), conceder de nuevo a un Gerente pasa la fila a "Quitar" y quitarla
+vuelve al valor del rol, revocar un permiso del rol pasa a "Conceder", y no se
+puede revocar un permiso que el actor no posee. `users.api.test.ts` verifica los
+contratos directos: alcance del Gerente, forzado de rol/sucursal al crear, 400 de
+contraseña corta y de más de 72 bytes, 409 de `nombreUsuario` duplicado, 403 del
+Gerente al cambiar rol, 404 fuera de alcance, 400 al cambiar el estado de la
+propia cuenta, 409 del último Admin activo (dos llamadas seguidas), las
+revocaciones sembradas, revocar/conceder/quitar y los 400 de la matriz de
+permisos (conceder a un Empleado uno fuera de los 4, revocar uno que el rol no da
+por defecto y asignar uno que el actor no posee). El generador de contraseñas se
+prueba de forma aislada en `generador-password.test.ts` (≥16 caracteres,
+alfabeto seguro y valores distintos).
 
 ### Detalles relevantes
 
@@ -363,6 +394,19 @@ fuera de alcance y el historial ordenado del más reciente al más antiguo.
   envíe otra), un equipo retirado devuelve 409 al intentar cambiar su estado, una
   sucursal ajena responde 404 y cada cambio de estado u observaciones agrega una
   entrada al historial con el usuario de la sesión.
+- Los **usuarios** mockeados también son estado mutable (fixtures
+  `USUARIOS_PRUEBA` y un mapa de asignaciones individuales por
+  `usuarioId:permisoId` en `src/test/handlers.ts`); `reiniciarUsuariosPrueba()`
+  los restaura tras cada test y el alcance se acota por el actor de la sesión
+  (`establecerActorUsuarios`, fijado por `iniciarSesionDePrueba`; sin sesión no
+  aplica alcance). Se siembran dos revocaciones realistas (`inventario.recuento`
+  revocado a un Gerente y `productos.ver` revocado a un Empleado) para probar
+  conceder/revocar/restaurar. Los handlers replican las reglas del backend: el
+  Gerente solo ve y crea Empleados de su sucursal (404 fuera de alcance), el
+  rol/sucursal solo los cambia el Admin (403), la propia cuenta responde 400, el
+  último Admin activo responde 409, `nombreUsuario` duplicado responde 409 y las
+  reglas de permisos (`PUT`/`DELETE`) replican poseer el permiso, la matriz de los
+  4 concedibles a un Empleado y revocar solo lo que el rol da por defecto.
 - El **menú por rol** se prueba con los permisos reales de Admin/Gerente/Empleado
   (tomados del seed del backend) y con un caso de permiso revocado.
 - El **panel de control** se prueba sobre `DashboardPage` con los permisos
