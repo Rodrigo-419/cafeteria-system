@@ -12,7 +12,7 @@ export function ComingSoonPage() {
     <div className="space-y-6">
       <PageHeader
         title="Próximamente"
-        description="Esta funcionalidad estará disponible en las siguientes etapas."
+        description="Todavía no está disponible."
       />
       <Card>
         <CardHeader>

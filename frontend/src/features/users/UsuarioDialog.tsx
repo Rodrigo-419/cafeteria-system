@@ -12,6 +12,7 @@
 // y aviso de no persistencia; también se puede escribir una propia (12
 // caracteres de mínimo, igual que la política del backend).
 import { useState } from 'react'
+import { cn } from 'cn'
 import { toast } from 'sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -43,8 +44,8 @@ import { mensajeDeError } from './mensajes'
 import {
   LARGO_NOMBRE,
   LARGO_NOMBRE_USUARIO,
-  LONGITUD_MINIMA_PASSWORD,
   ROLES_USUARIO,
+  ayudaPassword,
   mensajeNombre,
   mensajeNombreUsuario,
   mensajePassword,
@@ -305,10 +306,20 @@ export function UsuarioDialog({
                   type="password"
                   value={password}
                   autoComplete="new-password"
+                  aria-describedby="usuario-password-ayuda"
+                  aria-invalid={!passwordValida}
                   onChange={(evento) => setPassword(evento.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Mínimo {LONGITUD_MINIMA_PASSWORD} caracteres.
+                <p
+                  id="usuario-password-ayuda"
+                  className={cn(
+                    'text-xs',
+                    passwordValida
+                      ? 'text-muted-foreground'
+                      : 'text-destructive',
+                  )}
+                >
+                  {ayudaPassword(password)}
                 </p>
               </div>
 
@@ -330,9 +341,8 @@ export function UsuarioDialog({
                     <Alert>
                       <AlertTitle>Contraseña de un solo uso</AlertTitle>
                       <AlertDescription>
-                        Cópiala ahora y entrégala al usuario en persona. No se
-                        guarda en el sistema: al cerrar esta ventana deja de
-                        estar disponible.
+                        Cópiala ahora y entrégala al usuario en persona: al
+                        cerrar esta ventana dejará de estar disponible.
                       </AlertDescription>
                     </Alert>
                   </div>

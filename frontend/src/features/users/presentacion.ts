@@ -6,7 +6,7 @@
 // respeta la política real de 12 caracteres de mínimo (72 bytes máximos por
 // el límite de bcrypt).
 import type { TonoStatusPill } from '@/components/shared/StatusPill'
-import type { EstadoUsuario, OrigenPermiso } from '@/types/api'
+import type { EstadoUsuario } from '@/types/api'
 
 /** Roles gestionables, con las etiquetas literales que usa el backend. */
 export const ROLES_USUARIO = ['Admin', 'Gerente', 'Empleado'] as const
@@ -23,13 +23,6 @@ export const ETIQUETA_ESTADO_USUARIO: Record<EstadoUsuario, string> = {
 export const TONO_ESTADO_USUARIO: Record<EstadoUsuario, TonoStatusPill> = {
   activo: 'success',
   bloqueado: 'error',
-}
-
-/** Etiquetas del rol y del origen de cada permiso efectivo. */
-export const ETIQUETA_ORIGEN_PERMISO: Record<OrigenPermiso, string> = {
-  rol: 'Del rol',
-  concedido: 'Concesión',
-  revocado: 'Revocado',
 }
 
 export const LARGO_NOMBRE = { min: 3, max: 120 } as const
@@ -95,4 +88,20 @@ export function mensajePassword(valor: string): string | null {
     return `La contraseña no puede exceder ${LONGITUD_MAXIMA_BYTES_PASSWORD} bytes (límite de bcrypt).`
   }
   return null
+}
+
+/**
+ * Texto de ayuda bajo el campo de contraseña: actúa de contador y explica el
+ * motivo por el que la contraseña aún no es válida (mínimo de caracteres o
+ * límite de bytes). Es texto, no color, para que sea accesible.
+ */
+export function ayudaPassword(valor: string): string {
+  const bytes = new TextEncoder().encode(valor).length
+  if (bytes > LONGITUD_MAXIMA_BYTES_PASSWORD) {
+    return `La contraseña no puede exceder ${LONGITUD_MAXIMA_BYTES_PASSWORD} bytes (tiene ${bytes}).`
+  }
+  if (valor.length < LONGITUD_MINIMA_PASSWORD) {
+    return `${valor.length} de ${LONGITUD_MINIMA_PASSWORD} caracteres como mínimo.`
+  }
+  return `Cumple el mínimo (${LONGITUD_MINIMA_PASSWORD} caracteres).`
 }

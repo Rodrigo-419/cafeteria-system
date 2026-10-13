@@ -24,11 +24,10 @@ function renderComoGerente() {
 }
 
 describe('Alertas de stock (solo lectura)', () => {
-  it('lista las alertas abiertas y explica que son automáticas', async () => {
+  it('lista las alertas abiertas y no ofrece resolverlas a mano', async () => {
     renderComoGerente()
 
     expect(await screen.findByText('Café en grano')).toBeInTheDocument()
-    expect(screen.getByText('Alertas automáticas')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Resolver' })).toBeNull()
   })
 

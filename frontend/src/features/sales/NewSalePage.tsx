@@ -297,7 +297,7 @@ export function NewSalePage() {
       ) : !puedeVerCarta ? (
         <ErrorState
           title="No puedes ver la carta"
-          description="Necesitas el permiso productos.ver para elegir productos de la carta."
+          description="Necesitas permiso para ver la carta de productos."
         />
       ) : (
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
@@ -496,8 +496,8 @@ export function NewSalePage() {
                   <MoneyText amountCents={totalCentimos} />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Importe referencial: el servidor recalcula el total al
-                  registrar.
+                  El total final se calcula con los precios vigentes al registrar
+                  la venta.
                 </p>
 
                 <div className="space-y-2">

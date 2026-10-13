@@ -43,7 +43,7 @@ function filaDelPermiso(descripcion: string): HTMLElement {
 }
 
 describe('Permisos de un usuario', () => {
-  it('muestra un permiso revocado de un Empleado como Inactivo y sin poder concederlo', async () => {
+  it('muestra un permiso revocado como Inactivo y permite restablecerlo', async () => {
     const user = userEvent.setup({ delay: null })
     renderComoAdmin()
     await abrirPermisos(user, 'Beto Turno')
@@ -53,15 +53,49 @@ describe('Permisos de un usuario', () => {
     expect(within(fila).getByText('Revocado')).toBeInTheDocument()
     expect(within(fila).getByText('Inactivo')).toBeInTheDocument()
 
-    const boton = within(fila).getByRole('button', { name: 'Conceder' })
-    expect(boton).toBeDisabled()
-    expect(boton).toHaveAttribute(
-      'title',
-      'A un Empleado solo se le pueden conceder los permisos de la matriz de seguridad.',
-    )
+    expect(
+      within(fila).getByRole('button', { name: 'Restablecer' }),
+    ).toBeEnabled()
+    expect(
+      within(fila).queryByRole('button', { name: 'Conceder' }),
+    ).toBeNull()
   })
 
-  it('concede de nuevo un permiso revocado a un Gerente y luego puede quitarlo', async () => {
+  it('quita una concesión y vuelve al valor que da el rol', async () => {
+    const user = userEvent.setup({ delay: null })
+    let tipo: 'concedido' | null = 'concedido'
+    server.use(
+      http.get(`${BASE_API}/users/usuario-1/permisos`, () =>
+        HttpResponse.json([
+          {
+            permisoId: 'perm-inventario-recuento',
+            codigo: 'inventario.recuento',
+            descripcion: 'Registrar recuentos de inventario',
+            origen: tipo === 'concedido' ? 'concedido' : 'rol',
+            efectivo: true,
+          },
+        ]),
+      ),
+      http.delete(`${BASE_API}/users/usuario-1/permisos/:permisoId`, () => {
+        tipo = null
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    renderComoAdmin()
+    await abrirPermisos(user, 'Ada Pruebas')
+
+    await screen.findByText('Registrar recuentos de inventario')
+    const fila = filaDelPermiso('Registrar recuentos de inventario')
+    expect(within(fila).getByText('Concedido')).toBeInTheDocument()
+
+    await user.click(within(fila).getByRole('button', { name: 'Quitar' }))
+    await waitFor(() =>
+      expect(within(fila).getByRole('button')).toHaveTextContent('Revocar'),
+    )
+    expect(within(fila).getByText('Del rol')).toBeInTheDocument()
+  })
+
+  it('restablece un permiso revocado y luego puede volver a revocarlo', async () => {
     const user = userEvent.setup({ delay: null })
     renderComoAdmin()
     await abrirPermisos(user, 'Ada Pruebas')
@@ -69,20 +103,21 @@ describe('Permisos de un usuario', () => {
     await screen.findByText('Registrar recuentos de inventario')
     const fila = filaDelPermiso('Registrar recuentos de inventario')
     expect(within(fila).getByText('Revocado')).toBeInTheDocument()
+    expect(within(fila).getByText('Inactivo')).toBeInTheDocument()
 
-    await user.click(within(fila).getByRole('button', { name: 'Conceder' }))
-    await waitFor(() =>
-      expect(within(fila).getByRole('button')).toHaveTextContent('Quitar'),
-    )
-    expect(within(fila).getByText('Concesión')).toBeInTheDocument()
-    expect(within(fila).getByText('Activo')).toBeInTheDocument()
-
-    await user.click(within(fila).getByRole('button', { name: 'Quitar' }))
+    await user.click(within(fila).getByRole('button', { name: 'Restablecer' }))
     await waitFor(() =>
       expect(within(fila).getByRole('button')).toHaveTextContent('Revocar'),
     )
     expect(within(fila).getByText('Del rol')).toBeInTheDocument()
     expect(within(fila).getByText('Activo')).toBeInTheDocument()
+
+    await user.click(within(fila).getByRole('button', { name: 'Revocar' }))
+    await waitFor(() =>
+      expect(within(fila).getByRole('button')).toHaveTextContent('Restablecer'),
+    )
+    expect(within(fila).getByText('Revocado')).toBeInTheDocument()
+    expect(within(fila).getByText('Inactivo')).toBeInTheDocument()
   })
 
   it('revoca un permiso que el rol otorga por defecto', async () => {
@@ -97,7 +132,7 @@ describe('Permisos de un usuario', () => {
 
     await user.click(within(fila).getByRole('button', { name: 'Revocar' }))
     await waitFor(() =>
-      expect(within(fila).getByRole('button')).toHaveTextContent('Conceder'),
+      expect(within(fila).getByRole('button')).toHaveTextContent('Restablecer'),
     )
     expect(within(fila).getByText('Revocado')).toBeInTheDocument()
     expect(within(fila).getByText('Inactivo')).toBeInTheDocument()

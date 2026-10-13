@@ -202,13 +202,16 @@ describe('Gestión de usuarios', () => {
     ).toBeInTheDocument()
   })
 
-  it('una contraseña corta deshabilita el alta', async () => {
+  it('una contraseña corta deshabilita el alta y muestra el contador', async () => {
     renderComoAdmin()
     const user = userEvent.setup({ delay: null })
     await screen.findByText('Beto Turno')
 
     await user.click(screen.getByRole('button', { name: 'Crear usuario' }))
     const dialogo = await screen.findByRole('dialog')
+    expect(
+      within(dialogo).getByText('0 de 12 caracteres como mínimo.'),
+    ).toBeInTheDocument()
     await user.type(within(dialogo).getByLabelText('Nombre'), 'Hugo Breve')
     await user.type(
       within(dialogo).getByLabelText('Nombre de usuario'),
@@ -221,8 +224,39 @@ describe('Gestión de usuarios', () => {
     await user.type(within(dialogo).getByLabelText('Contraseña'), 'corta')
 
     expect(
+      within(dialogo).getByText('5 de 12 caracteres como mínimo.'),
+    ).toBeInTheDocument()
+    expect(
       within(dialogo).getByRole('button', { name: 'Crear usuario' }),
     ).toBeDisabled()
+
+    await user.type(
+      within(dialogo).getByLabelText('Contraseña'),
+      'maslarga123!',
+    )
+    expect(
+      within(dialogo).getByText('Cumple el mínimo (12 caracteres).'),
+    ).toBeInTheDocument()
+    expect(
+      within(dialogo).getByRole('button', { name: 'Crear usuario' }),
+    ).toBeEnabled()
+  })
+
+  it('la ayuda de contraseña avisa del límite de bytes', async () => {
+    renderComoAdmin()
+    const user = userEvent.setup({ delay: null })
+    await screen.findByText('Beto Turno')
+
+    await user.click(screen.getByRole('button', { name: 'Crear usuario' }))
+    const dialogo = await screen.findByRole('dialog')
+    await user.type(
+      within(dialogo).getByLabelText('Contraseña'),
+      'a'.repeat(73),
+    )
+
+    expect(
+      within(dialogo).getByText(/no puede exceder 72 bytes/),
+    ).toBeInTheDocument()
   })
 
   it('generar contraseña muestra una contraseña de 20 caracteres que no se persiste', async () => {

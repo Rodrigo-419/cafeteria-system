@@ -4,7 +4,6 @@
 // descontinuar el insumo: las gestiona el backend. Aunque el permiso se llame
 // `alertas.ver_resolver`, no existe ruta para resolverlas a mano.
 import { useMemo, useState } from 'react'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import {
@@ -131,14 +130,6 @@ export function AlertasPage() {
         title="Alertas de stock"
         description="Insumos en o por debajo del mínimo de su sucursal"
       />
-
-      <Alert>
-        <AlertTitle>Alertas automáticas</AlertTitle>
-        <AlertDescription>
-          Se abren al bajar del mínimo y se cierran al reponer el stock. No se
-          resuelven manualmente.
-        </AlertDescription>
-      </Alert>
 
       <Card>
         <CardContent className="grid gap-3 pt-6 sm:grid-cols-2">
