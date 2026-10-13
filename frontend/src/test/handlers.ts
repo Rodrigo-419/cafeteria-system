@@ -6,11 +6,13 @@ import type {
   EquipoApi,
   EstadoEquipo,
   EstadoStockInsumo,
+  EstadoUsuario,
   HistorialEquipoApi,
   InsumoApi,
   LineaRecuentoApi,
   MovimientoInventarioApi,
   PresentacionInsumo,
+  PermisoEfectivoApi,
   ProductoApi,
   RecuentoDetalleApi,
   RegistroAsistenciaApi,
@@ -19,6 +21,7 @@ import type {
   StockInsumoApi,
   SucursalApi,
   UsuarioApi,
+  UsuarioGestionApi,
   VarianteApi,
   VentaCompletaApi,
 } from '@/types/api'
@@ -79,6 +82,58 @@ export const PERMISOS_EMPLEADO: string[] = [
   'asistencia.marcar',
   'asistencia.ver',
 ]
+
+// Catálogo completo de permisos con sus descripciones (mismo de `seed.ts`).
+// Los ids son simulados; en producción el backend genera los UUID y la interfaz
+// solo conoce los que recibe dentro de `GET /users/:id/permisos`.
+function idDePermiso(codigo: string): string {
+  return `perm-${codigo.replace(/\./g, '-')}`
+}
+
+export interface PermisoCatalogoPrueba {
+  id: string
+  codigo: string
+  descripcion: string
+}
+
+export const CATALOGO_PERMISOS_PRUEBA: PermisoCatalogoPrueba[] = (
+  [
+    { codigo: 'sucursales.crear_editar', descripcion: 'Crear y editar sucursales' },
+    { codigo: 'sucursales.ver', descripcion: 'Ver sucursales' },
+    { codigo: 'usuarios.crear_editar', descripcion: 'Crear y editar usuarios' },
+    { codigo: 'permisos.asignar', descripcion: 'Asignar y revocar permisos de usuarios' },
+    { codigo: 'productos.catalogo.editar', descripcion: 'Editar el catalogo de productos' },
+    { codigo: 'productos.precio.editar', descripcion: 'Editar precios de productos por sucursal' },
+    { codigo: 'productos.ver', descripcion: 'Ver productos' },
+    { codigo: 'insumos.catalogo.editar', descripcion: 'Editar el catalogo de insumos' },
+    { codigo: 'insumos.ver', descripcion: 'Ver insumos' },
+    { codigo: 'inventario.registrar', descripcion: 'Registrar movimientos de inventario' },
+    { codigo: 'inventario.minimo.editar', descripcion: 'Editar el stock minimo de los insumos' },
+    { codigo: 'inventario.recuento', descripcion: 'Registrar recuentos de inventario' },
+    { codigo: 'alertas.ver_resolver', descripcion: 'Ver y resolver alertas de stock' },
+    { codigo: 'ventas.registrar', descripcion: 'Registrar ventas' },
+    { codigo: 'ventas.anular', descripcion: 'Anular ventas del dia' },
+    { codigo: 'ventas.ver', descripcion: 'Ver ventas' },
+    { codigo: 'reportes.comparativos.ver', descripcion: 'Ver reportes comparativos entre sucursales' },
+    { codigo: 'empleados.crear_editar', descripcion: 'Crear y editar empleados' },
+    { codigo: 'turnos.editar', descripcion: 'Editar turnos y asignaciones' },
+    { codigo: 'asistencia.marcar', descripcion: 'Marcar entradas y salidas' },
+    { codigo: 'asistencia.corregir', descripcion: 'Corregir registros de asistencia' },
+    { codigo: 'asistencia.ver', descripcion: 'Ver registros de asistencia' },
+    { codigo: 'equipo.registrar_editar', descripcion: 'Registrar y editar equipos' },
+    { codigo: 'equipo.ver', descripcion: 'Ver equipos y su historial' },
+  ] as const
+).map((permiso) => ({
+  ...permiso,
+  id: idDePermiso(permiso.codigo),
+}))
+
+/** Permisos que cada rol otorga por defecto (matriz de `seguridad-y-permisos.md`). */
+export const DEFAULT_PERMISOS_POR_ROL: Record<string, string[]> = {
+  Admin: PERMISOS_ADMIN,
+  Gerente: PERMISOS_GERENTE,
+  Empleado: PERMISOS_EMPLEADO,
+}
 
 export const USUARIO_PRUEBA: UsuarioApi = {
   id: 'usuario-1',
@@ -732,6 +787,150 @@ function equipoVisible(equipo: EquipoApi): boolean {
 
 function equipoFueraDeAlcance() {
   return errorApi(404, 'El equipo no existe', 'Not Found')
+}
+
+// Usuarios: cuentas, su rol y las asignaciones individuales de permisos.
+//
+// El estado es mutable y se reinicia entre pruebas con `reiniciarUsuariosPrueba`.
+// Las asignaciones se guardan por `usuarioId:permisoId` → tipo. Se siembran dos
+// revocaciones realistas para poder probar conceder/revocar/restaurar sin
+// montar estados extra en cada prueba: `inventario.recuento` revocado a un
+// Gerente y `productos.ver` revocado a un Empleado.
+export const USUARIOS_PRUEBA: UsuarioGestionApi[] = [
+  {
+    id: 'admin-1',
+    nombre: 'Administrador',
+    nombreUsuario: 'admin',
+    rol: 'Admin',
+    sucursalId: null,
+    estado: 'activo',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'usuario-1',
+    nombre: 'Ada Pruebas',
+    nombreUsuario: 'ada',
+    rol: 'Gerente',
+    sucursalId: 'sucursal-1',
+    estado: 'activo',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'usuario-2',
+    nombre: 'Beto Turno',
+    nombreUsuario: 'beto',
+    rol: 'Empleado',
+    sucursalId: 'sucursal-1',
+    estado: 'activo',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'usuario-3',
+    nombre: 'Ciro Ruiz',
+    nombreUsuario: 'ciro',
+    rol: 'Empleado',
+    sucursalId: 'sucursal-2',
+    estado: 'bloqueado',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+]
+
+interface EstadoUsuarios {
+  usuarios: UsuarioGestionApi[]
+  /** Asignaciones individuales por `usuarioId:permisoId` → tipo. */
+  individuales: Map<string, 'concedido' | 'revocado'>
+}
+
+function crearEstadoUsuarios(): EstadoUsuarios {
+  const individuales = new Map<string, 'concedido' | 'revocado'>()
+  // Un Gerente con `inventario.recuento` revocado: permite probar regrant/restauración.
+  individuales.set(`usuario-1:${idDePermiso('inventario.recuento')}`, 'revocado')
+  // Un Empleado con `productos.ver` revocado: el rol lo otorga, la concesión lo quita.
+  individuales.set(`usuario-2:${idDePermiso('productos.ver')}`, 'revocado')
+  return {
+    usuarios: USUARIOS_PRUEBA.map((usuario) => ({ ...usuario })),
+    individuales,
+  }
+}
+
+let usuarios: EstadoUsuarios = crearEstadoUsuarios()
+
+// Actor vigente para el alcance de usuarios. Si es `null` no se aplica alcance
+// (útil para pruebas que no inician sesión); `iniciarSesionDePrueba` lo fija.
+let actorUsuarios: UsuarioApi | null = null
+
+export function establecerActorUsuarios(usuario: UsuarioApi | null): void {
+  actorUsuarios = usuario
+}
+
+/** Restaura los usuarios y las asignaciones, y limpia el actor de alcance. */
+export function reiniciarUsuariosPrueba(): void {
+  usuarios = crearEstadoUsuarios()
+  actorUsuarios = null
+}
+
+function actorUsuariosEsAdmin(): boolean {
+  if (!actorUsuarios) return true
+  return (actorUsuarios.rol ?? '').toLowerCase() === 'admin'
+}
+
+function usuarioVisible(usuario: UsuarioGestionApi): boolean {
+  if (actorUsuariosEsAdmin()) return true
+  return (
+    usuario.rol === 'Empleado' &&
+    usuario.sucursalId === (actorUsuarios?.sucursalId ?? null)
+  )
+}
+
+function usuarioFueraDeAlcance() {
+  return errorApi(404, 'El usuario no existe o esta fuera de tu alcance', 'Not Found')
+}
+
+function permisoDeCatalogo(codigo: string) {
+  return CATALOGO_PERMISOS_PRUEBA.find((permiso) => permiso.codigo === codigo)
+}
+
+/** Permisos efectivos: los del rol más las asignaciones individuales. */
+function permisosEfectivos(usuario: UsuarioGestionApi): PermisoEfectivoApi[] {
+  const porDefecto = DEFAULT_PERMISOS_POR_ROL[usuario.rol] ?? []
+  const resultado: PermisoEfectivoApi[] = []
+  const vistos = new Set<string>()
+
+  for (const codigo of porDefecto) {
+    const permiso = permisoDeCatalogo(codigo)
+    if (!permiso) continue
+    vistos.add(permiso.codigo)
+    const tipo = usuarios.individuales.get(`${usuario.id}:${permiso.id}`)
+    resultado.push({
+      permisoId: permiso.id,
+      codigo,
+      descripcion: permiso.descripcion,
+      origen: tipo ?? 'rol',
+      efectivo: tipo ? tipo === 'concedido' : true,
+    })
+  }
+
+  // Concesiones de permisos que el rol no otorga (p. ej. los 4 de un Empleado).
+  for (const [clave, tipo] of usuarios.individuales) {
+    const [usuarioId, permisoId] = clave.split(':')
+    if (usuarioId !== usuario.id) continue
+    const permiso = CATALOGO_PERMISOS_PRUEBA.find((p) => p.id === permisoId)
+    if (!permiso || vistos.has(permiso.codigo)) continue
+    vistos.add(permiso.codigo)
+    resultado.push({
+      permisoId: permiso.id,
+      codigo: permiso.codigo,
+      descripcion: permiso.descripcion,
+      origen: tipo,
+      efectivo: tipo === 'concedido',
+    })
+  }
+
+  return resultado.sort((a, b) => a.codigo.localeCompare(b.codigo))
 }
 
 export const REPORTE_COMPARATIVO_PRUEBA: ReporteComparativoApi = {
@@ -1846,4 +2045,317 @@ export const handlers = [
   http.get(`${BASE_API}/reports/comparativo`, () =>
     HttpResponse.json(REPORTE_COMPARATIVO_PRUEBA),
   ),
+
+  // ------------------------------------------------------------ usuarios
+
+  http.get(`${BASE_API}/users`, ({ request }) => {
+    const url = new URL(request.url)
+    const q = url.searchParams.get('q')?.trim().toLowerCase()
+    const rol = url.searchParams.get('rol')
+    const estado = url.searchParams.get('estado')
+    const sucursalId = url.searchParams.get('sucursalId')
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+
+    let items = usuarios.usuarios.filter(usuarioVisible)
+    if (sucursalId) items = items.filter((usuario) => usuario.sucursalId === sucursalId)
+    if (rol) items = items.filter((usuario) => usuario.rol === rol)
+    if (estado) items = items.filter((usuario) => usuario.estado === estado)
+    if (q) {
+      items = items.filter(
+        (usuario) =>
+          usuario.nombre.toLowerCase().includes(q) ||
+          usuario.nombreUsuario.toLowerCase().includes(q),
+      )
+    }
+    return HttpResponse.json(paginar(items, page, limit))
+  }),
+
+  http.post(`${BASE_API}/users`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      nombre?: string
+      nombreUsuario?: string
+      password?: string
+      rol?: string
+      sucursalId?: string | null
+    }
+    const nombre = (cuerpo.nombre ?? '').trim()
+    if (nombre.length < 3 || nombre.length > 120) {
+      return errorApi(
+        400,
+        'El nombre debe tener entre 3 y 120 caracteres',
+        'Bad Request',
+      )
+    }
+    const nombreUsuario = (cuerpo.nombreUsuario ?? '').trim().toLowerCase()
+    if (nombreUsuario.length < 3 || nombreUsuario.length > 30) {
+      return errorApi(
+        400,
+        'El nombre de usuario debe tener entre 3 y 30 caracteres',
+        'Bad Request',
+      )
+    }
+    if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(nombreUsuario)) {
+      return errorApi(400, 'El nombre de usuario no es valido', 'Bad Request')
+    }
+    const password = cuerpo.password ?? ''
+    if (password.length < 12) {
+      return errorApi(
+        400,
+        'La contrasena debe tener al menos 12 caracteres',
+        'Bad Request',
+      )
+    }
+    if (new TextEncoder().encode(password).length > 72) {
+      return errorApi(
+        400,
+        'La contrasena no puede superar 72 bytes',
+        'Bad Request',
+      )
+    }
+
+    let rol: string
+    let sucursalId: string | null
+    if (actorUsuariosEsAdmin()) {
+      rol = cuerpo.rol ?? ''
+      if (!['Admin', 'Gerente', 'Empleado'].includes(rol)) {
+        return errorApi(400, 'El rol no es valido', 'Bad Request')
+      }
+      sucursalId = rol === 'Admin' ? null : cuerpo.sucursalId ?? null
+      if (sucursalId && !sucursalValida(sucursalId)) {
+        return errorApi(404, 'La sucursal no existe', 'Not Found')
+      }
+      if (rol !== 'Admin' && !sucursalId) {
+        return errorApi(
+          400,
+          'Un Gerente o Empleado requiere una sucursal',
+          'Bad Request',
+        )
+      }
+    } else {
+      // Un Gerente solo crea Empleados en su propia sucursal.
+      rol = 'Empleado'
+      sucursalId = actorUsuarios?.sucursalId ?? null
+      if (!sucursalId) {
+        return errorApi(403, 'Tu usuario no tiene sucursal asignada', 'Forbidden')
+      }
+    }
+
+    if (usuarios.usuarios.some((usuario) => usuario.nombreUsuario === nombreUsuario)) {
+      return errorApi(
+        409,
+        'Ya existe un usuario con ese nombre de usuario',
+        'Conflict',
+      )
+    }
+
+    const ahora = new Date().toISOString()
+    const usuario: UsuarioGestionApi = {
+      id: `usuario-${usuarios.usuarios.length + 1}`,
+      nombre,
+      nombreUsuario,
+      rol,
+      sucursalId,
+      estado: 'activo',
+      createdAt: ahora,
+      updatedAt: ahora,
+    }
+    usuarios.usuarios = [...usuarios.usuarios, usuario]
+    return HttpResponse.json(usuario, { status: 201 })
+  }),
+
+  http.get(`${BASE_API}/users/:id`, ({ params }) => {
+    const usuario = usuarios.usuarios.find((item) => item.id === params.id)
+    if (!usuario || !usuarioVisible(usuario)) return usuarioFueraDeAlcance()
+    return HttpResponse.json(usuario)
+  }),
+
+  http.patch(`${BASE_API}/users/:id`, async ({ request, params }) => {
+    const usuario = usuarios.usuarios.find((item) => item.id === params.id)
+    if (!usuario || !usuarioVisible(usuario)) return usuarioFueraDeAlcance()
+    const esPropia = usuario.id === (actorUsuarios?.id ?? null)
+    const cuerpo = (await request.json()) as {
+      nombre?: string
+      nombreUsuario?: string
+      rol?: string
+      sucursalId?: string | null
+    }
+
+    if (cuerpo.rol !== undefined && esPropia) {
+      return errorApi(400, 'No puedes cambiar tu propio rol', 'Bad Request')
+    }
+    if (cuerpo.sucursalId !== undefined && esPropia) {
+      return errorApi(400, 'No puedes cambiar tu propia sucursal', 'Bad Request')
+    }
+    if (
+      !actorUsuariosEsAdmin() &&
+      (cuerpo.rol !== undefined || cuerpo.sucursalId !== undefined)
+    ) {
+      return errorApi(
+        403,
+        'Solo el administrador puede cambiar el rol o la sucursal',
+        'Forbidden',
+      )
+    }
+
+    if (cuerpo.nombre !== undefined) {
+      const nombre = cuerpo.nombre.trim()
+      if (nombre.length < 3 || nombre.length > 120) {
+        return errorApi(
+          400,
+          'El nombre debe tener entre 3 y 120 caracteres',
+          'Bad Request',
+        )
+      }
+      usuario.nombre = nombre
+    }
+
+    if (cuerpo.nombreUsuario !== undefined) {
+      const nombreUsuario = (cuerpo.nombreUsuario ?? '').trim().toLowerCase()
+      if (nombreUsuario.length < 3 || nombreUsuario.length > 30) {
+        return errorApi(
+          400,
+          'El nombre de usuario debe tener entre 3 y 30 caracteres',
+          'Bad Request',
+        )
+      }
+      if (!/^[a-z0-9][a-z0-9._-]{2,29}$/.test(nombreUsuario)) {
+        return errorApi(400, 'El nombre de usuario no es valido', 'Bad Request')
+      }
+      if (
+        usuarios.usuarios.some(
+          (item) => item.id !== usuario.id && item.nombreUsuario === nombreUsuario,
+        )
+      ) {
+        return errorApi(
+          409,
+          'Ya existe un usuario con ese nombre de usuario',
+          'Conflict',
+        )
+      }
+      usuario.nombreUsuario = nombreUsuario
+    }
+
+    if (cuerpo.rol !== undefined && actorUsuariosEsAdmin()) {
+      if (!['Admin', 'Gerente', 'Empleado'].includes(cuerpo.rol)) {
+        return errorApi(400, 'El rol no es valido', 'Bad Request')
+      }
+      usuario.rol = cuerpo.rol
+      if (cuerpo.rol === 'Admin') usuario.sucursalId = null
+    }
+    if (cuerpo.sucursalId !== undefined && actorUsuariosEsAdmin() && usuario.rol !== 'Admin') {
+      if (cuerpo.sucursalId && !sucursalValida(cuerpo.sucursalId)) {
+        return errorApi(404, 'La sucursal no existe', 'Not Found')
+      }
+      if (!cuerpo.sucursalId) {
+        return errorApi(
+          400,
+          'Un Gerente o Empleado requiere una sucursal',
+          'Bad Request',
+        )
+      }
+      usuario.sucursalId = cuerpo.sucursalId
+    }
+
+    usuario.updatedAt = new Date().toISOString()
+    return HttpResponse.json(usuario)
+  }),
+
+  http.patch(`${BASE_API}/users/:id/estado`, async ({ request, params }) => {
+    const usuario = usuarios.usuarios.find((item) => item.id === params.id)
+    if (!usuario || !usuarioVisible(usuario)) return usuarioFueraDeAlcance()
+    if (usuario.id === (actorUsuarios?.id ?? null)) {
+      return errorApi(400, 'No puedes cambiar el estado de tu propia cuenta', 'Bad Request')
+    }
+    const cuerpo = (await request.json()) as { estado?: string }
+    if (cuerpo.estado !== 'activo' && cuerpo.estado !== 'bloqueado') {
+      return errorApi(400, 'El estado no es valido', 'Bad Request')
+    }
+    if (cuerpo.estado === 'bloqueado' && usuario.rol === 'Admin') {
+      const adminsActivos = usuarios.usuarios.filter(
+        (item) => item.rol === 'Admin' && item.estado === 'activo',
+      ).length
+      if (adminsActivos <= 1) {
+        return errorApi(
+          409,
+          'No puedes bloquear al ultimo administrador activo',
+          'Conflict',
+        )
+      }
+    }
+    usuario.estado = cuerpo.estado as EstadoUsuario
+    usuario.updatedAt = new Date().toISOString()
+    return HttpResponse.json(usuario)
+  }),
+
+  http.get(`${BASE_API}/users/:id/permisos`, ({ params }) => {
+    const usuario = usuarios.usuarios.find((item) => item.id === params.id)
+    if (!usuario || !usuarioVisible(usuario)) return usuarioFueraDeAlcance()
+    return HttpResponse.json(permisosEfectivos(usuario))
+  }),
+
+  http.put(`${BASE_API}/users/:id/permisos/:permisoId`, async ({ request, params }) => {
+    const usuario = usuarios.usuarios.find((item) => item.id === params.id)
+    if (!usuario || !usuarioVisible(usuario)) return usuarioFueraDeAlcance()
+    if (usuario.id === (actorUsuarios?.id ?? null)) {
+      return errorApi(400, 'No puedes cambiar tus propios permisos', 'Bad Request')
+    }
+    const permiso = CATALOGO_PERMISOS_PRUEBA.find(
+      (item) => item.id === String(params.permisoId),
+    )
+    if (!permiso) return errorApi(404, 'El permiso no existe', 'Not Found')
+    const cuerpo = (await request.json()) as { tipo?: string }
+    if (cuerpo.tipo !== 'concedido' && cuerpo.tipo !== 'revocado') {
+      return errorApi(400, 'El tipo de asignacion no es valido', 'Bad Request')
+    }
+    const posee = actorUsuarios?.permisos.includes(permiso.codigo) ?? true
+    if (!posee) {
+      return errorApi(400, 'No puedes asignar un permiso que no posees', 'Bad Request')
+    }
+    if (cuerpo.tipo === 'concedido' && usuario.rol === 'Empleado') {
+      if (
+        !['insumos.ver', 'inventario.registrar', 'ventas.registrar', 'equipo.ver'].includes(
+          permiso.codigo,
+        )
+      ) {
+        return errorApi(
+          400,
+          'A un Empleado solo se le pueden conceder los permisos de la matriz de seguridad',
+          'Bad Request',
+        )
+      }
+    }
+    if (cuerpo.tipo === 'revocado') {
+      if (!(DEFAULT_PERMISOS_POR_ROL[usuario.rol] ?? []).includes(permiso.codigo)) {
+        return errorApi(
+          400,
+          'No se puede revocar un permiso que el rol no otorga por defecto',
+          'Bad Request',
+        )
+      }
+    }
+    usuarios.individuales.set(
+      `${usuario.id}:${String(params.permisoId)}`,
+      cuerpo.tipo,
+    )
+    return new HttpResponse(null, { status: 204 })
+  }),
+
+  http.delete(`${BASE_API}/users/:id/permisos/:permisoId`, ({ params }) => {
+    const usuario = usuarios.usuarios.find((item) => item.id === params.id)
+    if (!usuario || !usuarioVisible(usuario)) return usuarioFueraDeAlcance()
+    if (usuario.id === (actorUsuarios?.id ?? null)) {
+      return errorApi(400, 'No puedes cambiar tus propios permisos', 'Bad Request')
+    }
+    const clave = `${usuario.id}:${String(params.permisoId)}`
+    if (!usuarios.individuales.has(clave)) {
+      return errorApi(
+        404,
+        'El permiso no tiene una asignacion individual',
+        'Not Found',
+      )
+    }
+    usuarios.individuales.delete(clave)
+    return new HttpResponse(null, { status: 204 })
+  }),
 ]

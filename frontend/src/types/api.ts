@@ -360,3 +360,42 @@ export interface RecuentoDetalleApi extends RecuentoApi {
   sucursal: { id: string; nombre: string }
   detalles: LineaRecuentoApi[]
 }
+
+// --------------------------------------------------------------- usuarios
+
+/** Estado de un usuario (`activo` o `bloqueado`). */
+export type EstadoUsuario = 'activo' | 'bloqueado'
+
+/**
+ * Usuario gestionable (`GET /users` y respuestas de crear/editar/estado). No
+ * incluye `permisos`: esos se consultan por separado en `GET /users/:id/permisos`.
+ */
+export interface UsuarioGestionApi {
+  id: string
+  nombre: string
+  nombreUsuario: string
+  rol: string
+  sucursalId: string | null
+  estado: EstadoUsuario
+  createdAt: string
+  updatedAt: string
+}
+
+/** Origen de cada permiso efectivo devuelto por `GET /users/:id/permisos`. */
+export type OrigenPermiso = 'rol' | 'concedido' | 'revocado'
+
+/**
+ * Permiso efectivo de un usuario (`GET /users/:id/permisos`). El backend solo
+ * devuelve los permisos que el rol del objetivo otorga por defecto más las
+ * asignaciones individuales (concedidas o revocadas): no expone el catálogo
+ * completo de permisos, por lo que la interfaz solo puede actuar sobre lo que
+ * aquí aparezca.
+ */
+export interface PermisoEfectivoApi {
+  permisoId: string
+  codigo: string
+  descripcion: string
+  origen: OrigenPermiso
+  /** `false` solo cuando el permiso está revocado individualmente. */
+  efectivo: boolean
+}

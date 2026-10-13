@@ -4,6 +4,7 @@ import {
   reiniciarCatalogoPrueba,
   reiniciarEquiposPrueba,
   reiniciarInventarioPrueba,
+  reiniciarUsuariosPrueba,
 } from './handlers'
 import { server } from './server'
 
@@ -35,6 +36,7 @@ afterEach(() => {
   reiniciarCatalogoPrueba()
   reiniciarInventarioPrueba()
   reiniciarEquiposPrueba()
+  reiniciarUsuariosPrueba()
   sessionStorage.clear()
   localStorage.clear()
   window.history.pushState({}, '', '/')

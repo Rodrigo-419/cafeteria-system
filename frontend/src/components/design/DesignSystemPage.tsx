@@ -10,8 +10,10 @@ import { StatusPill } from '@/components/shared/StatusPill'
 import { EstadoOfertaBadge } from '@/features/products/EstadoOfertaBadge'
 import { EstadoEquipoBadge } from '@/features/equipment/EstadoEquipoBadge'
 import { EstadoStockBadge } from '@/features/inventory/EstadoStockBadge'
+import { EstadoUsuarioBadge } from '@/features/users/EstadoUsuarioBadge'
 import { NivelStock } from '@/features/inventory/NivelStock'
 import { VariacionStock } from '@/features/inventory/VariacionStock'
+import { PasswordReveal } from '@/components/shared/PasswordReveal'
 import {
   Card,
   CardContent,
@@ -588,6 +590,8 @@ export function DesignSystemPage() {
                 <EstadoEquipoBadge estado="en_mantenimiento" />
                 <EstadoEquipoBadge estado="danado" />
                 <EstadoEquipoBadge estado="retirado" />
+                <EstadoUsuarioBadge estado="activo" />
+                <EstadoUsuarioBadge estado="bloqueado" />
               </div>
             </CardContent>
           </Card>
@@ -658,6 +662,10 @@ export function DesignSystemPage() {
               <div className="flex items-center gap-2">
                 <Checkbox id="ds-check" />
                 <Label htmlFor="ds-check">Checkbox</Label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ds-password">Contraseña temporal (solo lectura + copiar)</Label>
+                <PasswordReveal id="ds-password" valor="S3creta!DeMuestra2026" />
               </div>
             </CardContent>
           </Card>
