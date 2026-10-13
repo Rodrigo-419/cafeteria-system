@@ -343,16 +343,20 @@ nombre o nombre de usuario; el Admin crea un Empleado eligiendo sucursal y el
 Gerente crea en su sucursal sin selectores de rol ni sucursal; crear un Gerente
 exige elegir sucursal y un Admin no lleva sucursal (el selector queda
 deshabilitado); el 409 de nombre de usuario repetido muestra el mensaje del
-servidor; una contraseña corta deshabilita el alta; "Generar contraseña" produce
-una de 20 caracteres que **no se persiste** (ni en `sessionStorage`/`localStorage`
-ni en las claves del caché de consultas); la propia fila solo ofrece "Editar"
+servidor; una contraseña corta deshabilita el alta y la ayuda muestra el
+contador ("5 de 12 caracteres como mínimo") y el motivo, incluido el límite de
+72 bytes; "Generar contraseña" produce una de 20 caracteres que **no se persiste**
+(ni en `sessionStorage`/`localStorage` ni en las claves del caché de consultas);
+la propia fila solo ofrece "Editar"
 (sin Permisos ni Bloquear); el Admin edita rol y sucursal de un Empleado; bloquear
 un Empleado confirma y cambia el estado en la tabla; y los estados vacío, de
-error y de carga del listado. En `PermisosUsuarioDialog`, un permiso revocado de
-un Empleado aparece como Inactivo con "Conceder" deshabilitado (regla de los 4
-concedibles), conceder de nuevo a un Gerente pasa la fila a "Quitar" y quitarla
-vuelve al valor del rol, revocar un permiso del rol pasa a "Conceder", y no se
-puede revocar un permiso que el actor no posee. `users.api.test.ts` verifica los
+error y de carga del listado. En `PermisosUsuarioDialog`, un permiso revocado
+aparece como Inactivo y ofrece "Restablecer" (`DELETE` que vuelve al valor del
+rol, sin exigir que el actor posea el permiso); restablecer un permiso revocado de
+un Gerente pasa la fila a "Revocar" (y revocar de nuevo la devuelve a
+"Restablecer"); una concesión se quita con "Quitar" (`DELETE`, vuelve al valor del
+rol y la fila pasa a "Del rol"); revocar un permiso del rol pasa a "Restablecer";
+y no se puede revocar un permiso que el actor no posee. `users.api.test.ts` verifica los
 contratos directos: alcance del Gerente, forzado de rol/sucursal al crear, 400 de
 contraseña corta y de más de 72 bytes, 409 de `nombreUsuario` duplicado, 403 del
 Gerente al cambiar rol, 404 fuera de alcance, 400 al cambiar el estado de la
@@ -401,7 +405,7 @@ alfabeto seguro y valores distintos).
   (`establecerActorUsuarios`, fijado por `iniciarSesionDePrueba`; sin sesión no
   aplica alcance). Se siembran dos revocaciones realistas (`inventario.recuento`
   revocado a un Gerente y `productos.ver` revocado a un Empleado) para probar
-  conceder/revocar/restaurar. Los handlers replican las reglas del backend: el
+  revocar/restablecer/quitar. Los handlers replican las reglas del backend: el
   Gerente solo ve y crea Empleados de su sucursal (404 fuera de alcance), el
   rol/sucursal solo los cambia el Admin (403), la propia cuenta responde 400, el
   último Admin activo responde 409, `nombreUsuario` duplicado responde 409 y las
