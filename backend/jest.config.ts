@@ -24,7 +24,13 @@ const config: Config = {
   // reciclan los que se quedan ociosos por encima de 512 MB.
   maxWorkers: 4,
   workerIdleMemoryLimit: '512MB',
-  moduleNameMapper: pathsToModuleNameMapper(paths, { prefix: '<rootDir>/' }),
+  moduleNameMapper: {
+    ...pathsToModuleNameMapper(paths, { prefix: '<rootDir>/' }),
+    // El cliente generado de Prisma importa sus modulos internos con extension
+    // `.js` (ESM): se remapea a su `.ts` para que ts-jest lo resuelva, igual que
+    // hace la configuracion e2e.
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
   collectCoverageFrom: [
     'src/**/*.(t|j)s',
     'libs/**/*.(t|j)s',
