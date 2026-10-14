@@ -49,6 +49,7 @@ El backend vive en `backend/` y expone los siguientes módulos en
 | `shifts`    | Implementado | Turnos fijos/variables y asignaciones con control de solapamiento. |
 | `attendance`| Implementado | Marcación con PIN, correcciones, faltas justificadas y lecturas. |
 | `reports`   | Implementado | Reporte comparativo entre sucursales (ventas, inventario y asistencia). |
+| `auditoria` | Implementado | Rastro inmutable de cambios (personas, sucursales, equipos, turnos y catálogo de productos e insumos) con listado e historial por usuario. |
 
 ## Pendientes de verificar
 

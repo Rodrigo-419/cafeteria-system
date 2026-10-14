@@ -19,7 +19,11 @@ verifican el contrato HTTP completo y el comportamiento con una base real
 Las pruebas unitarias se escriben junto al código: `*.spec.ts` al lado de la
 regla o caso de uso (p. ej. `password-policy.spec.ts`, `reglas-permisos.spec.ts`,
 `dinero.spec.ts`, `estados-venta.spec.ts`, `alcance.spec.ts`). El `testRegex`
-`.spec.ts$` de la configuración de Jest las descubre automáticamente.
+`.spec.ts$` de la configuración de Jest las descubre automáticamente. Una de ellas
+es especial: `backend/src/modules/auditoria/presentation/rutas-auditadas.spec.ts`
+recorre los controladores por **reflexión** (metadata de rutas de Nest, sin
+instanciar la app ni tocar la base) y exige que toda ruta mutante esté auditada o
+justificada como exclusión.
 
 ## 2. Ejecución
 
@@ -28,6 +32,15 @@ cd backend
 npm test            # unitarias
 npm run test:e2e    # end-to-end (requiere la base de pruebas)
 ```
+
+> El `testTimeout` de e2e es de **120 s** (`test/jest-e2e.json`); Jest aplica el
+> mismo tope a `beforeEach`/`beforeAll`. Jest ordena las suites por tamaño de
+> archivo (descendente), de modo que `attendance` corre justo después de
+> `products`; con la máquina cargada, el `beforeEach` que resetea la base puede
+> rozar el minuto, por lo que el tope se dejó en 120 s para absorber esa varianza
+> sin fallar por presupuesto de tiempo. El diagnóstico descartó bloqueos de base y
+> fugas de conexiones (sin `idle in transaction` persistente): era una suite más
+> lenta de lo previsto sobre un `testTimeout` demasiado ajustado.
 
 - **E2E corre en serie** (`--runInBand`): todas las suites comparten una única
   base de pruebas, así que no pueden correr en paralelo.
@@ -89,6 +102,7 @@ Cada módulo tiene su suite en `backend/test/`:
 | `shifts`              | `shifts.e2e-spec.ts`       | Turnos fijos/variables, asignaciones, solapamiento y retiro. |
 | `attendance`          | `attendance.e2e-spec.ts`   | Marcación con PIN, doble marcaje, correcciones, cierre administrativo, justificación de faltas, lecturas y terminal. |
 | `reports`             | `reports.e2e-spec.ts`      | Reporte comparativo entre sucursales: contrato, ventas, inventario, asistencia, estado actual, validaciones y autorización. |
+| `auditoria`           | `auditoria.e2e-spec.ts`    | Un evento por operación auditada (usuario, empleado, sucursal, equipo, turno, asignación, catálogo y oferta), atomicidad en operaciones rechazadas, inmutabilidad de la tabla, detalle sin secretos, alcance de lectura, filtros/paginado, bordes de fecha y coherencia de los enums código↔BD. |
 | `trust proxy`         | `trust-proxy.e2e-spec.ts`  | `TRUST_PROXY`: con el valor por defecto `X-Forwarded-For` no evade el límite de login; activado, cada IP declarada tiene su propio límite. Usa el límite de login real (`crearAppConLimiteLoginReal`, sin neutralizar el throttle). |
 | `login throttle`      | `login-throttle.e2e-spec.ts` | Solo cuentan los **fallos**: tras 5 fallos del mismo par usuario+IP (o 20 de la misma IP) responde `429` con `Retry-After` y mensaje, aunque llegue la contraseña correcta; el usuario inexistente cuenta igual; el bloqueo de una cuenta no afecta a otra; la ventana se reinicia al avanzar el **reloj simulado**. |
 
@@ -109,14 +123,18 @@ generado a su `.ts` (Node no lo resuelve solo).
 ## 5. Cobertura
 
 Las cifras siguientes corresponden a la última ejecución limpia, verificada en
-**2026-10-11** con `npm run build`, `npm run lint`, `npm test` y
+**2026-10-14** con `npm run build`, `npm run lint`, `npm test` y
 `npm run test:e2e` (Docker con la base de pruebas disponible). Se refrescan
 ejecutando los comandos de la sección 2.
 
 | Nivel     | Suites | Casos |
 | --------- | ------ | ----- |
-| Unitarias | 58     | 806   |
-| E2E       | 15     | 415   |
+| Unitarias | 60     | 836   |
+| E2E       | 16     | 474   |
+
+La suite e2e completa tarda alrededor de **8 minutos** (entre 470 y 492 s en las
+tres últimas ejecuciones consecutivas), dentro del `testTimeout` de 120 s por
+prueba/hook.
 
 > La tabla no incluye un % de cobertura de código: el repo no define el comando
 > `coverage` como parte del flujo estándar.

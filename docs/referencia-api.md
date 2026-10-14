@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Referencia de las **76 rutas implementadas** por el backend. Todas se solicitan
+Referencia de las **78 rutas implementadas** por el backend. Todas se solicitan
 bajo el prefijo global `/api`.
 
 ## Convenciones
@@ -360,6 +360,31 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
     `GET /attendance/absences`) y `faltasJustificadas`.
   - `estadoActual`: `insumosConAlertaAbierta` y `entradasAbiertas`, **al momento
     de generar** el reporte (no son cifras del período).
+
+### Auditoría (`/api/auditoria`)
+
+| Método | Ruta                                 | Permiso                 | Códigos |
+| ------ | ------------------------------------ | ----------------------- | ------- |
+| GET    | `/api/auditoria`                     | `usuarios.crear_editar` | 200, 400, 403 |
+| GET    | `/api/auditoria/usuarios/:usuarioId` | `usuarios.crear_editar` | 200, 400, 403, 404 |
+
+- **Solo lectura**: la auditoría se escribe sola dentro de la transacción de cada
+  operación auditada (personas, sucursales, equipos, turnos y catálogo de productos e
+  insumos); no hay endpoints para crear, editar ni borrar eventos.
+- `GET /api/auditoria` lista eventos con paginado (`page`, `limit` ≤ 100) y filtros
+  `actorId`, `entidad`, `entidadId`, `accion`, `sucursalId`, `desde` y `hasta`
+  (`YYYY-MM-DD`, día local America/Lima; un rango invertido o mayor de **92 días**
+  responde `400`). Ordena por fecha descendente.
+- `GET /api/auditoria/usuarios/:usuarioId` devuelve el historial de un usuario con el
+  mismo paginado; `usuarioId` debe ser un UUID (`400` si no lo es).
+- Cada evento trae `{ id, entidad, entidadId, accion, actor, usuarioAfectadoId,
+  sucursalAfectadaId, detalle, fecha }`. `detalle` es `{ antes, despues }` y **nunca**
+  incluye contraseñas, hashes ni PIN.
+- **Alcance**: el **Admin** ve todo; el **Gerente** solo los eventos de personas
+  (usuario/empleado) cuyo usuario afectado es un **Empleado de su sucursal** y los
+  eventos operativos de esa sucursal (el catálogo global queda fuera de su lectura).
+  En el historial por usuario, un usuario fuera de su alcance (otra sucursal u otro
+  rol) responde `404`. Un **Empleado** recibe `403`.
 
 ## Códigos de error más comunes
 

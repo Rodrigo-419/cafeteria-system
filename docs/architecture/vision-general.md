@@ -59,7 +59,7 @@ Se eligió un **monolito modular** en lugar de microservicios:
 ## 4. Organización en capas
 
 Los módulos con lógica real (auth, users, branches, products, inventory, sales,
-equipment, employees, shifts, attendance, reports) implementan las **capas
+equipment, employees, shifts, attendance, reports, auditoria) implementan las **capas
 completas**:
 
 - **presentation**: controllers HTTP, DTOs y guards específicos del módulo.
@@ -110,11 +110,17 @@ Todo el código está en `backend/src/modules/`. Estado real de cada paquete:
 | `shifts`    | Implementado | Turnos fijos/variables y asignaciones.                   |
 | `attendance`| Implementado | Marcación con PIN, correcciones, faltas y lecturas.      |
 | `reports`   | Implementado | `GET /api/reports/comparativo` (comparativo entre sucursales). |
+| `auditoria` | Implementado | `GET /api/auditoria` y `GET /api/auditoria/usuarios/:usuarioId` (listado e historial). |
 
 El módulo de reportes quedó **implementado** y registrado en `AppModule`: expone
 `GET /api/reports/comparativo` bajo el permiso `reportes.comparativos.ver`. No
 tiene esqueleto pendiente (sus archivos base se eliminaron). El seed ya cubría su
 permiso (ver [Modelo de datos](../modelo-de-datos.md)).
+
+El módulo de **auditoría** es transversal: se instrumenta dentro de los módulos que
+escriben (registra un evento en su misma transacción) y expone solo dos rutas de
+lectura, bajo el permiso `usuarios.crear_editar`. Su tabla es de solo inserción
+(ver [Decisiones de diseño](decisiones-de-diseno.md), sección 14).
 
 ## 6. Ciclo de una petición autenticada
 

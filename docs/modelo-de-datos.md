@@ -27,6 +27,7 @@ en [modelo.dbml](database/modelo.dbml) y de él se genera
 | Inventario     | `Insumo`, `InsumoSucursal`, `MovimientoInventario`, `RecuentoInventario`, `RecuentoInventarioDetalle`, `AlertaStock` |
 | Ventas         | `Venta`, `VentaDetalle`                                        |
 | Equipamiento   | `Equipo`, `HistorialEquipo`                                    |
+| Auditoría      | `Auditoria`                                                    |
 
 Los modelos del dominio **Personal** existen en el esquema y los opera la API:
 `employees` opera `Empleado` (alta, edición, cese y PIN) y `JustificacionFalta`
@@ -34,7 +35,11 @@ Los modelos del dominio **Personal** existen en el esquema y los opera la API:
 `AsignacionTurno` (alta, edición de horario y asignación/retiro); y `attendance`
 opera `RegistroAsistencia` (marcación con PIN, correcciones, lecturas y cálculo de
 faltas). El módulo `reports` **no escribe**: lee ventas, inventario y asistencia
-para el reporte comparativo entre sucursales.
+para el reporte comparativo entre sucursales. El módulo `auditoria` **solo inserta
+y lee**: registra un evento por cada operación auditada (personas, sucursales,
+equipos, turnos y el catálogo de productos e insumos) en la tabla `auditoria`, y
+expone el listado general y el historial por usuario. Su tabla es de **solo
+inserción**.
 
 ## 3. Relevancia por dominio
 
@@ -263,6 +268,45 @@ erDiagram
 - `JUSTIFICACIONFALTA` tiene unicidad `(empleadoId, fecha)`: un solo justificante
   por empleado y día.
 
+### Auditoría
+
+```mermaid
+erDiagram
+    USUARIO ||--o{ AUDITORIA : "actua como actor"
+    USUARIO ||--o{ AUDITORIA : "es el afectado"
+    SUCURSAL ||--o{ AUDITORIA : "es la afectada"
+
+    AUDITORIA {
+        uuid id PK
+        auditoria_entidad entidad
+        uuid entidad_id "referencia polimorfica, SIN FK"
+        auditoria_accion accion
+        uuid actor_id FK
+        uuid usuario_afectado_id FK "nullable"
+        uuid sucursal_afectada_id FK "nullable"
+        jsonb detalle "JSONB {antes, despues}"
+        datetime created_at
+    }
+```
+
+- `AUDITORIA` es de **solo inserción**: un `UPDATE`/`DELETE` falla por el trigger
+  `trg_auditoria_inmutable`. Las claves `actor_id` y `usuario_afectado_id` apuntan a
+  `usuario` (dos relaciones distintas) y `sucursal_afectada_id` a `sucursal`; todas
+  con `onDelete: Restrict`.
+- `entidad_id` es una **referencia polimórfica deliberadamente sin FK**: apunta al
+  recurso afectado (`usuario`, `empleado`, `producto`, `insumo`, etc.) según el
+  valor de `entidad`.
+- `usuario_afectado_id` solo se llena en eventos de **personas** (usuario, permiso y
+  empleado —en el cese/alta de empleado apunta al usuario vinculado). En los eventos
+  **globales** del catálogo (productos, categorías, variantes, insumos, sucursales)
+  queda `null`; los eventos operativos (oferta, `insumo_sucursal`, turno, asignación,
+  equipo) llevan `sucursal_afectada_id`.
+- `detalle` (JSONB `{ antes, despues }`) **nunca** lleva contraseñas, hashes ni PIN:
+  pasa por un saneador de claves prohibidas antes de escribirse.
+- `historial_permisos` e `historial_equipo` se conservan como **tablas heredadas**
+  (escritura doble desde permisos y equipos); la lectura del historial sale **solo**
+  de `auditoria`.
+
 ## 4. Enums
 
 Los enums de PostgreSQL (tipos `usuario_estado`, `insumo_presentacion`, etc.) se
@@ -284,6 +328,8 @@ leen de `backend/prisma/schema.prisma`:
 | `VentaMetodoPago`            | `efectivo`, `tarjeta`                                       |
 | `VentaEstado`                | `completada`, `anulada`                                     |
 | `EquipoEstado`               | `funcionando`, `danado`, `en_mantenimiento`, `retirado`     |
+| `AuditoriaEntidad`           | `usuario`, `empleado`, `sucursal`, `categoria`, `variante`, `producto`, `oferta`, `insumo`, `insumo_sucursal`, `turno`, `asignacion`, `equipo` |
+| `AuditoriaAccion`            | 44 valores; ver `schema.prisma` (p. ej. `usuario_creado`, `empleado_cesado`, `oferta_precio_fijado`, `insumo_sucursal_descontinuado`, `equipo_estado_cambiado`) |
 
 > Nota: `EquipoEstado` usa `danado` (sin tilde) en código y base, tal como quedó
 > documentado en [Decisiones de diseño](architecture/decisiones-de-diseno.md).
@@ -358,6 +404,19 @@ justificaciones del período, cuya única unicidad empieza por `empleado_id`).
 > base (no hay índice único para el par): la valida la aplicación en
 > `corregir-registro.use-case.ts` (`existeParCorreccion`), que responde `409`.
 
+La migración **`20261013120000_auditoria`** crea la tabla **`auditoria`** (solo
+inserción) con sus enums definitivos (`auditoria_entidad`, 12 valores, y
+`auditoria_accion`, 44 valores) y añade:
+
+12. **`auditoria` es inmutable** (solo insert). El trigger `trg_auditoria_inmutable`
+    (`BEFORE UPDATE OR DELETE`) ejecuta `fn_auditoria_es_inmutable`, que rechaza
+    `UPDATE` y `DELETE` con una excepción de tipo `P0001`, igual que
+    `registro_asistencia` y `justificacion_falta`. El `TRUNCATE` **no** se bloquea,
+    para que el harness de pruebas pueda vaciar las tablas entre suites.
+
+Los enums de la auditoría se crearon **completos** en esa única migración (todas las
+entidades y acciones), para no tener que ampliarlos al instrumentar cada módulo.
+
 ## 7. Comportamientos notables del dominio
 
 - **Ventas**: el precio se congela en `VentaDetalle.precioUnitarioSnapshot` al
@@ -391,6 +450,14 @@ justificaciones del período, cuya única unicidad empieza por `empleado_id`).
   **no persiste** nada: cruza ventas, movimientos de inventario y asistencia de un
   período con el estado actual (alertas abiertas y entradas sin cerrar) y se
   resuelve con consultas agregadas, sin escrituras.
+- **Auditoría**: solo inserción. Cada operación auditada escribe su evento dentro de
+  la **misma transacción** que la operación; si el detalle llevara un secreto
+  (contraseña, hash, PIN, token), el saneador lanza y toda la operación se revierte
+  en vez de dejar el rastro. `detalle` guarda `{ antes, despues }`;
+  `usuarioAfectadoId` solo aplica a eventos de personas y `sucursalAfectadaId` queda
+  `null` en el catálogo global. Las tablas heredadas `historial_permisos` e
+  `historial_equipo` siguen escribiéndose (doble escritura), pero el historial se
+  **lee solo de `auditoria`**.
 
 ## 8. Relación con el DBML
 

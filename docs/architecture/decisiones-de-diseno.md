@@ -25,7 +25,7 @@ Los nombres de archivo son relativos a la raíz del repositorio. Salvo que se in
 | Las fechas se guardan en **UTC** y la zona horaria de negocio es **America/Lima** (sin DST). El "mismo día" y los filtros por día se calculan en ese calendario. | Supuesto de implementación | `backend/src/modules/sales/domain/rules/fechas.ts` (`ZONA_HORARIA_NEGOCIO`, `mismoDiaLocal`, `rangoDelDiaLocal`) | `backend/src/modules/sales/domain/rules/fechas.spec.ts`: "separa dos instantes que en UTC son del mismo dia" | Confirmada |
 | El dinero y el stock se manejan como **Decimal** (`money`/`Decimal`) y se exponen como **string con 2 decimales**; los cálculos monetarios se hacen en **céntimos enteros** para evitar la coma flotante. | Supuesto de implementación | `backend/src/modules/sales/domain/rules/dinero.ts` y `backend/src/modules/inventory/domain/rules/cantidades.ts` (`aCentimos`, `subtotalLinea`, `sumarCentimos`, `compararCantidades`) | `backend/src/modules/sales/domain/rules/dinero.spec.ts`: "multiplica sin coma flotante"; `backend/src/modules/inventory/domain/rules/cantidades.spec.ts`: "el resultado no depende de la representacion binaria" | Confirmada |
 | Los **permisos efectivos se recalculan en cada petición** leyendo el usuario y sus permisos desde la base de datos: bloquear o cambiar permisos surte efecto de inmediato, sin esperar a que expire el token. | Requisito original | `backend/src/modules/auth/infrastructure/jwt/jwt.strategy.ts` (valida y recompone `permisosEfectivos` en cada request) | `backend/test/auth.e2e-spec.ts`: "responde 401 tras bloquear a la cuenta"; `backend/test/users.e2e-spec.ts`: "el permiso concedido se refleja en los permisos efectivos del Empleado" | Confirmada |
-| **No hay borrado físico** en las entidades con historia (ventas, permisos, equipos, movimientos, asistencia); las claves foráneas usan `onDelete: Restrict`. La auditoría se registra en `historial_permisos`, `historial_equipo` y `movimiento_inventario`. | Supuesto de implementación | `backend/prisma/schema.prisma` (relaciones con `Restrict`) | `backend/test/sales.e2e-spec.ts`: "la venta anulada sigue en la base y sale en el listado" | Confirmada |
+| **No hay borrado físico** en las entidades con historia (ventas, permisos, equipos, movimientos, asistencia); las claves foráneas usan `onDelete: Restrict`. El rastro de cambios de negocio se guarda en la tabla **`auditoria`** (solo inserción; ver la sección 14); `historial_permisos`, `historial_equipo` y `movimiento_inventario` se conservan como tablas heredadas/específicas. | Supuesto de implementación | `backend/prisma/schema.prisma` (relaciones con `Restrict`); migración `20261013120000_auditoria` | `backend/test/sales.e2e-spec.ts`: "la venta anulada sigue en la base y sale en el listado" | Confirmada |
 | Guard global encadenado: **JWT → permisos → throttling** (300 peticiones/min por defecto; el login queda excluido con `@SkipThrottle`). | Supuesto de implementación | `backend/src/app.module.ts` (`APP_GUARD`: `JwtAuthGuard`, `PermissionsGuard`, `ThrottlerGuard`; `ThrottlerModule` default 300/min) | Comportamiento derivado cubierto en todos los `*.e2e-spec.ts` (401 sin token, 403 sin permiso) | Confirmada |
 
 ## 3. Módulo Auth
@@ -196,7 +196,62 @@ El reporte comparativo cruza **ventas, inventario y asistencia** de un período 
 | **Todas las sucursales** aparecen, incluso las que no tienen datos (con ceros), ordenadas por **nombre** ascendente. El filtro opcional `sucursalId` limita el reporte a una sucursal; una inexistente responde **404**. | Requisito original + supuesto de implementación | `ReportsRepository.listarSucursales` (`orderBy nombre asc`); `generar-reporte-comparativo.use-case.ts` | `backend/test/reports.e2e-spec.ts`: "devuelve el rango pedido y las tres sucursales ordenadas por nombre"; "con sucursalId devuelve solo esa sucursal"; "con una sucursal inexistente responde 404" | Confirmada |
 | El reporte se resuelve con **SQL agregado fijo** (`GROUP BY`) y una **sola carga** de los datos de asistencia, calculada en memoria con las reglas puras; no hay consultas por sucursal (sin N+1). | Supuesto de implementación | `backend/src/modules/reports/infrastructure/reports.repository.ts` (`Prisma.sql`); `generar-reporte-comparativo.use-case.ts` | Cubierto de forma indirecta por `backend/test/reports.e2e-spec.ts` (contrato agregado por sucursal) | Confirmada |
 
-## 14. Inventario de supuestos clave (resumen)
+## 14. Módulo Auditoría (`auditoria`)
+
+La auditoría registra un **evento inmutable** por cada operación que cambia estado en
+los módulos auditados (personas, sucursales, equipos, turnos y el catálogo de
+productos e insumos), **dentro de la misma transacción** que la operación, y expone
+dos lecturas: el listado general y el historial por usuario. Es de **solo inserción**
+(la tabla rechaza `UPDATE`/`DELETE` por trigger) y toda escritura pasa por un único
+punto (`AuditoriaRepository.registrar`).
+
+| Regla de negocio | Origen | Dónde se implementa | Prueba que la cubre | Estado |
+| --- | --- | --- | --- | --- |
+| **Un evento por operación, en la misma transacción**: si el evento no se puede escribir, la operación tampoco confirma (y si la operación se rechaza, no queda rastro). | Supuesto de implementación | `auditoria.repository.ts` (`registrar(evento, cliente?)`); los casos de uso auditados le pasan el cliente transaccional | `backend/test/auditoria.e2e-spec.ts`: "un nombre de usuario duplicado no deja ningun evento", "una operacion rechazada sobre el propio usuario no deja evento" | Confirmada |
+| El **detalle nunca lleva secretos**: el saneador comprueba por **clave exacta** (normalizada a minúsculas) contra una lista de claves prohibidas (`password`, `contrasena`, `hash`, `pin`, `secret`, `token`, etc.); si encuentra una, **lanza** y la operación entera se revierte. No usa regex amplias (`/pin/i`) para no marcar claves legítimas como `mapping` o `shipping`. | Supuesto de implementación | `domain/sanitizar-detalle.ts`; `auditoria.repository.ts` (`registrar` saneando antes de insertar) | `backend/test/auditoria.e2e-spec.ts`: "ninguna respuesta de auditoria expone contrasenas, hashes ni PIN"; `backend/src/modules/auditoria/domain/sanitizar-detalle.spec.ts` | Confirmada |
+| La tabla **`auditoria` es inmutable**: el trigger `trg_auditoria_inmutable` (`BEFORE UPDATE OR DELETE`) ejecuta `fn_auditoria_es_inmutable` y rechaza ambas operaciones con excepción `P0001`. El `TRUNCATE` no se bloquea (para el harness de pruebas). | Supuesto de implementación | Migración `20261013120000_auditoria`; `schema.prisma` (`model Auditoria`) | `backend/test/auditoria.e2e-spec.ts`: "rechaza UPDATE y DELETE directos sobre auditoria" | Confirmada |
+| **Modelo del evento**: `entidad` + `entidadId` (referencia **polimórfica sin FK**) + `accion` + `actorId`; `usuarioAfectadoId` solo en eventos de personas (usuario, permiso y empleado —apunta al usuario vinculado) y `sucursalAfectadaId` en los operativos (oferta, `insumo_sucursal`, turno, asignación, equipo), quedando `null` en los eventos **globales** del catálogo (productos, categorías, variantes, insumos, sucursales). | Supuesto de implementación | `domain/evento-auditoria.ts`; `infrastructure/auditoria.repository.ts` | `backend/test/auditoria.e2e-spec.ts` (describes de usuario, empleado, sucursal, equipo, turno, asignación, catálogo global y oferta) | Confirmada |
+| Los enums **`auditoria_entidad` (12 valores)** y **`auditoria_accion` (44 valores)** se crearon **completos** en una sola migración, para no ampliarlos al instrumentar cada módulo. Una prueba compara el enum de la base con el del código en **ambos sentidos** y comprueba que se usa `insumo_sucursal_descontinuado` (no `desactivado`). | Supuesto de implementación | Migración `20261013120000_auditoria`; `schema.prisma` (`enum AuditoriaEntidad`, `enum AuditoriaAccion`) | `backend/test/auditoria.e2e-spec.ts`: "cada accion definida en el codigo existe en el enum de la BD", "cada entidad definida en el codigo existe en el enum de la BD", "el enum de la BD usa insumo_sucursal_descontinuado (no desactivado)" | Confirmada |
+| **Lectura con el permiso `usuarios.crear_editar`** (Admin y Gerente; no se creó un permiso nuevo). El **Admin ve todo**; el **Gerente** solo los eventos de personas (usuario/empleado) cuyo usuario afectado es un **Empleado de su sucursal** y los eventos operativos de esa sucursal (no ve el catálogo global); cualquier otro rol recibe **403**. | Requisito original + supuesto de implementación | `presentation/auditoria.controller.ts` (`@RequirePermission('usuarios.crear_editar')`); `application/alcance-auditoria.ts` (`alcanceDeActor`); `infrastructure/auditoria.repository.ts` (`construirWhere`) | `backend/test/auditoria.e2e-spec.ts`: "un Gerente solo ve eventos de sus Empleados, no los de otras sucursales ni de otros roles" | Confirmada |
+| El alcance del Gerente sigue el **rol y la sucursal ACTUALES** del usuario afectado: si un Empleado cambia de sucursal, su historial anterior pasa a verlo el Gerente de la sucursal nueva. Un usuario fuera de alcance (otra sucursal u otro rol) responde **404**. | Supuesto de implementación | `application/historial-usuario.use-case.ts`; `auditoria.repository.ts` (`buscarAlcanceUsuario`) | `backend/test/auditoria.e2e-spec.ts`: "el historial por usuario respeta el alcance: Gerente 404 para Empleados ajenos y otros roles" | Confirmada |
+| **Listado** con paginado (`page`, `limit` ≤ 100) y filtros `actorId`, `entidad`, `entidadId`, `accion`, `sucursalId`, `desde` y `hasta`; orden por **fecha descendente**. El rango de fechas es de días locales (America/Lima): invertido o de más de **92 días** responde **400**. | Supuesto de implementación | `presentation/dto/auditoria.dto.ts`; `domain/fechas.ts` (`construirRango`, reutilizando el calendario de ventas); `listar-auditoria.use-case.ts` | `backend/test/auditoria.e2e-spec.ts`: "filtra por actor, accion y entidad del recurso", "pagina los resultados", "rechaza un rango invertido con 400", "rechaza un rango de mas de 92 dias con 400", "rechaza una fecha que no existe con 400" | Confirmada |
+| Un **PATCH sin cambios reales** no genera evento (se emite un evento por cada campo que realmente cambió). | Supuesto de implementación | Casos de uso de edición (comparan antes/después antes de registrar) | `backend/test/auditoria.e2e-spec.ts`: "un PATCH sin cambios reales no genera eventos" | Confirmada |
+| **Toda ruta mutante** (POST/PUT/PATCH/DELETE) está auditada o justificada como exclusión; una prueba descubre los controladores por reflexión y falla si aparece un endpoint mutante sin cubrir. | Supuesto de implementación | `presentation/rutas-auditadas.spec.ts` (registro `RUTAS_AUDITADAS` + mapa `RUTAS_EXCLUIDAS`) | `backend/src/modules/auditoria/presentation/rutas-auditadas.spec.ts` (4 casos) | Confirmada |
+| Las tablas heredadas **`historial_permisos`** e **`historial_equipo`** se mantienen tal cual (doble escritura desde permisos y equipos), pero la **lectura del historial sale solo de `auditoria`**. | Supuesto de implementación | `COMMENT ON TABLE "auditoria"` en la migración `20261013120000_auditoria` | Documentado en la migración; el historial visible sale de `auditoria` | Confirmada |
+
+### 14.1 Cobertura de rutas
+
+Toda ruta mutante del backend está **auditada** o **justificada como exclusión**. La
+prueba `backend/src/modules/auditoria/presentation/rutas-auditadas.spec.ts` descubre
+los controladores recorriendo `src`, lee la metadata de rutas de Nest y exige que cada
+operación mutante esté en el registro o en la lista de exclusiones.
+
+**Rutas auditadas** (cada una emite uno o más eventos):
+
+| Módulo | Rutas auditadas |
+| --- | --- |
+| Usuarios | `POST /users`; `PATCH /users/:id`; `PATCH /users/:id/estado`; `PATCH /users/:id/password`; `PATCH /users/me/password`; `PUT /users/:id/permisos/:permisoId`; `DELETE /users/:id/permisos/:permisoId` |
+| Empleados | `POST /employees`; `PATCH /employees/:id`; `POST /employees/:id/cese`; `POST /employees/:id/pin` |
+| Sucursales | `POST /branches`; `PATCH /branches/:id` |
+| Equipos | `POST /equipment`; `PATCH /equipment/:id` |
+| Turnos y asignaciones | `POST /shifts`; `PATCH /shifts/:id`; `POST /assignments`; `PATCH /assignments/:id` |
+| Catálogo de productos | `POST`/`PATCH`/`DELETE /products`; `POST`/`PATCH`/`DELETE /product-categories`; `POST`/`PATCH`/`DELETE /variants`; `PUT /branches/:sucursalId/products/:productoId/variants/:varianteId` |
+| Catálogo de insumos | `POST /insumos`; `PATCH /insumos/:id`; `DELETE /insumos/:id`; `PUT /inventario/sucursales/:sucursalId/insumos/:insumoId` |
+
+**Rutas mutantes excluidas** (con su motivo):
+
+| Ruta | Motivo |
+| --- | --- |
+| `POST /auth/login` | Autenticación: no es una operación de negocio y no hay actor autenticado previo. |
+| `POST /attendance/mark` | Asistencia: marcación con PIN, fuera del alcance de esta entrega. |
+| `POST /attendance/records/:id/correct` | Asistencia: corrección de registro, fuera del alcance. |
+| `POST /attendance/absences/justify` | Asistencia: justificación de falta, fuera del alcance. |
+| `POST /inventario/sucursales/:sucursalId/insumos/:insumoId/entradas` | Inventario: alta de entrada (movimiento), fuera del alcance. |
+| `POST /inventario/sucursales/:sucursalId/recuentos` | Inventario: recuento físico, fuera del alcance. |
+| `POST /sales` | Ventas: registro de venta, fuera del alcance. |
+| `POST /sales/:id/anular` | Ventas: anulación de venta, fuera del alcance. |
+
+## 15. Inventario de supuestos clave (resumen)
 
 Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. Las reglas que quedan **POR CONFIRMAR** están en las tablas de sus módulos: que **cambiar la contraseña no invalida los tokens emitidos** (autenticación), que **un Gerente no corrija sus propios registros de asistencia** (asistencia) y, en reportes, que **`faltasJustificadas` cuente todas las justificaciones del período** y que **las alertas abiertas y las entradas sin cerrar sean el estado actual** en lugar de cifras del período.
 
@@ -213,12 +268,13 @@ Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. L
 | JWT de acceso de **8 horas sin refresh**. | `auth.module.ts` | Confirmada |
 | Login: solo cuentan los **fallos** (5 por usuario+IP, 20 por IP, ventana fija de 1 min en memoria). | `login-throttle.service.ts` + `login-throttle.interceptor.ts` | Confirmada |
 | **Permisos efectivos recalculados por petición** (bloqueo/permisos surten efecto inmediato). | `jwt.strategy.ts` | Confirmada |
+| La tabla **`auditoria` es inmutable** (solo inserción) y su `detalle` **nunca lleva secretos** (saneador de claves prohibidas). | Migración `20261013120000_auditoria`; `sanitizar-detalle.ts` | Confirmada |
 
-## 15. Pendiente de implementar
+## 16. Pendiente de implementar
 
-**No quedan módulos esqueleto.** Los once módulos del backend (`auth`, `users`, `branches`, `products`, `inventory`, `sales`, `equipment`, `employees`, `shifts`, `attendance` y `reports`) están **implementados y registrados en `app.module.ts`**, y todas las rutas y permisos sembrados ya se consumen desde la API. El último en cerrarse fue **Reportes** (secciones 13); sus esqueletos (`reports.controller.ts`, `reports.service.ts` y `dto/`) se eliminaron y `ReportsModule` quedó registrado.
+**No quedan módulos esqueleto.** Los doce módulos del backend (`auth`, `users`, `branches`, `products`, `inventory`, `sales`, `equipment`, `employees`, `shifts`, `attendance`, `reports` y `auditoria`) están **implementados y registrados en `app.module.ts`**, y todas las rutas y permisos sembrados ya se consumen desde la API. El último módulo de negocio en cerrarse fue **Reportes** (sección 13); sus esqueletos (`reports.controller.ts`, `reports.service.ts` y `dto/`) se eliminaron y `ReportsModule` quedó registrado. Después se añadió **Auditoría** (sección 14), que es transversal: instrumenta dentro de cada módulo y solo añade dos rutas de lectura.
 
-## 16. Limitaciones y observaciones
+## 17. Limitaciones y observaciones
 
 - **Cobertura minima por turno y cargo** (turnos): hoy varios empleados pueden compartir un turno **sin limite** y no se valida un minimo de personal por turno ni por cargo. Es una **mejora futura**, no una regla vigente.
 - **Ventana de PIN de asistencia en memoria**: el bloqueo por 5 fallos vive en un `Map` del proceso (`RegistroFallosPinService`); **se reinicia al reiniciar el servidor** y **no se comparte entre instancias**. Para producción horizontal habría que llevarlo a un almacén compartido (Redis o la base). Es una **mejora futura**.
@@ -233,3 +289,4 @@ Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. L
 - **Persistencia de decimales**: todo importe y cantidad se serializa a texto antes de tocar la base para que Prisma no arrastre errores de representación binaria (ver `precioATextoDecimal`, `cantidadATexto`, `centimosATexto`).
 - **Filtro global de excepciones con formato de error uniforme**, a evaluar cuando el frontend lo requiera.
 - **Orden de guards** (registrados como `APP_GUARD` en este orden en `backend/src/app.module.ts`): autenticación (`JwtAuthGuard`) → permisos (`PermissionsGuard`) → throttling (`ThrottlerGuard`). El login queda excluido del throttling global (`@SkipThrottle()`) y usa su propio interceptor (`LoginThrottleInterceptor`).
+- **Auditoría (alcance y saneador)**: la instrumentación cubre personas, sucursales, equipos, turnos y el catálogo de productos e insumos; quedan **fuera** ventas, asistencia y entradas/recuentos de inventario (tabla de exclusiones en la sección 14). El saneador del detalle prohíbe **claves exactas** conocidas (`password`, `hash`, `pin`, `token`, ...); una clave secreta con otro nombre no se detecta. La tabla es de solo inserción: no se puede vaciar por `DELETE` (solo `TRUNCATE`, reservado al harness de pruebas).

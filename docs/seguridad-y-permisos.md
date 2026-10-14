@@ -135,6 +135,12 @@ se registra en `historial_permisos` en la misma transacción.
   sí mismo.
 - No se puede dejar al sistema **sin Admin activo**: se bloquea la operación que
   convertiría al último Admin activo en bloqueado o en otro rol.
+- **Auditoría**: se lee con el permiso **`usuarios.crear_editar`** (Admin y Gerente;
+  no existe un `auditoria.ver` ni un permiso nuevo). El Admin ve todo; el Gerente
+  solo los eventos de personas (usuario/empleado) cuyo usuario afectado es un
+  **Empleado de su sucursal** y los eventos operativos de su sucursal; cualquier otro
+  rol recibe `403`. En el historial por usuario, un usuario fuera de su alcance
+  responde **404**.
 
 ## 6. Modelo de permisos por módulo
 
@@ -150,6 +156,7 @@ se registra en `historial_permisos` en la misma transacción.
 | Turnos      | `turnos.editar` (turnos y asignaciones; no existe `turnos.ver`). | Ídem (Admin y Gerente). |
 | Asistencia  | `asistencia.ver` (Admin, Gerente y Empleado). | Marcar: `asistencia.marcar` (Admin, Gerente y Empleado). Corregir y justificar: `asistencia.corregir` (solo Gerente). |
 | Reportes    | `reportes.comparativos.ver` (solo Admin). | No aplica: el reporte es de solo lectura. |
+| Auditoría   | `usuarios.crear_editar` (Admin y Gerente). El Admin ve todo; el Gerente solo personas de su sucursal y eventos operativos de su sucursal. | No aplica: los eventos los escribe el propio sistema dentro de la transacción de cada operación auditada. |
 
 ## 7. Notas de verificación
 
