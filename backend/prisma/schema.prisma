@@ -30,6 +30,7 @@ model Sucursal {
   recuentosInventario  RecuentoInventario[]
   ventas               Venta[]
   equipos              Equipo[]
+  auditorias           Auditoria[]
 
   @@map("sucursal")
 }
@@ -101,6 +102,8 @@ model Usuario {
   correccionesAsistencia RegistroAsistencia[]   @relation("RegistroAsistenciaCorrector")
   historialEquipos       HistorialEquipo[]
   justificacionesFalta   JustificacionFalta[]
+  auditoriaComoActor     Auditoria[]            @relation("AuditoriaActor")
+  auditoriaComoAfectado  Auditoria[]            @relation("AuditoriaUsuarioAfectado")
 
   @@index([rolId])
   @@index([sucursalId])
@@ -507,6 +510,39 @@ model HistorialEquipo {
   @@map("historial_equipo")
 }
 
+// ==================== Auditoria ====================
+
+model Auditoria {
+  id                 String           @id @default(uuid(7)) @db.Uuid
+  /// usuario, empleado, sucursal, categoria, variante, producto, oferta,
+  /// insumo, insumo_sucursal, turno, asignacion, equipo
+  entidad            AuditoriaEntidad
+  /// Referencia polimorfica al recurso afectado; deliberadamente SIN FK.
+  entidadId          String           @map("entidad_id") @db.Uuid
+  accion             AuditoriaAccion
+  actorId            String           @map("actor_id") @db.Uuid
+  /// Solo en eventos de usuario, permiso y empleado (usuario vinculado).
+  usuarioAfectadoId  String?          @map("usuario_afectado_id") @db.Uuid
+  /// NULL en eventos globales (catalogo de productos, categorias, variantes,
+  /// insumos, sucursales).
+  sucursalAfectadaId String?          @map("sucursal_afectada_id") @db.Uuid
+  /// JSONB { antes, despues }. Nunca contiene contrasenas, hashes ni PIN.
+  detalle            Json             @default("{}")
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  actor            Usuario   @relation("AuditoriaActor", fields: [actorId], references: [id], onDelete: Restrict)
+  usuarioAfectado  Usuario?  @relation("AuditoriaUsuarioAfectado", fields: [usuarioAfectadoId], references: [id], onDelete: Restrict)
+  sucursalAfectada Sucursal? @relation(fields: [sucursalAfectadaId], references: [id], onDelete: Restrict)
+
+  @@index([entidad, entidadId, createdAt(sort: Desc)])
+  @@index([usuarioAfectadoId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([accion, createdAt(sort: Desc)])
+  @@index([sucursalAfectadaId, createdAt(sort: Desc)])
+  @@map("auditoria")
+}
+
 // ==================== Enums ====================
 
 /// activo, bloqueado
@@ -625,4 +661,73 @@ enum EquipoEstado {
   retirado
 
   @@map("equipo_estado")
+}
+
+/// usuario, empleado, sucursal, categoria, variante, producto, oferta, insumo,
+/// insumo_sucursal, turno, asignacion, equipo
+enum AuditoriaEntidad {
+  usuario
+  empleado
+  sucursal
+  categoria
+  variante
+  producto
+  oferta
+  insumo
+  insumo_sucursal
+  turno
+  asignacion
+  equipo
+
+  @@map("auditoria_entidad")
+}
+
+/// Acciones definitivas de la auditoria, derivadas de las operaciones reales.
+enum AuditoriaAccion {
+  usuario_creado
+  usuario_editado
+  usuario_rol_cambiado
+  usuario_sucursal_cambiada
+  usuario_bloqueado
+  usuario_activado
+  usuario_password_restablecida
+  usuario_password_cambiada
+  permiso_concedido
+  permiso_revocado
+  permiso_restablecido
+  empleado_creado
+  empleado_editado
+  empleado_cesado
+  empleado_pin_regenerado
+  sucursal_creada
+  sucursal_editada
+  categoria_creada
+  categoria_editada
+  categoria_eliminada
+  variante_creada
+  variante_editada
+  variante_eliminada
+  producto_creado
+  producto_editado
+  producto_eliminado
+  oferta_creada
+  oferta_precio_fijado
+  oferta_activada
+  oferta_desactivada
+  insumo_creado
+  insumo_editado
+  insumo_eliminado
+  insumo_sucursal_creado
+  insumo_sucursal_stock_minimo_cambiado
+  insumo_sucursal_activado
+  insumo_sucursal_descontinuado
+  turno_creado
+  turno_editado
+  asignacion_creada
+  asignacion_retirada
+  equipo_creado
+  equipo_editado
+  equipo_estado_cambiado
+
+  @@map("auditoria_accion")
 }

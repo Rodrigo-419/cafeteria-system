@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { appConfig } from './config/app.config';
 import { validate } from './config/env.config';
 import { PrismaModule } from './database/prisma.module';
+import { AuditoriaModule } from './modules/auditoria/auditoria.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { BranchesModule } from './modules/branches/branches.module';
@@ -40,6 +41,7 @@ import { PermissionsGuard } from './modules/auth/presentation/guards/permissions
       },
     ]),
     PrismaModule,
+    AuditoriaModule,
     AuthModule,
     UsersModule,
     EmployeesModule,
