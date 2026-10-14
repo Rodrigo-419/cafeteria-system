@@ -527,7 +527,7 @@ async function ejecutarDemoSeed(
       continue;
     }
 
-    const creada = await categoriasService.crear(nombre);
+    const creada = await categoriasService.crear(adminActor.id, nombre);
     anotar(contadores, 'categorias', 'creado');
     categoriaPorNombre.set(nombre, creada.id);
   }
@@ -556,7 +556,7 @@ async function ejecutarDemoSeed(
       continue;
     }
 
-    const creado = await productosService.crear({
+    const creado = await productosService.crear(adminActor.id, {
       nombre: spec.nombre,
       categoriaId,
       descripcion: spec.descripcion,
@@ -628,7 +628,7 @@ async function ejecutarDemoSeed(
       continue;
     }
 
-    const creado = await crearInsumo.ejecutar({
+    const creado = await crearInsumo.ejecutar(adminActor.id, {
       nombre: spec.nombre,
       presentacion: spec.presentacion,
     });

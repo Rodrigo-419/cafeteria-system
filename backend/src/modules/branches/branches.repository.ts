@@ -18,6 +18,9 @@ export type SucursalRespuesta = {
   updatedAt: Date;
 };
 
+/** Cliente con el que se puede trabajar fuera o dentro de una transaccion. */
+export type ClienteSucursales = PrismaService | Prisma.TransactionClient;
+
 const SELECT_SUCURSAL = {
   id: true,
   nombre: true,
@@ -36,10 +39,27 @@ const SELECT_SUCURSAL_NOMBRE = {
 export class BranchesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  // ------------------------------------------------------------ transaccion
+
+  /**
+   * Ejecuta la operacion dentro de una transaccion interactiva.
+   *
+   * La creacion y la edicion encadenan en la misma transaccion la comprobacion
+   * de nombre, la escritura y el evento de auditoria.
+   */
+  async enTransaccion<T>(
+    operacion: (cliente: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(operacion);
+  }
+
   // ---------------------------------------------------------------- lecturas
 
-  async buscarPorId(id: string): Promise<SucursalRespuesta | null> {
-    return this.prisma.sucursal.findUnique({
+  async buscarPorId(
+    id: string,
+    cliente?: ClienteSucursales,
+  ): Promise<SucursalRespuesta | null> {
+    return this.db(cliente).sucursal.findUnique({
       where: { id },
       select: SELECT_SUCURSAL,
     });
@@ -70,8 +90,12 @@ export class BranchesRepository {
    * `exceptoSucursalId` deja que la propia sucursal conserve su nombre al
    * editarlo.
    */
-  async nombreEnUso(nombre: string, exceptoSucursalId?: string): Promise<boolean> {
-    const sucursales = await this.prisma.sucursal.findMany({
+  async nombreEnUso(
+    nombre: string,
+    exceptoSucursalId?: string,
+    cliente?: ClienteSucursales,
+  ): Promise<boolean> {
+    const sucursales = await this.db(cliente).sucursal.findMany({
       select: SELECT_SUCURSAL_NOMBRE,
     });
 
@@ -82,12 +106,15 @@ export class BranchesRepository {
 
   // --------------------------------------------------------------- escrituras
 
-  async crear(data: {
-    nombre: string;
-    direccion: string;
-    telefono: string | null;
-  }): Promise<SucursalRespuesta> {
-    return this.prisma.sucursal.create({
+  async crear(
+    data: {
+      nombre: string;
+      direccion: string;
+      telefono: string | null;
+    },
+    cliente?: ClienteSucursales,
+  ): Promise<SucursalRespuesta> {
+    return this.db(cliente).sucursal.create({
       data: {
         nombre: data.nombre,
         direccion: data.direccion,
@@ -104,11 +131,18 @@ export class BranchesRepository {
   async actualizar(
     id: string,
     data: { nombre?: string; direccion?: string; telefono?: string | null },
+    cliente?: ClienteSucursales,
   ): Promise<SucursalRespuesta> {
-    return this.prisma.sucursal.update({
+    return this.db(cliente).sucursal.update({
       where: { id },
       data,
       select: SELECT_SUCURSAL,
     });
+  }
+
+  // ------------------------------------------------------------------ privado
+
+  private db(cliente?: ClienteSucursales): ClienteSucursales {
+    return cliente ?? this.prisma;
   }
 }

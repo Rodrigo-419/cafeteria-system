@@ -33,6 +33,8 @@ export type UsuarioRespuesta = {
 /** Lo mínimo del objetivo para decidir alcance y reglas. */
 export type UsuarioAlcance = {
   id: string;
+  nombre: string;
+  nombreUsuario: string;
   rol: string;
   rolId: string;
   sucursalId: string | null;
@@ -104,6 +106,8 @@ const SELECT_USUARIO_RESPUESTA = {
  */
 const SELECT_USUARIO_ALCANCE = {
   id: true,
+  nombre: true,
+  nombreUsuario: true,
   rolId: true,
   sucursalId: true,
   estado: true,
@@ -131,6 +135,19 @@ const SELECT_PERMISOS_INDIVIDUALES = {
 @Injectable()
 export class UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Ejecuta `operacion` dentro de una transaccion y le pasa el cliente.
+   *
+   * Lo usan los casos de uso que necesitan encadenar una escritura con su
+   * evento de auditoria (y a veces con otra escritura) para que todo confirme o
+   * falle junto.
+   */
+  async enTransaccion<T>(
+    operacion: (cliente: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(operacion);
+  }
 
   // ---------------------------------------------------------------- lecturas
 
@@ -173,6 +190,8 @@ export class UsersRepository {
 
     return {
       id: usuario.id,
+      nombre: usuario.nombre,
+      nombreUsuario: usuario.nombreUsuario,
       rol: rol?.nombre ?? '',
       rolId: usuario.rolId,
       sucursalId: usuario.sucursalId,
@@ -185,8 +204,11 @@ export class UsersRepository {
    * contrasena propia. Se pide por separado para no arrastrar el hash en el
    * resto de lecturas.
    */
-  async buscarHashPorId(id: string): Promise<UsuarioConHash | null> {
-    const usuario = await this.prisma.usuario.findUnique({
+  async buscarHashPorId(
+    id: string,
+    cliente?: ClienteUsuarios,
+  ): Promise<UsuarioConHash | null> {
+    const usuario = await this.db(cliente).usuario.findUnique({
       where: { id },
       select: { id: true, passwordHash: true },
     });
@@ -237,8 +259,9 @@ export class UsersRepository {
   async nombreUsuarioEnUso(
     nombreUsuario: string,
     exceptoUsuarioId?: string,
+    cliente?: ClienteUsuarios,
   ): Promise<boolean> {
-    const usuario = await this.prisma.usuario.findUnique({
+    const usuario = await this.db(cliente).usuario.findUnique({
       where: { nombreUsuario },
       select: { id: true },
     });
@@ -246,35 +269,47 @@ export class UsersRepository {
     return usuario !== null && usuario.id !== exceptoUsuarioId;
   }
 
-  async existeSucursal(sucursalId: string): Promise<boolean> {
-    const sucursal = await this.prisma.sucursal.findUnique({
+  async existeSucursal(
+    sucursalId: string,
+    cliente?: ClienteUsuarios,
+  ): Promise<boolean> {
+    const sucursal = await this.db(cliente).sucursal.findUnique({
       where: { id: sucursalId },
       select: { id: true },
     });
     return sucursal !== null;
   }
 
-  async obtenerRolPorNombre(nombre: string): Promise<RolBasico | null> {
-    return this.prisma.rol.findUnique({
+  async obtenerRolPorNombre(
+    nombre: string,
+    cliente?: ClienteUsuarios,
+  ): Promise<RolBasico | null> {
+    return this.db(cliente).rol.findUnique({
       where: { nombre },
       select: { id: true, nombre: true },
     });
   }
 
-  async obtenerPermisoPorId(permisoId: string): Promise<{
+  async obtenerPermisoPorId(
+    permisoId: string,
+    cliente?: ClienteUsuarios,
+  ): Promise<{
     id: string;
     codigo: string;
     descripcion: string;
   } | null> {
-    return this.prisma.permiso.findUnique({
+    return this.db(cliente).permiso.findUnique({
       where: { id: permisoId },
       select: { id: true, codigo: true, descripcion: true },
     });
   }
 
   /** Permisos que el rol del objetivo concede por defecto. */
-  async permisosPorDefectoDeRol(rolId: string): Promise<PermisoDeRol[]> {
-    const rolesPermiso = await this.prisma.rolPermiso.findMany({
+  async permisosPorDefectoDeRol(
+    rolId: string,
+    cliente?: ClienteUsuarios,
+  ): Promise<PermisoDeRol[]> {
+    const rolesPermiso = await this.db(cliente).rolPermiso.findMany({
       where: { rolId },
       select: {
         permisoId: true,
@@ -291,8 +326,9 @@ export class UsersRepository {
 
   async permisosIndividuales(
     usuarioId: string,
+    cliente?: ClienteUsuarios,
   ): Promise<PermisoIndividualFila[]> {
-    return this.prisma.usuarioPermiso.findMany({
+    return this.db(cliente).usuarioPermiso.findMany({
       where: { usuarioId },
       select: SELECT_PERMISOS_INDIVIDUALES,
       orderBy: { permiso: { codigo: 'asc' } },
@@ -315,14 +351,17 @@ export class UsersRepository {
 
   // --------------------------------------------------------------- escrituras
 
-  async crearUsuario(data: {
-    nombre: string;
-    nombreUsuario: string;
-    passwordHash: string;
-    rolId: string;
-    sucursalId: string | null;
-  }): Promise<UsuarioRespuesta> {
-    const usuario = await this.prisma.usuario.create({
+  async crearUsuario(
+    data: {
+      nombre: string;
+      nombreUsuario: string;
+      passwordHash: string;
+      rolId: string;
+      sucursalId: string | null;
+    },
+    cliente?: ClienteUsuarios,
+  ): Promise<UsuarioRespuesta> {
+    const usuario = await this.db(cliente).usuario.create({
       data: {
         nombre: data.nombre,
         nombreUsuario: data.nombreUsuario,
@@ -343,8 +382,9 @@ export class UsersRepository {
       rolId?: string;
       sucursalId?: string | null;
     },
+    cliente?: ClienteUsuarios,
   ): Promise<UsuarioRespuesta> {
-    const usuario = await this.prisma.usuario.update({
+    const usuario = await this.db(cliente).usuario.update({
       where: { id },
       data,
       select: SELECT_USUARIO_RESPUESTA,
@@ -367,8 +407,12 @@ export class UsersRepository {
     return this.conRolRespuesta(usuario, db);
   }
 
-  async actualizarPassword(id: string, passwordHash: string): Promise<void> {
-    await this.prisma.usuario.update({
+  async actualizarPassword(
+    id: string,
+    passwordHash: string,
+    cliente?: ClienteUsuarios,
+  ): Promise<void> {
+    await this.db(cliente).usuario.update({
       where: { id },
       data: { passwordHash },
       select: { id: true },
@@ -383,18 +427,21 @@ export class UsersRepository {
    * cambio otorga el permiso, "revocado" si se lo quita. Un PUT con tipo
    * "concedido" concede, y un PUT con tipo "revocado" quita.
    */
-  async asignarPermisoIndividual(params: {
-    usuarioId: string;
-    permisoId: string;
-    tipo: TipoPermisoIndividual;
-    usuarioEjecutorId: string;
-    valorAnterior: string | null;
-  }): Promise<void> {
+  async asignarPermisoIndividual(
+    params: {
+      usuarioId: string;
+      permisoId: string;
+      tipo: TipoPermisoIndividual;
+      usuarioEjecutorId: string;
+      valorAnterior: string | null;
+    },
+    cliente?: ClienteUsuarios,
+  ): Promise<void> {
     const tipo = params.tipo as UsuarioPermisoTipo;
     const accion: HistorialPermisosAccion =
       params.tipo === 'concedido' ? 'asignado' : 'revocado';
 
-    await this.prisma.$transaction(async (tx) => {
+    const operacion = async (tx: ClienteUsuarios): Promise<void> => {
       await tx.usuarioPermiso.upsert({
         where: {
           usuarioId_permisoId: {
@@ -421,7 +468,16 @@ export class UsersRepository {
         },
         select: { id: true },
       });
-    });
+    };
+
+    // Sin cliente abre su propia transaccion; con cliente se une a la del caso
+    // de uso que ya la abrio (permiso + historial + auditoria, todo junto).
+    if (cliente !== undefined) {
+      await operacion(cliente);
+      return;
+    }
+
+    await this.prisma.$transaction(operacion);
   }
 
   /**
@@ -437,17 +493,20 @@ export class UsersRepository {
    * Por eso el valor anterior de la fila borrada es lo que decide la accion.
    * `valorAnterior` guarda el tipo que tenía la fila eliminada.
    */
-  async eliminarPermisoIndividual(params: {
-    usuarioId: string;
-    permisoId: string;
-    usuarioEjecutorId: string;
-    tipoPrevio: TipoPermisoIndividual;
-    valorAnterior: string | null;
-  }): Promise<void> {
+  async eliminarPermisoIndividual(
+    params: {
+      usuarioId: string;
+      permisoId: string;
+      usuarioEjecutorId: string;
+      tipoPrevio: TipoPermisoIndividual;
+      valorAnterior: string | null;
+    },
+    cliente?: ClienteUsuarios,
+  ): Promise<void> {
     const accion: HistorialPermisosAccion =
       params.tipoPrevio === 'concedido' ? 'revocado' : 'asignado';
 
-    await this.prisma.$transaction(async (tx) => {
+    const operacion = async (tx: ClienteUsuarios): Promise<void> => {
       await tx.usuarioPermiso.deleteMany({
         where: { usuarioId: params.usuarioId, permisoId: params.permisoId },
       });
@@ -462,7 +521,14 @@ export class UsersRepository {
         },
         select: { id: true },
       });
-    });
+    };
+
+    if (cliente !== undefined) {
+      await operacion(cliente);
+      return;
+    }
+
+    await this.prisma.$transaction(operacion);
   }
 
   // ------------------------------------------------------------------ privado

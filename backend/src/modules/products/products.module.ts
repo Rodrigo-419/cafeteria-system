@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { CategoriasService } from './categorias.service';
 import { OfertasService } from './ofertas.service';
 import { ProductosService } from './productos.service';
@@ -10,6 +11,7 @@ import { ProductsController } from './products.controller';
 import { VariantsController } from './variants.controller';
 
 @Module({
+  imports: [AuditoriaModule],
   controllers: [
     ProductCategoriesController,
     VariantsController,

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { UsersController } from './presentation/users.controller';
 import { UsersRepository } from './infrastructure/users.repository';
 import { ActualizarUsuarioUseCase } from './application/use-cases/actualizar-usuario.use-case';
@@ -13,6 +14,7 @@ import { ObtenerUsuarioUseCase } from './application/use-cases/obtener-usuario.u
 import { RestablecerPasswordUseCase } from './application/use-cases/restablecer-password.use-case';
 
 @Module({
+  imports: [AuditoriaModule],
   controllers: [UsersController],
   providers: [
     UsersRepository,

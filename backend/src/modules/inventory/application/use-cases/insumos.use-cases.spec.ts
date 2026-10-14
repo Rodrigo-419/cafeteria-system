@@ -11,6 +11,10 @@ jest.mock('../../infrastructure/inventory.repository', () => ({
   esViolacionDeUnicidad: () => false,
 }));
 
+jest.mock('../../../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import {
   PRESENTACIONES_INSUMO,
   type PresentacionInsumo,
@@ -19,6 +23,11 @@ import { CrearInsumoUseCase } from './crear-insumo.use-case';
 import { EditarInsumoUseCase } from './editar-insumo.use-case';
 import { EliminarInsumoUseCase } from './eliminar-insumo.use-case';
 import type { InventoryRepository } from '../../infrastructure/inventory.repository';
+import type { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
+
+const ACTOR_ID = 'adm-1';
+
+type Auditoria = { registrar: jest.Mock };
 
 type Repo = {
   enTransaccion: jest.Mock;
@@ -83,17 +92,20 @@ const INSUMO_EXISTENTE = {
 
 describe('CrearInsumoUseCase', () => {
   let repository: Repo;
+  let auditoria: Auditoria;
   let useCase: CrearInsumoUseCase;
 
   beforeEach(() => {
     repository = repo();
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
     useCase = new CrearInsumoUseCase(
       repository as unknown as InventoryRepository,
+      auditoria as unknown as AuditoriaRepository,
     );
   });
 
 it('crea el insumo con el nombre recortado', async () => {
-    await useCase.ejecutar({ nombre: '  Cafe molido  ', presentacion: 'paquete' });
+    await useCase.ejecutar(ACTOR_ID, { nombre: '  Cafe molido  ', presentacion: 'paquete' });
 
     expect(repository.crearInsumo).toHaveBeenCalledWith(
       { nombre: 'Cafe molido', presentacion: 'paquete' },
@@ -121,7 +133,7 @@ it('crea el insumo con el nombre recortado', async () => {
       };
     });
 
-    await useCase.ejecutar({ nombre: 'Leche', presentacion: 'bolsa' });
+    await useCase.ejecutar(ACTOR_ID, { nombre: 'Leche', presentacion: 'bolsa' });
 
     // Si el `count` fuera antes del candado, dos altas simultaneas podrian leer
     // las dos que el nombre esta libre.
@@ -129,7 +141,7 @@ it('crea el insumo con el nombre recortado', async () => {
   });
 
   it('comprueba el duplicado con el cliente de la transaccion', async () => {
-    await useCase.ejecutar({ nombre: 'Leche', presentacion: 'bolsa' });
+    await useCase.ejecutar(ACTOR_ID, { nombre: 'Leche', presentacion: 'bolsa' });
 
     expect(repository.bloquearNombreInsumo).toHaveBeenCalledWith(
       'Leche',
@@ -143,7 +155,7 @@ it('crea el insumo con el nombre recortado', async () => {
   });
 
   it('devuelve la fila que creo el repositorio', async () => {
-    const resultado = await useCase.ejecutar({
+    const resultado = await useCase.ejecutar(ACTOR_ID, {
       nombre: 'Leche',
       presentacion: 'bolsa',
     });
@@ -155,13 +167,13 @@ it('crea el insumo con el nombre recortado', async () => {
     repository.nombreInsumoEnUso.mockResolvedValue(true);
 
     await expect(
-      useCase.ejecutar({ nombre: 'Leche', presentacion: 'bolsa' }),
+      useCase.ejecutar(ACTOR_ID, { nombre: 'Leche', presentacion: 'bolsa' }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('no comprueba duplicados si el nombre ya es invalido', async () => {
     await expect(
-      useCase.ejecutar({ nombre: '  ', presentacion: 'bolsa' }),
+      useCase.ejecutar(ACTOR_ID, { nombre: '  ', presentacion: 'bolsa' }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(repository.nombreInsumoEnUso).not.toHaveBeenCalled();
@@ -169,13 +181,13 @@ it('crea el insumo con el nombre recortado', async () => {
 
   it('rechaza un nombre de un solo caracter', async () => {
     await expect(
-      useCase.ejecutar({ nombre: 'L', presentacion: 'bolsa' }),
+      useCase.ejecutar(ACTOR_ID, { nombre: 'L', presentacion: 'bolsa' }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rechaza un nombre de mas de 100 caracteres', async () => {
     await expect(
-      useCase.ejecutar({ nombre: 'L'.repeat(101), presentacion: 'bolsa' }),
+      useCase.ejecutar(ACTOR_ID, { nombre: 'L'.repeat(101), presentacion: 'bolsa' }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -183,52 +195,79 @@ it('crea el insumo con el nombre recortado', async () => {
     const nombre = 'L'.repeat(100);
 
     await expect(
-      useCase.ejecutar({ nombre, presentacion: 'bolsa' }),
+      useCase.ejecutar(ACTOR_ID, { nombre, presentacion: 'bolsa' }),
     ).resolves.toBeDefined();
   });
 
   it('rechaza una presentacion inexistente con la lista de validas', async () => {
     await expect(
-      useCase.ejecutar({ nombre: 'Leche', presentacion: 'litro' }),
+      useCase.ejecutar(ACTOR_ID, { nombre: 'Leche', presentacion: 'litro' }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
     await expect(
-      useCase.ejecutar({ nombre: 'Leche', presentacion: 'litro' }),
+      useCase.ejecutar(ACTOR_ID, { nombre: 'Leche', presentacion: 'litro' }),
     ).rejects.toThrow(/paquete, bolsa, caja, unidad, paquete_varias_unidades/u);
   });
 
   it('acepta todas las presentaciones del enum', async () => {
     for (const presentacion of PRESENTACIONES_INSUMO) {
       await expect(
-        useCase.ejecutar({ nombre: 'Leche', presentacion }),
+        useCase.ejecutar(ACTOR_ID, { nombre: 'Leche', presentacion }),
       ).resolves.toBeDefined();
     }
   });
 
   it('no toca la base si el nombre es invalido', async () => {
     await expect(
-      useCase.ejecutar({ nombre: 'x', presentacion: 'bolsa' }),
+      useCase.ejecutar(ACTOR_ID, { nombre: 'x', presentacion: 'bolsa' }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(repository.crearInsumo).not.toHaveBeenCalled();
+  });
+
+  it('registra el alta con el actor, en la misma transaccion', async () => {
+    await useCase.ejecutar(ACTOR_ID, { nombre: 'Leche', presentacion: 'bolsa' });
+
+    expect(auditoria.registrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entidad: 'insumo',
+        entidadId: 'ins-nuevo',
+        accion: 'insumo_creado',
+        actorId: ACTOR_ID,
+      }),
+      TRANSACCION,
+    );
+  });
+
+  it('no registra nada si el nombre esta duplicado', async () => {
+    repository.nombreInsumoEnUso.mockResolvedValue(true);
+
+    await expect(
+      useCase.ejecutar(ACTOR_ID, { nombre: 'Leche', presentacion: 'bolsa' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(auditoria.registrar).not.toHaveBeenCalled();
   });
 });
 
 describe('EditarInsumoUseCase', () => {
   let repository: Repo;
+  let auditoria: Auditoria;
   let useCase: EditarInsumoUseCase;
 
   beforeEach(() => {
     repository = repo({
       buscarInsumoPorId: jest.fn().mockResolvedValue(INSUMO_EXISTENTE),
     });
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
     useCase = new EditarInsumoUseCase(
       repository as unknown as InventoryRepository,
+      auditoria as unknown as AuditoriaRepository,
     );
   });
 
   it('actualiza el nombre cuando cambia', async () => {
-    await useCase.ejecutar('ins-1', { nombre: 'Cafe en grano' });
+    await useCase.ejecutar(ACTOR_ID, 'ins-1', { nombre: 'Cafe en grano' });
 
     expect(repository.actualizarInsumo).toHaveBeenCalledWith(
       'ins-1',
@@ -251,24 +290,25 @@ describe('EditarInsumoUseCase', () => {
       return { id, nombre: 'Cafe en grano', ...data, createdAt: new Date(), updatedAt: new Date() };
     });
 
-    await useCase.ejecutar('ins-1', { nombre: 'Cafe en grano' });
+    await useCase.ejecutar(ACTOR_ID, 'ins-1', { nombre: 'Cafe en grano' });
 
     expect(orden).toEqual(['candado', 'comprobar', 'actualizar']);
   });
 
-  it('actualiza la presentacion sin abrir transaccion si el nombre no cambia', async () => {
-    await useCase.ejecutar('ins-1', { presentacion: 'bolsa' });
+  it('actualiza la presentacion dentro de una transaccion aunque el nombre no cambie', async () => {
+    await useCase.ejecutar(ACTOR_ID, 'ins-1', { presentacion: 'bolsa' });
 
-    expect(repository.enTransaccion).not.toHaveBeenCalled();
+    expect(repository.enTransaccion).toHaveBeenCalledTimes(1);
     expect(repository.bloquearNombreInsumo).not.toHaveBeenCalled();
     expect(repository.actualizarInsumo).toHaveBeenCalledWith(
       'ins-1',
       { presentacion: 'bolsa' satisfies PresentacionInsumo },
+      TRANSACCION,
     );
   });
 
   it('actualiza los dos campos juntos en una sola transaccion', async () => {
-    await useCase.ejecutar('ins-1', { nombre: 'Cafe', presentacion: 'caja' });
+    await useCase.ejecutar(ACTOR_ID, 'ins-1', { nombre: 'Cafe', presentacion: 'caja' });
 
     expect(repository.enTransaccion).toHaveBeenCalledTimes(1);
     expect(repository.actualizarInsumo).toHaveBeenCalledWith(
@@ -281,7 +321,7 @@ describe('EditarInsumoUseCase', () => {
   it('responde 404 si el insumo no existe', async () => {
     repository.buscarInsumoPorId.mockResolvedValue(null);
 
-    await expect(useCase.ejecutar('ins-x', { nombre: 'Cafe' })).rejects.toBeInstanceOf(
+    await expect(useCase.ejecutar(ACTOR_ID, 'ins-x', { nombre: 'Cafe' })).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });
@@ -289,13 +329,13 @@ describe('EditarInsumoUseCase', () => {
   it('rechaza un nombre duplicado con 409', async () => {
     repository.nombreInsumoEnUso.mockResolvedValue(true);
 
-    await expect(useCase.ejecutar('ins-1', { nombre: 'Leche' })).rejects.toBeInstanceOf(
+    await expect(useCase.ejecutar(ACTOR_ID, 'ins-1', { nombre: 'Leche' })).rejects.toBeInstanceOf(
       ConflictException,
     );
   });
 
   it('comprueba el duplicado excluyendo el propio insumo', async () => {
-    await useCase.ejecutar('ins-1', { nombre: 'Leche' });
+    await useCase.ejecutar(ACTOR_ID, 'ins-1', { nombre: 'Leche' });
 
     expect(repository.nombreInsumoEnUso).toHaveBeenCalledWith(
       'Leche',
@@ -305,34 +345,34 @@ describe('EditarInsumoUseCase', () => {
   });
 
   it('no escribe si el nombre es identico al actual, solo con espacios de mas', async () => {
-    const resultado = await useCase.ejecutar('ins-1', { nombre: '  Cafe molido  ' });
+    const resultado = await useCase.ejecutar(ACTOR_ID, 'ins-1', { nombre: '  Cafe molido  ' });
 
     expect(repository.actualizarInsumo).not.toHaveBeenCalled();
     expect(resultado).toBe(INSUMO_EXISTENTE);
   });
 
   it('no escribe si la presentacion no cambia', async () => {
-    const resultado = await useCase.ejecutar('ins-1', { presentacion: 'paquete' });
+    const resultado = await useCase.ejecutar(ACTOR_ID, 'ins-1', { presentacion: 'paquete' });
 
     expect(repository.actualizarInsumo).not.toHaveBeenCalled();
     expect(resultado).toBe(INSUMO_EXISTENTE);
   });
 
   it('no comprueba duplicados si el nombre no cambia', async () => {
-    await useCase.ejecutar('ins-1', { nombre: 'Cafe molido' });
+    await useCase.ejecutar(ACTOR_ID, 'ins-1', { nombre: 'Cafe molido' });
 
     expect(repository.nombreInsumoEnUso).not.toHaveBeenCalled();
   });
 
   it('no escribe nada si el cuerpo va vacio', async () => {
-    const resultado = await useCase.ejecutar('ins-1', {});
+    const resultado = await useCase.ejecutar(ACTOR_ID, 'ins-1', {});
 
     expect(repository.actualizarInsumo).not.toHaveBeenCalled();
     expect(resultado).toBe(INSUMO_EXISTENTE);
   });
 
   it('valida la longitud del nombre antes de tocar la base', async () => {
-    await expect(useCase.ejecutar('ins-1', { nombre: '' })).rejects.toBeInstanceOf(
+    await expect(useCase.ejecutar(ACTOR_ID, 'ins-1', { nombre: '' })).rejects.toBeInstanceOf(
       BadRequestException,
     );
 
@@ -341,36 +381,73 @@ describe('EditarInsumoUseCase', () => {
 
   it('valida la presentacion antes de tocar la base', async () => {
     await expect(
-      useCase.ejecutar('ins-1', { presentacion: 'litro' }),
+      useCase.ejecutar(ACTOR_ID, 'ins-1', { presentacion: 'litro' }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(repository.actualizarInsumo).not.toHaveBeenCalled();
+  });
+
+  it('registra la edicion con el actor, en la misma transaccion', async () => {
+    await useCase.ejecutar(ACTOR_ID, 'ins-1', { nombre: 'Cafe en grano' });
+
+    expect(auditoria.registrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entidad: 'insumo',
+        entidadId: 'ins-1',
+        accion: 'insumo_editado',
+        actorId: ACTOR_ID,
+      }),
+      TRANSACCION,
+    );
+  });
+
+  it('no registra nada si el patch no cambia nada', async () => {
+    await useCase.ejecutar(ACTOR_ID, 'ins-1', {});
+
+    expect(auditoria.registrar).not.toHaveBeenCalled();
   });
 });
 
 describe('EliminarInsumoUseCase', () => {
   let repository: Repo;
+  let auditoria: Auditoria;
   let useCase: EliminarInsumoUseCase;
 
   beforeEach(() => {
     repository = repo({
       buscarInsumoPorId: jest.fn().mockResolvedValue(INSUMO_EXISTENTE),
     });
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
     useCase = new EliminarInsumoUseCase(
       repository as unknown as InventoryRepository,
+      auditoria as unknown as AuditoriaRepository,
     );
   });
 
   it('borra un insumo que no tiene stock en ninguna sucursal', async () => {
-    await useCase.ejecutar('ins-1');
+    await useCase.ejecutar(ACTOR_ID, 'ins-1');
 
-    expect(repository.eliminarInsumo).toHaveBeenCalledWith('ins-1');
+    expect(repository.eliminarInsumo).toHaveBeenCalledWith('ins-1', TRANSACCION);
+  });
+
+  it('registra el borrado con el actor, en la misma transaccion', async () => {
+    await useCase.ejecutar(ACTOR_ID, 'ins-1');
+
+    expect(auditoria.registrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entidad: 'insumo',
+        entidadId: 'ins-1',
+        accion: 'insumo_eliminado',
+        actorId: ACTOR_ID,
+      }),
+      TRANSACCION,
+    );
   });
 
   it('responde 409 si el insumo ya tiene stock en alguna sucursal', async () => {
     repository.contarSucursalesDeInsumo.mockResolvedValue(1);
 
-    await expect(useCase.ejecutar('ins-1')).rejects.toBeInstanceOf(
+    await expect(useCase.ejecutar(ACTOR_ID, 'ins-1')).rejects.toBeInstanceOf(
       ConflictException,
     );
   });
@@ -378,14 +455,14 @@ describe('EliminarInsumoUseCase', () => {
   it('no borra un insumo que esta en uso, y lo dice', async () => {
     repository.contarSucursalesDeInsumo.mockResolvedValue(3);
 
-    await expect(useCase.ejecutar('ins-1')).rejects.toThrow(/descontinualo/u);
+    await expect(useCase.ejecutar(ACTOR_ID, 'ins-1')).rejects.toThrow(/descontinualo/u);
     expect(repository.eliminarInsumo).not.toHaveBeenCalled();
   });
 
   it('responde 404 si el insumo no existe', async () => {
     repository.buscarInsumoPorId.mockResolvedValue(null);
 
-    await expect(useCase.ejecutar('ins-x')).rejects.toBeInstanceOf(
+    await expect(useCase.ejecutar(ACTOR_ID, 'ins-x')).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });
@@ -393,7 +470,7 @@ describe('EliminarInsumoUseCase', () => {
   it('no mira el stock si el insumo no existe', async () => {
     repository.buscarInsumoPorId.mockResolvedValue(null);
 
-    await expect(useCase.ejecutar('ins-x')).rejects.toBeInstanceOf(
+    await expect(useCase.ejecutar(ACTOR_ID, 'ins-x')).rejects.toBeInstanceOf(
       NotFoundException,
     );
 

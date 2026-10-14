@@ -10,16 +10,22 @@ jest.mock('../../infrastructure/users.repository', () => ({
   UsersRepository: class UsersRepository {},
 }));
 
+jest.mock('../../../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import {
   CrearUsuarioUseCase,
   type EntradaCrearUsuario,
 } from './crear-usuario.use-case';
 import type { UsersRepository } from '../../infrastructure/users.repository';
+import type { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../../domain/roles';
 
 const PASSWORD_VALIDA = 'contrasena-larga-123';
 
 type Repo = {
+  enTransaccion: jest.Mock;
   nombreUsuarioEnUso: jest.Mock;
   existeSucursal: jest.Mock;
   obtenerRolPorNombre: jest.Mock;
@@ -28,6 +34,11 @@ type Repo = {
 
 function repo(): Repo {
   return {
+    // El caso de uso envuelve las comprobaciones y la escritura en una
+    // transaccion; el mock la ejecuta con un cliente centinela.
+    enTransaccion: jest.fn((operacion: (cliente: unknown) => unknown) =>
+      operacion({}),
+    ),
     nombreUsuarioEnUso: jest.fn().mockResolvedValue(false),
     existeSucursal: jest.fn().mockResolvedValue(true),
     obtenerRolPorNombre: jest.fn().mockImplementation(async (nombre: string) => ({
@@ -53,12 +64,15 @@ function repo(): Repo {
 
 describe('CrearUsuarioUseCase', () => {
   let repository: Repo;
+  let auditoria: { registrar: jest.Mock };
   let useCase: CrearUsuarioUseCase;
 
   beforeEach(() => {
     repository = repo();
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
     useCase = new CrearUsuarioUseCase(
       repository as unknown as UsersRepository,
+      auditoria as unknown as AuditoriaRepository,
     );
   });
 
@@ -83,6 +97,7 @@ describe('CrearUsuarioUseCase', () => {
       expect(resultado.id).toBe('usr-nuevo');
       expect(repository.crearUsuario).toHaveBeenCalledWith(
         expect.objectContaining({ rolId: `rol-${ROL_GERENTE}`, sucursalId: 'suc-7' }),
+        expect.anything(),
       );
     });
 
@@ -95,15 +110,21 @@ describe('CrearUsuarioUseCase', () => {
 
       expect(repository.crearUsuario).toHaveBeenCalledWith(
         expect.objectContaining({ rolId: `rol-${ROL_ADMIN}`, sucursalId: null }),
+        expect.anything(),
       );
     });
 
     it('normaliza el nombre de usuario a minusculas y sin espacios', async () => {
       await useCase.ejecutar(admin, { ...entrada, nombreUsuario: '  ANA.PEREZ ' });
 
-      expect(repository.nombreUsuarioEnUso).toHaveBeenCalledWith('ana.perez');
+      expect(repository.nombreUsuarioEnUso).toHaveBeenCalledWith(
+        'ana.perez',
+        undefined,
+        expect.anything(),
+      );
       expect(repository.crearUsuario).toHaveBeenCalledWith(
         expect.objectContaining({ nombreUsuario: 'ana.perez' }),
+        expect.anything(),
       );
     });
 
@@ -122,6 +143,7 @@ describe('CrearUsuarioUseCase', () => {
 
       expect(repository.crearUsuario).toHaveBeenCalledWith(
         expect.objectContaining({ rolId: `rol-${ROL_EMPLEADO}`, sucursalId: 'suc-1' }),
+        expect.anything(),
       );
     });
 
@@ -130,6 +152,7 @@ describe('CrearUsuarioUseCase', () => {
 
       expect(repository.crearUsuario).toHaveBeenCalledWith(
         expect.objectContaining({ sucursalId: 'suc-1' }),
+        expect.anything(),
       );
     });
 

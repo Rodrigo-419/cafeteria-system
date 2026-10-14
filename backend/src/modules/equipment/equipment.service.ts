@@ -20,9 +20,11 @@ import {
   type ActorEquipos,
 } from './domain/rules/equipment.rules';
 import { esAdmin } from '../users/domain/roles';
+import { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 import { EquipmentRepository } from './equipment.repository';
 import { pagina, type Paginado } from '../sales/application/paginado';
 import type {
+  ClienteEquipo,
   EquipoFila,
   HistorialEquipoFila,
 } from './equipment.repository';
@@ -56,16 +58,16 @@ export type FiltrosListarHistorial = {
 
 @Injectable()
 export class EquipmentService {
-  constructor(private readonly repository: EquipmentRepository) {}
+  constructor(
+    private readonly repository: EquipmentRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   async crear(actor: ActorEquipos, entrada: EntradaCrearEquipo): Promise<EquipoFila> {
     let sucursalId = entrada.sucursalId;
 
     if (esAdmin(actor.rol)) {
       sucursalId = entrada.sucursalId;
-      if (!(await this.repository.existeSucursal(sucursalId))) {
-        throw new NotFoundException('La sucursal no existe');
-      }
     } else {
       if (actor.sucursalId === null || actor.sucursalId === undefined) {
         throw new ForbiddenException('Acceso denegado');
@@ -73,14 +75,47 @@ export class EquipmentService {
       sucursalId = actor.sucursalId;
     }
 
-    const equipo = await this.repository.crearEquipo({
-      sucursalId,
-      nombre: entrada.nombre.trim(),
-      tipo: entrada.tipo.trim(),
-      observaciones: entrada.observaciones !== undefined && entrada.observaciones !== null ? entrada.observaciones.trim() || null : null,
-    });
+    const sucursalResuelta = sucursalId;
 
-    return equipo;
+    return this.repository.enTransaccion(async (tx) => {
+      if (
+        esAdmin(actor.rol) &&
+        !(await this.repository.existeSucursal(sucursalResuelta, tx))
+      ) {
+        throw new NotFoundException('La sucursal no existe');
+      }
+
+      const equipo = await this.repository.crearEquipo(
+        {
+          sucursalId: sucursalResuelta,
+          nombre: entrada.nombre.trim(),
+          tipo: entrada.tipo.trim(),
+          observaciones: entrada.observaciones !== undefined && entrada.observaciones !== null ? entrada.observaciones.trim() || null : null,
+        },
+        tx,
+      );
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'equipo',
+          entidadId: equipo.id,
+          accion: 'equipo_creado',
+          actorId: actor.id,
+          sucursalAfectadaId: equipo.sucursalId,
+          detalle: {
+            despues: {
+              nombre: equipo.nombre,
+              tipo: equipo.tipo,
+              estado: equipo.estado,
+              observaciones: equipo.observaciones,
+            },
+          },
+        },
+        tx,
+      );
+
+      return equipo;
+    });
   }
 
   async actualizar(
@@ -152,8 +187,81 @@ export class EquipmentService {
         );
       }
 
+      await this.registrarAuditoria(
+        actor,
+        equipo,
+        equipoActualizado,
+        { nombreCambia, tipoCambia, estadoCambia, obsCambia },
+        tx,
+      );
+
       return equipoActualizado;
     });
+  }
+
+  /**
+   * Deja eventos de auditoria para los cambios reales: `equipo_editado` para
+   * nombre/tipo/observaciones y `equipo_estado_cambiado` para el estado. Un PATCH
+   * sin cambios reales no llega aqui (se corta antes).
+   */
+  private async registrarAuditoria(
+    actor: ActorEquipos,
+    equipo: EquipoFila,
+    equipoActualizado: EquipoFila,
+    cambios: {
+      nombreCambia: boolean;
+      tipoCambia: boolean;
+      estadoCambia: boolean;
+      obsCambia: boolean;
+    },
+    cliente: ClienteEquipo,
+  ): Promise<void> {
+    if (cambios.estadoCambia) {
+      await this.auditoria.registrar(
+        {
+          entidad: 'equipo',
+          entidadId: equipo.id,
+          accion: 'equipo_estado_cambiado',
+          actorId: actor.id,
+          sucursalAfectadaId: equipoActualizado.sucursalId,
+          detalle: {
+            antes: { estado: equipo.estado },
+            despues: { estado: equipoActualizado.estado },
+          },
+        },
+        cliente,
+      );
+    }
+
+    if (cambios.nombreCambia || cambios.tipoCambia || cambios.obsCambia) {
+      const antes: Record<string, unknown> = {};
+      const despues: Record<string, unknown> = {};
+
+      if (cambios.nombreCambia) {
+        antes.nombre = equipo.nombre;
+        despues.nombre = equipoActualizado.nombre;
+      }
+      if (cambios.tipoCambia) {
+        antes.tipo = equipo.tipo;
+        despues.tipo = equipoActualizado.tipo;
+      }
+      if (cambios.obsCambia) {
+        antes.observaciones = equipo.observaciones;
+        despues.observaciones = equipoActualizado.observaciones;
+      }
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'equipo',
+          entidadId: equipo.id,
+          accion: 'equipo_editado',
+          actorId: actor.id,
+          sucursalAfectadaId: equipoActualizado.sucursalId,
+          detalle: { antes, despues },
+        },
+        cliente,
+      );
+    }
   }
 
   async obtener(actor: ActorEquipos, id: string): Promise<EquipoFila> {

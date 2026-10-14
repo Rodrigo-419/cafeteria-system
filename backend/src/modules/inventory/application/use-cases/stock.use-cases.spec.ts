@@ -6,6 +6,10 @@ jest.mock('../../infrastructure/inventory.repository', () => ({
   InventoryRepository: class InventoryRepository {},
 }));
 
+jest.mock('../../../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import { ListarStockUseCase } from './listar-stock.use-case';
 import { ListarMovimientosUseCase } from './listar-movimientos.use-case';
 import { ListarAlertasUseCase } from './listar-alertas.use-case';
@@ -14,6 +18,7 @@ import { RegistrarEntradaUseCase } from './registrar-entrada.use-case';
 import { ConfigurarStockUseCase } from './configurar-stock.use-case';
 import { ReevaluarAlertasService } from './reevaluar-alertas.service';
 import type { InventoryRepository } from '../../infrastructure/inventory.repository';
+import type { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { ROL_ADMIN, ROL_GERENTE } from '../../../users/domain/roles';
 
 /** Cliente de transaccion simulado; sirve para comprobar que se usa uno solo. */
@@ -507,14 +512,17 @@ describe('RegistrarEntradaUseCase', () => {
 describe('ConfigurarStockUseCase', () => {
   let repository: Repo;
   let reevaluar: { ejecutar: jest.Mock };
+  let auditoria: { registrar: jest.Mock };
   let useCase: ConfigurarStockUseCase;
 
   beforeEach(() => {
     repository = repo();
     reevaluar = { ejecutar: jest.fn().mockResolvedValue(undefined) };
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
     useCase = new ConfigurarStockUseCase(
       repository as unknown as InventoryRepository,
       reevaluar as unknown as ReevaluarAlertasService,
+      auditoria as unknown as AuditoriaRepository,
     );
   });
 
@@ -606,5 +614,88 @@ describe('ConfigurarStockUseCase', () => {
 
     expect(repository.incrementarStock).not.toHaveBeenCalled();
     expect(repository.crearMovimiento).not.toHaveBeenCalled();
+  });
+
+  it('registra el alta del insumo en la sucursal cuando la fila no existia', async () => {
+    repository.buscarStock.mockResolvedValue(null);
+
+    await useCase.ejecutar(ADMIN, 'suc-9', 'ins-1', { stockMinimo: 4 });
+
+    expect(auditoria.registrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entidad: 'insumo_sucursal',
+        entidadId: 'is-1',
+        accion: 'insumo_sucursal_creado',
+        actorId: 'admin-1',
+        sucursalAfectadaId: 'suc-9',
+      }),
+      TRANSACCION,
+    );
+  });
+
+  it('registra el cambio de stock minimo cuando la fila ya existia', async () => {
+    repository.buscarStock.mockResolvedValue({
+      id: 'is-1',
+      stockMinimo: '5.00',
+      estado: 'activo',
+    });
+
+    await useCase.ejecutar(ADMIN, 'suc-9', 'ins-1', { stockMinimo: 9 });
+
+    expect(auditoria.registrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accion: 'insumo_sucursal_stock_minimo_cambiado',
+        sucursalAfectadaId: 'suc-9',
+      }),
+      TRANSACCION,
+    );
+  });
+
+  it('registra la descontinuacion cuando el estado pasa a descontinuado', async () => {
+    repository.buscarStock.mockResolvedValue({
+      id: 'is-1',
+      stockMinimo: '5.00',
+      estado: 'activo',
+    });
+
+    await useCase.ejecutar(ADMIN, 'suc-9', 'ins-1', { estado: 'descontinuado' });
+
+    expect(auditoria.registrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accion: 'insumo_sucursal_descontinuado',
+        sucursalAfectadaId: 'suc-9',
+      }),
+      TRANSACCION,
+    );
+  });
+
+  it('registra la reactivacion cuando vuelve a activo', async () => {
+    repository.buscarStock.mockResolvedValue({
+      id: 'is-1',
+      stockMinimo: '5.00',
+      estado: 'descontinuado',
+    });
+
+    await useCase.ejecutar(ADMIN, 'suc-9', 'ins-1', { estado: 'activo' });
+
+    expect(auditoria.registrar).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accion: 'insumo_sucursal_activado',
+        sucursalAfectadaId: 'suc-9',
+      }),
+      TRANSACCION,
+    );
+  });
+
+  it('no registra nada si la configuracion no cambia la fila', async () => {
+    repository.buscarStock.mockResolvedValue({
+      id: 'is-1',
+      stockMinimo: '5.00',
+      estado: 'activo',
+    });
+
+    await useCase.ejecutar(ADMIN, 'suc-9', 'ins-1', { stockMinimo: 5 });
+
+    expect(auditoria.registrar).not.toHaveBeenCalled();
   });
 });

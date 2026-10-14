@@ -7,14 +7,20 @@ jest.mock('./branches.repository', () => ({
   BranchesRepository: class BranchesRepository {},
 }));
 
+jest.mock('../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import { BranchesService, type ActorSucursales } from './branches.service';
 import type {
   BranchesRepository,
   SucursalRespuesta,
 } from './branches.repository';
+import type { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../users/domain/roles';
 
 type Repo = {
+  enTransaccion: jest.Mock;
   buscarPorId: jest.Mock;
   listar: jest.Mock;
   nombreEnUso: jest.Mock;
@@ -48,10 +54,14 @@ const empleado: ActorSucursales = {
 
 describe('BranchesService', () => {
   let repository: Repo;
+  let auditoria: { registrar: jest.Mock };
   let service: BranchesService;
 
   beforeEach(() => {
     repository = {
+      enTransaccion: jest.fn((operacion: (cliente: unknown) => unknown) =>
+        operacion({}),
+      ),
       buscarPorId: jest.fn().mockResolvedValue(sucursal()),
       listar: jest.fn().mockResolvedValue([]),
       nombreEnUso: jest.fn().mockResolvedValue(false),
@@ -59,8 +69,10 @@ describe('BranchesService', () => {
       actualizar: jest.fn().mockResolvedValue(sucursal()),
     };
 
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
     service = new BranchesService(
       repository as unknown as BranchesRepository,
+      auditoria as unknown as AuditoriaRepository,
     );
   });
 
@@ -73,21 +85,27 @@ describe('BranchesService', () => {
       telefono: '  600000000  ',
     });
 
-    expect(repository.crear).toHaveBeenCalledWith({
-      nombre: 'Sucursal Nueva',
-      direccion: 'Calle Nueva 2',
-      telefono: '600000000',
-    });
+    expect(repository.crear).toHaveBeenCalledWith(
+      {
+        nombre: 'Sucursal Nueva',
+        direccion: 'Calle Nueva 2',
+        telefono: '600000000',
+      },
+      expect.anything(),
+    );
   });
 
   it('crea con telefono null cuando no se envia', async () => {
     await service.crear(admin, { nombre: 'Sucursal Nueva', direccion: 'Calle 1' });
 
-    expect(repository.crear).toHaveBeenCalledWith({
-      nombre: 'Sucursal Nueva',
-      direccion: 'Calle 1',
-      telefono: null,
-    });
+    expect(repository.crear).toHaveBeenCalledWith(
+      {
+        nombre: 'Sucursal Nueva',
+        direccion: 'Calle 1',
+        telefono: null,
+      },
+      expect.anything(),
+    );
   });
 
   it('rechaza un nombre duplicado con 409', async () => {
@@ -105,7 +123,11 @@ describe('BranchesService', () => {
       direccion: 'Calle 1',
     });
 
-    expect(repository.nombreEnUso).toHaveBeenCalledWith('Sucursal Nueva', undefined);
+    expect(repository.nombreEnUso).toHaveBeenCalledWith(
+      'Sucursal Nueva',
+      undefined,
+      expect.anything(),
+    );
   });
 
   it('traduce a 409 la violacion del indice unico de la base', async () => {
@@ -142,9 +164,13 @@ describe('BranchesService', () => {
   it('edita solo los campos enviados', async () => {
     await service.actualizar(admin, 'suc-centro', { direccion: 'Calle Nueva 5' });
 
-    expect(repository.actualizar).toHaveBeenCalledWith('suc-centro', {
-      direccion: 'Calle Nueva 5',
-    });
+    expect(repository.actualizar).toHaveBeenCalledWith(
+      'suc-centro',
+      {
+        direccion: 'Calle Nueva 5',
+      },
+      expect.anything(),
+    );
   });
 
   it('edita recortando los textos', async () => {
@@ -153,18 +179,26 @@ describe('BranchesService', () => {
       telefono: '  911111111  ',
     });
 
-    expect(repository.actualizar).toHaveBeenCalledWith('suc-centro', {
-      nombre: 'Sucursal Centro',
-      telefono: '911111111',
-    });
+    expect(repository.actualizar).toHaveBeenCalledWith(
+      'suc-centro',
+      {
+        nombre: 'Sucursal Centro',
+        telefono: '911111111',
+      },
+      expect.anything(),
+    );
   });
 
   it('permite vaciar el telefono con null', async () => {
     await service.actualizar(admin, 'suc-centro', { telefono: null });
 
-    expect(repository.actualizar).toHaveBeenCalledWith('suc-centro', {
-      telefono: null,
-    });
+    expect(repository.actualizar).toHaveBeenCalledWith(
+      'suc-centro',
+      {
+        telefono: null,
+      },
+      expect.anything(),
+    );
   });
 
   it('rechaza editar una sucursal inexistente con 404', async () => {
@@ -185,7 +219,11 @@ describe('BranchesService', () => {
   it('no considera conflicto el nombre de la propia sucursal', async () => {
     await service.actualizar(admin, 'suc-centro', { nombre: 'Sucursal Centro' });
 
-    expect(repository.nombreEnUso).toHaveBeenCalledWith('Sucursal Centro', 'suc-centro');
+    expect(repository.nombreEnUso).toHaveBeenCalledWith(
+      'Sucursal Centro',
+      'suc-centro',
+      expect.anything(),
+    );
   });
 
   it('rechaza con 409 tomar el nombre de otra sucursal', async () => {

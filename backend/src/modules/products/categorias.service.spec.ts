@@ -4,13 +4,19 @@ jest.mock('./products.repository', () => ({
   ProductsRepository: class ProductsRepository {},
 }));
 
+jest.mock('../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import { CategoriasService } from './categorias.service';
 import type {
   CategoriaRespuesta,
   ProductsRepository,
 } from './products.repository';
+import type { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 
 type Repo = {
+  enTransaccion: jest.Mock;
   listarCategorias: jest.Mock;
   buscarCategoriaPorId: jest.Mock;
   contarProductosDeCategoria: jest.Mock;
@@ -21,6 +27,7 @@ type Repo = {
   eliminarCategoria: jest.Mock;
 };
 
+const ACTOR_ID = 'adm-1';
 const FECHA = new Date('2026-01-01T00:00:00.000Z');
 
 function categoria(over: Partial<CategoriaRespuesta> = {}): CategoriaRespuesta {
@@ -35,10 +42,14 @@ function categoria(over: Partial<CategoriaRespuesta> = {}): CategoriaRespuesta {
 
 describe('CategoriasService', () => {
   let repo: Repo;
+  let auditoria: { registrar: jest.Mock };
   let service: CategoriasService;
 
   beforeEach(() => {
     repo = {
+      enTransaccion: jest.fn((operacion: (cliente: unknown) => unknown) =>
+        operacion({}),
+      ),
       listarCategorias: jest.fn().mockResolvedValue([categoria()]),
       buscarCategoriaPorId: jest.fn().mockResolvedValue(categoria()),
       contarProductosDeCategoria: jest.fn().mockResolvedValue(0),
@@ -49,7 +60,11 @@ describe('CategoriasService', () => {
       eliminarCategoria: jest.fn().mockResolvedValue(undefined),
     };
 
-    service = new CategoriasService(repo as unknown as ProductsRepository);
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
+    service = new CategoriasService(
+      repo as unknown as ProductsRepository,
+      auditoria as unknown as AuditoriaRepository,
+    );
   });
 
   describe('listar y obtener', () => {
@@ -73,45 +88,53 @@ describe('CategoriasService', () => {
 
   describe('crear', () => {
     it('crea la categoria y la devuelve', async () => {
-      const resultado = await service.crear('Postres');
+      const resultado = await service.crear(ACTOR_ID, 'Postres');
 
       expect(resultado).toEqual(categoria({ id: 'cat-nueva' }));
-      expect(repo.crearCategoria).toHaveBeenCalledWith('Postres');
+      expect(repo.crearCategoria).toHaveBeenCalledWith('Postres', expect.anything());
     });
 
     it('recorta el nombre antes de crear', async () => {
-      await service.crear('  Postres  ');
+      await service.crear(ACTOR_ID, '  Postres  ');
 
-      expect(repo.crearCategoria).toHaveBeenCalledWith('Postres');
+      expect(repo.crearCategoria).toHaveBeenCalledWith('Postres', expect.anything());
     });
 
     it('da 409 si el nombre ya esta en uso, ignorando mayusculas', async () => {
       repo.nombreCategoriaEnUso.mockResolvedValue(true);
 
-      await expect(service.crear('Bebidas')).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.crear(ACTOR_ID, 'Bebidas')).rejects.toBeInstanceOf(ConflictException);
       expect(repo.crearCategoria).not.toHaveBeenCalled();
     });
 
     it('comprueba el duplicado contra el nombre ya recortado', async () => {
-      await service.crear('  Bebidas  ');
+      await service.crear(ACTOR_ID, '  Bebidas  ');
 
-      expect(repo.nombreCategoriaEnUso).toHaveBeenCalledWith('Bebidas');
+      expect(repo.nombreCategoriaEnUso).toHaveBeenCalledWith(
+        'Bebidas',
+        undefined,
+        expect.anything(),
+      );
     });
   });
 
   describe('actualizar', () => {
     it('renombra la categoria', async () => {
-      const resultado = await service.actualizar('cat-bebidas', '  Comidas  ');
+      const resultado = await service.actualizar(ACTOR_ID, 'cat-bebidas', '  Comidas  ');
 
       expect(resultado).toEqual(categoria({ nombre: 'Comidas' }));
-      expect(repo.actualizarCategoria).toHaveBeenCalledWith('cat-bebidas', 'Comidas');
+      expect(repo.actualizarCategoria).toHaveBeenCalledWith(
+        'cat-bebidas',
+        'Comidas',
+        expect.anything(),
+      );
     });
 
     it('da 404 si la categoria no existe, sin tocar el nombre', async () => {
       repo.buscarCategoriaPorId.mockResolvedValue(null);
 
       await expect(
-        service.actualizar('cat-inexistente', 'Comidas'),
+        service.actualizar(ACTOR_ID, 'cat-inexistente', 'Comidas'),
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(repo.nombreCategoriaEnUso).not.toHaveBeenCalled();
       expect(repo.actualizarCategoria).not.toHaveBeenCalled();
@@ -120,43 +143,50 @@ describe('CategoriasService', () => {
     it('da 409 si el nuevo nombre lo usa otra categoria', async () => {
       repo.nombreCategoriaEnUso.mockResolvedValue(true);
 
-      await expect(service.actualizar('cat-bebidas', 'Comidas')).rejects.toBeInstanceOf(
+      await expect(service.actualizar(ACTOR_ID, 'cat-bebidas', 'Comidas')).rejects.toBeInstanceOf(
         ConflictException,
       );
       expect(repo.actualizarCategoria).not.toHaveBeenCalled();
     });
 
     it('excluye a si misma de la comprobacion de duplicado', async () => {
-      await service.actualizar('cat-bebidas', 'Bebidas');
+      await service.actualizar(ACTOR_ID, 'cat-bebidas', 'Bebidas');
 
-      expect(repo.nombreCategoriaEnUso).toHaveBeenCalledWith('Bebidas', 'cat-bebidas');
+      expect(repo.nombreCategoriaEnUso).toHaveBeenCalledWith(
+        'Bebidas',
+        'cat-bebidas',
+        expect.anything(),
+      );
     });
   });
 
   describe('eliminar', () => {
     it('borra una categoria vacia', async () => {
-      await service.eliminar('cat-bebidas');
+      await service.eliminar(ACTOR_ID, 'cat-bebidas');
 
-      expect(repo.eliminarCategoria).toHaveBeenCalledWith('cat-bebidas');
+      expect(repo.eliminarCategoria).toHaveBeenCalledWith(
+        'cat-bebidas',
+        expect.anything(),
+      );
     });
 
     it('da 409 si la categoria tiene productos, y no borra', async () => {
       repo.contarProductosDeCategoria.mockResolvedValue(3);
 
-      await expect(service.eliminar('cat-bebidas')).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.eliminar(ACTOR_ID, 'cat-bebidas')).rejects.toBeInstanceOf(ConflictException);
       expect(repo.eliminarCategoria).not.toHaveBeenCalled();
     });
 
     it('el 409 explica que hay que mover los productos', async () => {
       repo.contarProductosDeCategoria.mockResolvedValue(1);
 
-      await expect(service.eliminar('cat-bebidas')).rejects.toThrow(/productos/i);
+      await expect(service.eliminar(ACTOR_ID, 'cat-bebidas')).rejects.toThrow(/productos/i);
     });
 
     it('da 404 si la categoria no existe', async () => {
       repo.buscarCategoriaPorId.mockResolvedValue(null);
 
-      await expect(service.eliminar('cat-inexistente')).rejects.toBeInstanceOf(
+      await expect(service.eliminar(ACTOR_ID, 'cat-inexistente')).rejects.toBeInstanceOf(
         NotFoundException,
       );
       expect(repo.contarProductosDeCategoria).not.toHaveBeenCalled();

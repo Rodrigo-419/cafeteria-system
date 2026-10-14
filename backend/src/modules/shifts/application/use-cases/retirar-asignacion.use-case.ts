@@ -8,7 +8,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { diaUtc, fechaLocalDe } from '../../domain/fechas';
+import { diaUtc, fechaIsoDe, fechaLocalDe } from '../../domain/fechas';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import {
   alcanceEmpleadosParaAsignaciones,
   type ActorTurnos,
@@ -20,7 +21,10 @@ import {
 
 @Injectable()
 export class RetirarAsignacionUseCase {
-  constructor(private readonly shiftsRepository: ShiftsRepository) {}
+  constructor(
+    private readonly shiftsRepository: ShiftsRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   async ejecutar(
     actor: ActorTurnos,
@@ -50,6 +54,37 @@ export class RetirarAsignacionUseCase {
       );
     }
 
-    return this.shiftsRepository.retirarAsignacion(id, fechaFin);
+    return this.shiftsRepository.enTransaccion(async (cliente) => {
+      const retirada = await this.shiftsRepository.retirarAsignacion(
+        id,
+        fechaFin,
+        cliente,
+      );
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'asignacion',
+          entidadId: retirada.id,
+          accion: 'asignacion_retirada',
+          actorId: actor.id,
+          sucursalAfectadaId: retirada.empleado.sucursalId,
+          detalle: {
+            antes: {
+              fechaFin:
+                asignacion.fechaFin === null
+                  ? null
+                  : fechaIsoDe(asignacion.fechaFin),
+            },
+            despues: {
+              fechaFin:
+                retirada.fechaFin === null ? null : fechaIsoDe(retirada.fechaFin),
+            },
+          },
+        },
+        cliente,
+      );
+
+      return retirada;
+    });
   }
 }

@@ -4,6 +4,10 @@ jest.mock('./products.repository', () => ({
   ProductsRepository: class ProductsRepository {},
 }));
 
+jest.mock('../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import { ESTADO_POR_DEFECTO, OfertasService } from './ofertas.service';
 import type { ActorProductos } from './products.rules';
 import type {
@@ -11,11 +15,14 @@ import type {
   OfertaRespuesta,
   ProductsRepository,
 } from './products.repository';
+import type { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../users/domain/roles';
 
 type Repo = {
+  enTransaccion: jest.Mock;
   existeSucursal: jest.Mock;
   listarCarta: jest.Mock;
+  buscarOferta: jest.Mock;
   upsertOferta: jest.Mock;
   existeProducto: jest.Mock;
   existeVariante: jest.Mock;
@@ -58,18 +65,27 @@ function fila(over: Partial<CartaFila> = {}): CartaFila {
 
 describe('OfertasService', () => {
   let repo: Repo;
+  let auditoria: { registrar: jest.Mock };
   let service: OfertasService;
 
   beforeEach(() => {
     repo = {
+      enTransaccion: jest.fn((operacion: (cliente: unknown) => unknown) =>
+        operacion({}),
+      ),
       existeSucursal: jest.fn().mockResolvedValue(true),
       listarCarta: jest.fn().mockResolvedValue([fila()]),
+      buscarOferta: jest.fn().mockResolvedValue(null),
       upsertOferta: jest.fn().mockResolvedValue({ precio: '2.50', estado: 'activo' }),
       existeProducto: jest.fn().mockResolvedValue(true),
       existeVariante: jest.fn().mockResolvedValue(true),
     };
 
-    service = new OfertasService(repo as unknown as ProductsRepository);
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
+    service = new OfertasService(
+      repo as unknown as ProductsRepository,
+      auditoria as unknown as AuditoriaRepository,
+    );
   });
 
   describe('carta', () => {
@@ -176,13 +192,16 @@ describe('OfertasService', () => {
     it('el Gerente crea la oferta con el estado por defecto y el precio serializado', async () => {
       await service.upsert(gerente, base);
 
-      expect(repo.upsertOferta).toHaveBeenCalledWith({
-        sucursalId: SUC_NORTE,
-        productoId: PROD_CAFE,
-        varianteId: VAR_UNICA,
-        precio: '2.50',
-        estado: ESTADO_POR_DEFECTO,
-      });
+      expect(repo.upsertOferta).toHaveBeenCalledWith(
+        {
+          sucursalId: SUC_NORTE,
+          productoId: PROD_CAFE,
+          varianteId: VAR_UNICA,
+          precio: '2.50',
+          estado: ESTADO_POR_DEFECTO,
+        },
+        expect.anything(),
+      );
     });
 
     it('respeta el estado pedido', async () => {
@@ -190,6 +209,7 @@ describe('OfertasService', () => {
 
       expect(repo.upsertOferta).toHaveBeenCalledWith(
         expect.objectContaining({ estado: 'inactivo' }),
+        expect.anything(),
       );
     });
 
@@ -212,6 +232,7 @@ describe('OfertasService', () => {
 
         expect(repo.upsertOferta).toHaveBeenCalledWith(
           expect.objectContaining({ precio: texto }),
+          expect.anything(),
         );
       }
     });

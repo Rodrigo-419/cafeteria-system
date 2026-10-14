@@ -18,6 +18,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequirePermission } from '../../../common/decorators/require-permission.decorator';
+import { User } from '../../../common/decorators/user.decorator';
+import type { UsuarioAutenticado } from '../../auth/infrastructure/jwt/jwt.strategy';
 import { CrearInsumoUseCase } from '../application/use-cases/crear-insumo.use-case';
 import { EditarInsumoUseCase } from '../application/use-cases/editar-insumo.use-case';
 import { EliminarInsumoUseCase } from '../application/use-cases/eliminar-insumo.use-case';
@@ -42,8 +44,8 @@ export class InsumosController {
   @Post()
   @RequirePermission('insumos.catalogo.editar')
   @ApiOperation({ summary: 'Crea un insumo en el catalogo global' })
-  crear(@Body() dto: CrearInsumoDto) {
-    return this.crearInsumoUseCase.ejecutar({
+  crear(@User() usuario: UsuarioAutenticado, @Body() dto: CrearInsumoDto) {
+    return this.crearInsumoUseCase.ejecutar(usuario.id, {
       nombre: dto.nombre,
       presentacion: dto.presentacion,
     });
@@ -72,10 +74,11 @@ export class InsumosController {
   @RequirePermission('insumos.catalogo.editar')
   @ApiOperation({ summary: 'Actualiza nombre y presentacion del insumo' })
   actualizar(
+    @User() usuario: UsuarioAutenticado,
     @Param('id', UUID_PIPE) id: string,
     @Body() dto: EditarInsumoDto,
   ) {
-    return this.editarInsumoUseCase.ejecutar(id, {
+    return this.editarInsumoUseCase.ejecutar(usuario.id, id, {
       nombre: dto.nombre,
       presentacion: dto.presentacion,
     });
@@ -87,7 +90,10 @@ export class InsumosController {
   @ApiOperation({
     summary: 'Borra un insumo que aun no tiene stock en ninguna sucursal',
   })
-  async eliminar(@Param('id', UUID_PIPE) id: string): Promise<void> {
-    await this.eliminarInsumoUseCase.ejecutar(id);
+  async eliminar(
+    @User() usuario: UsuarioAutenticado,
+    @Param('id', UUID_PIPE) id: string,
+  ): Promise<void> {
+    await this.eliminarInsumoUseCase.ejecutar(usuario.id, id);
   }
 }

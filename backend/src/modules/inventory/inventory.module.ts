@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { ConfigurarStockUseCase } from './application/use-cases/configurar-stock.use-case';
 import { CrearInsumoUseCase } from './application/use-cases/crear-insumo.use-case';
 import { CrearRecuentoUseCase } from './application/use-cases/crear-recuento.use-case';
@@ -21,6 +22,7 @@ import { MovimientosController } from './presentation/movimientos.controller';
 import { RecuentosController } from './presentation/recuentos.controller';
 
 @Module({
+  imports: [AuditoriaModule],
   controllers: [
     InsumosController,
     InventarioStockController,

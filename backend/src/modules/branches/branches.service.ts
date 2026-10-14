@@ -9,8 +9,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 import {
   BranchesRepository,
+  type ClienteSucursales,
   type SucursalRespuesta,
 } from './branches.repository';
 import {
@@ -39,25 +41,53 @@ const NOMBRE_DUPLICADO = 'Ya existe una sucursal con ese nombre';
 
 @Injectable()
 export class BranchesService {
-  constructor(private readonly branchesRepository: BranchesRepository) {}
+  constructor(
+    private readonly branchesRepository: BranchesRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   /**
    * Crea una sucursal. El permiso `sucursales.crear_editar` ya lo exige el
    * guard, asi que aqui solo se valida el nombre duplicado.
+   *
+   * La comprobacion, la escritura y el evento de auditoria van en la misma
+   * transaccion: si algo falla, no queda ni sucursal ni evento.
    */
   async crear(
-    _actor: ActorSucursales,
+    actor: ActorSucursales,
     entrada: EntradaCrearSucursal,
   ): Promise<SucursalRespuesta> {
     const nombre = recortar(entrada.nombre);
-
-    await this.asegurarNombreLibre(nombre, undefined);
+    const direccion = recortar(entrada.direccion);
+    const telefono = recortarOpcional(entrada.telefono);
 
     try {
-      return await this.branchesRepository.crear({
-        nombre,
-        direccion: recortar(entrada.direccion),
-        telefono: recortarOpcional(entrada.telefono),
+      return await this.branchesRepository.enTransaccion(async (cliente) => {
+        await this.asegurarNombreLibre(nombre, undefined, cliente);
+
+        const sucursal = await this.branchesRepository.crear(
+          { nombre, direccion, telefono },
+          cliente,
+        );
+
+        await this.auditoria.registrar(
+          {
+            entidad: 'sucursal',
+            entidadId: sucursal.id,
+            accion: 'sucursal_creada',
+            actorId: actor.id,
+            detalle: {
+              despues: {
+                nombre: sucursal.nombre,
+                direccion: sucursal.direccion,
+                telefono: sucursal.telefono,
+              },
+            },
+          },
+          cliente,
+        );
+
+        return sucursal;
       });
     } catch (error) {
       // Red de seguridad: el indice unico de `sucursal.nombre` es exacto y
@@ -71,32 +101,42 @@ export class BranchesService {
 
   /** Edita parcialmente una sucursal. 404 si no existe. */
   async actualizar(
-    _actor: ActorSucursales,
+    actor: ActorSucursales,
     id: string,
     entrada: EntradaActualizarSucursal,
   ): Promise<SucursalRespuesta> {
-    const existente = await this.branchesRepository.buscarPorId(id);
-    if (!existente) {
-      throw new NotFoundException(SUCURSAL_NO_ENCONTRADA);
-    }
-
     const nombre = entrada.nombre !== undefined ? recortar(entrada.nombre) : undefined;
-
-    // Se excluye la propia sucursal: editar sin tocar el nombre, o volver a
-    // escribir el mismo nombre con otra capitalizacion, no es un conflicto.
-    if (nombre !== undefined) {
-      await this.asegurarNombreLibre(nombre, id);
-    }
+    const direccion =
+      entrada.direccion !== undefined ? recortar(entrada.direccion) : undefined;
+    const telefono =
+      entrada.telefono !== undefined ? recortarOpcional(entrada.telefono) : undefined;
 
     try {
-      return await this.branchesRepository.actualizar(id, {
-        ...(nombre !== undefined ? { nombre } : {}),
-        ...(entrada.direccion !== undefined
-          ? { direccion: recortar(entrada.direccion) }
-          : {}),
-        ...(entrada.telefono !== undefined
-          ? { telefono: recortarOpcional(entrada.telefono) }
-          : {}),
+      return await this.branchesRepository.enTransaccion(async (cliente) => {
+        const existente = await this.branchesRepository.buscarPorId(id, cliente);
+        if (!existente) {
+          throw new NotFoundException(SUCURSAL_NO_ENCONTRADA);
+        }
+
+        // Se excluye la propia sucursal: editar sin tocar el nombre, o volver a
+        // escribir el mismo nombre con otra capitalizacion, no es un conflicto.
+        if (nombre !== undefined) {
+          await this.asegurarNombreLibre(nombre, id, cliente);
+        }
+
+        const actualizado = await this.branchesRepository.actualizar(
+          id,
+          {
+            ...(nombre !== undefined ? { nombre } : {}),
+            ...(direccion !== undefined ? { direccion } : {}),
+            ...(telefono !== undefined ? { telefono } : {}),
+          },
+          cliente,
+        );
+
+        await this.registrarEdicion(actor, existente, actualizado, cliente);
+
+        return actualizado;
       });
     } catch (error) {
       this.relanzarSiNombreDuplicado(error);
@@ -131,11 +171,56 @@ export class BranchesService {
 
   // ------------------------------------------------------------------ privado
 
+  /**
+   * Escribe un `sucursal_editada` con los campos que cambiaron de verdad. Un
+   * PATCH sin cambios reales no deja evento.
+   */
+  private async registrarEdicion(
+    actor: ActorSucursales,
+    existente: SucursalRespuesta,
+    actualizado: SucursalRespuesta,
+    cliente: ClienteSucursales,
+  ): Promise<void> {
+    const antes: Record<string, unknown> = {};
+    const despues: Record<string, unknown> = {};
+
+    if (actualizado.nombre !== existente.nombre) {
+      antes.nombre = existente.nombre;
+      despues.nombre = actualizado.nombre;
+    }
+    if (actualizado.direccion !== existente.direccion) {
+      antes.direccion = existente.direccion;
+      despues.direccion = actualizado.direccion;
+    }
+    if (actualizado.telefono !== existente.telefono) {
+      antes.telefono = existente.telefono;
+      despues.telefono = actualizado.telefono;
+    }
+
+    if (Object.keys(despues).length === 0) {
+      return;
+    }
+
+    await this.auditoria.registrar(
+      {
+        entidad: 'sucursal',
+        entidadId: actualizado.id,
+        accion: 'sucursal_editada',
+        actorId: actor.id,
+        detalle: { antes, despues },
+      },
+      cliente,
+    );
+  }
+
   private async asegurarNombreLibre(
     nombre: string,
     exceptoSucursalId: string | undefined,
+    cliente?: ClienteSucursales,
   ): Promise<void> {
-    if (await this.branchesRepository.nombreEnUso(nombre, exceptoSucursalId)) {
+    if (
+      await this.branchesRepository.nombreEnUso(nombre, exceptoSucursalId, cliente)
+    ) {
       throw new ConflictException(NOMBRE_DUPLICADO);
     }
   }

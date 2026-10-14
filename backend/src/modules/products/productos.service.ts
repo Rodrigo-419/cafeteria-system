@@ -1,11 +1,16 @@
 // Logica de negocio de productos del catalogo global.
+//
+// El catalogo es global: sus eventos de auditoria van con la sucursal afectada
+// en null.
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 import {
+  type ClienteProductos,
   type FiltrosListadoProductos,
   ProductsRepository,
   type ProductoRespuesta,
@@ -23,7 +28,10 @@ const NOMBRE_DUPLICADO =
 
 @Injectable()
 export class ProductosService {
-  constructor(private readonly productsRepository: ProductsRepository) {}
+  constructor(
+    private readonly productsRepository: ProductsRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   /** Listado paginado del catalogo global, con filtro de categoria y busqueda. */
   async listar(filtros: {
@@ -67,20 +75,47 @@ export class ProductosService {
     return this.exigirProducto(id);
   }
 
-  async crear(entrada: {
-    nombre: string;
-    categoriaId: string;
-    descripcion?: string | null;
-  }): Promise<ProductoRespuesta> {
+  async crear(
+    actorId: string,
+    entrada: {
+      nombre: string;
+      categoriaId: string;
+      descripcion?: string | null;
+    },
+  ): Promise<ProductoRespuesta> {
     const nombre = entrada.nombre.trim();
 
-    await this.exigirCategoria(entrada.categoriaId);
-    await this.exigirNombreLibre(nombre, entrada.categoriaId);
+    return this.productsRepository.enTransaccion(async (cliente) => {
+      await this.exigirCategoria(entrada.categoriaId, cliente);
+      await this.exigirNombreLibre(nombre, entrada.categoriaId, undefined, cliente);
 
-    return this.productsRepository.crearProducto({
-      nombre,
-      categoriaId: entrada.categoriaId,
-      descripcion: limpiarOpcional(entrada.descripcion),
+      const producto = await this.productsRepository.crearProducto(
+        {
+          nombre,
+          categoriaId: entrada.categoriaId,
+          descripcion: limpiarOpcional(entrada.descripcion),
+        },
+        cliente,
+      );
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'producto',
+          entidadId: producto.id,
+          accion: 'producto_creado',
+          actorId,
+          detalle: {
+            despues: {
+              nombre: producto.nombre,
+              categoriaId: producto.categoriaId,
+              descripcion: producto.descripcion,
+            },
+          },
+        },
+        cliente,
+      );
+
+      return producto;
     });
   }
 
@@ -92,29 +127,50 @@ export class ProductosService {
    * solo cuando el nombre cambia.
    */
   async actualizar(
+    actorId: string,
     id: string,
-    entrada: { nombre?: string; categoriaId?: string; descripcion?: string | null },
+    entrada: {
+      nombre?: string;
+      categoriaId?: string;
+      descripcion?: string | null;
+    },
   ): Promise<ProductoRespuesta> {
-    const actual = await this.exigirProducto(id);
-
     const nombre = entrada.nombre !== undefined ? entrada.nombre.trim() : undefined;
-    const categoriaId =
-      entrada.categoriaId !== undefined ? entrada.categoriaId : actual.categoriaId;
 
-    if (entrada.categoriaId !== undefined) {
-      await this.exigirCategoria(entrada.categoriaId);
-    }
+    return this.productsRepository.enTransaccion(async (cliente) => {
+      const actual = await this.exigirProducto(id, cliente);
 
-    if (nombre !== undefined || entrada.categoriaId !== undefined) {
-      await this.exigirNombreLibre(nombre ?? actual.nombre, categoriaId, id);
-    }
+      const categoriaId =
+        entrada.categoriaId !== undefined ? entrada.categoriaId : actual.categoriaId;
 
-    return this.productsRepository.actualizarProducto(id, {
-      ...(nombre !== undefined ? { nombre } : {}),
-      ...(entrada.categoriaId !== undefined ? { categoriaId } : {}),
-      ...(entrada.descripcion !== undefined
-        ? { descripcion: limpiarOpcional(entrada.descripcion) }
-        : {}),
+      if (entrada.categoriaId !== undefined) {
+        await this.exigirCategoria(entrada.categoriaId, cliente);
+      }
+
+      if (nombre !== undefined || entrada.categoriaId !== undefined) {
+        await this.exigirNombreLibre(
+          nombre ?? actual.nombre,
+          categoriaId,
+          id,
+          cliente,
+        );
+      }
+
+      const producto = await this.productsRepository.actualizarProducto(
+        id,
+        {
+          ...(nombre !== undefined ? { nombre } : {}),
+          ...(entrada.categoriaId !== undefined ? { categoriaId } : {}),
+          ...(entrada.descripcion !== undefined
+            ? { descripcion: limpiarOpcional(entrada.descripcion) }
+            : {}),
+        },
+        cliente,
+      );
+
+      await this.registrarEdicion(actorId, actual, producto, cliente);
+
+      return producto;
     });
   }
 
@@ -123,23 +179,89 @@ export class ProductosService {
    * 409: la base no deja borrar una oferta, y la forma de retirar un producto es
    * desactivar su oferta en cada sucursal, no borrarlo.
    */
-  async eliminar(id: string): Promise<void> {
-    await this.exigirProducto(id);
+  async eliminar(actorId: string, id: string): Promise<void> {
+    await this.productsRepository.enTransaccion(async (cliente) => {
+      const producto = await this.exigirProducto(id, cliente);
 
-    const ofertas = await this.productsRepository.contarOfertasDeProducto(id);
-    if (ofertas > 0) {
-      throw new ConflictException(
-        'El producto tiene precios en alguna sucursal: desactiva su oferta en cada sucursal en vez de borrarlo',
+      const ofertas = await this.productsRepository.contarOfertasDeProducto(
+        id,
+        cliente,
       );
-    }
+      if (ofertas > 0) {
+        throw new ConflictException(
+          'El producto tiene precios en alguna sucursal: desactiva su oferta en cada sucursal en vez de borrarlo',
+        );
+      }
 
-    await this.productsRepository.eliminarProducto(id);
+      await this.productsRepository.eliminarProducto(id, cliente);
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'producto',
+          entidadId: producto.id,
+          accion: 'producto_eliminado',
+          actorId,
+          detalle: {
+            antes: { nombre: producto.nombre, categoriaId: producto.categoriaId },
+          },
+        },
+        cliente,
+      );
+    });
   }
 
   // ------------------------------------------------------------------ privado
 
-  private async exigirProducto(id: string): Promise<ProductoRespuesta> {
-    const producto = await this.productsRepository.buscarProductoPorId(id);
+  /**
+   * Escribe un `producto_editado` con los campos que cambiaron de verdad. Un
+   * PATCH sin cambios reales no deja evento.
+   */
+  private async registrarEdicion(
+    actorId: string,
+    actual: ProductoRespuesta,
+    producto: ProductoRespuesta,
+    cliente: ClienteProductos,
+  ): Promise<void> {
+    const antes: Record<string, unknown> = {};
+    const despues: Record<string, unknown> = {};
+
+    if (producto.nombre !== actual.nombre) {
+      antes.nombre = actual.nombre;
+      despues.nombre = producto.nombre;
+    }
+    if (producto.categoriaId !== actual.categoriaId) {
+      antes.categoriaId = actual.categoriaId;
+      despues.categoriaId = producto.categoriaId;
+    }
+    if (producto.descripcion !== actual.descripcion) {
+      antes.descripcion = actual.descripcion;
+      despues.descripcion = producto.descripcion;
+    }
+
+    if (Object.keys(despues).length === 0) {
+      return;
+    }
+
+    await this.auditoria.registrar(
+      {
+        entidad: 'producto',
+        entidadId: producto.id,
+        accion: 'producto_editado',
+        actorId,
+        detalle: { antes, despues },
+      },
+      cliente,
+    );
+  }
+
+  private async exigirProducto(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<ProductoRespuesta> {
+    const producto = await this.productsRepository.buscarProductoPorId(
+      id,
+      cliente,
+    );
     if (!producto) {
       throw new NotFoundException(PRODUCTO_NO_ENCONTRADO);
     }
@@ -155,8 +277,11 @@ export class ProductosService {
    * invalido, igual que un nombre de usuario mal escrito. Coherente con
    * `CrearUsuarioUseCase`, que responde 400 cuando la sucursal no existe.
    */
-  private async exigirCategoria(categoriaId: string): Promise<void> {
-    if (!(await this.productsRepository.existeCategoria(categoriaId))) {
+  private async exigirCategoria(
+    categoriaId: string,
+    cliente?: ClienteProductos,
+  ): Promise<void> {
+    if (!(await this.productsRepository.existeCategoria(categoriaId, cliente))) {
       throw new BadRequestException(CATEGORIA_INEXISTENTE);
     }
   }
@@ -164,12 +289,14 @@ export class ProductosService {
   private async exigirNombreLibre(
     nombre: string,
     categoriaId: string,
-    exceptoProductoId?: string,
+    exceptoProductoId: string | undefined,
+    cliente?: ClienteProductos,
   ): Promise<void> {
     const enUso = await this.productsRepository.nombreProductoEnUso(
       nombre,
       categoriaId,
       exceptoProductoId,
+      cliente,
     );
 
     if (enUso) {

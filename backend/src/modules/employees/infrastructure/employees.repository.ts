@@ -45,6 +45,7 @@ export type EmpleadoRespuesta = {
 export type EmpleadoAlcance = {
   id: string;
   usuarioId: string;
+  cargo: string;
   sucursalId: string;
   estado: $Enums.EmpleadoEstado;
   fechaContratacion: Date;
@@ -111,6 +112,7 @@ const SELECT_EMPLEADO_ESCALARES = {
 const SELECT_EMPLEADO_ALCANCE = {
   id: true,
   usuarioId: true,
+  cargo: true,
   sucursalId: true,
   estado: true,
   fechaContratacion: true,
@@ -214,8 +216,9 @@ export class EmployeesRepository {
   async usuarioYaEsEmpleado(
     usuarioId: string,
     exceptoEmpleadoId?: string,
+    cliente?: ClienteEmpleados,
   ): Promise<boolean> {
-    const empleado = await this.prisma.empleado.findUnique({
+    const empleado = await this.db(cliente).empleado.findUnique({
       where: { usuarioId },
       select: { id: true },
     });

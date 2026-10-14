@@ -9,15 +9,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 import {
   type CartaFila,
+  type ClienteProductos,
   type OfertaRespuesta,
   ProductsRepository,
 } from './products.repository';
 import {
-  estadosVisiblesConFiltro,
   type ActorProductos,
   type EstadoOferta,
+  estadosVisiblesConFiltro,
   esPrecioValido,
   puedeEditarPrecios,
   puedeVerPrecios,
@@ -32,7 +34,10 @@ const VARIANTE_NO_ENCONTRADA = 'Variante no encontrada';
 
 @Injectable()
 export class OfertasService {
-  constructor(private readonly productsRepository: ProductsRepository) {}
+  constructor(
+    private readonly productsRepository: ProductsRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   /**
    * Carta de una sucursal: producto, categoria, variante, precio y estado.
@@ -73,6 +78,9 @@ export class OfertasService {
   /**
    * Crea o actualiza la oferta de una variante de un producto en la sucursal del
    * Gerente. No hay DELETE de ofertas: se desactivan con `estado: "inactivo"`.
+   *
+   * La lectura del estado previo, el upsert y el evento de auditoria van en la
+   * misma transaccion: el evento describe con exactitud el cambio realizado.
    */
   async upsert(
     actor: ActorProductos,
@@ -101,14 +109,100 @@ export class OfertasService {
       throw new NotFoundException(VARIANTE_NO_ENCONTRADA);
     }
 
-    return this.productsRepository.upsertOferta({
-      productoId: params.productoId,
-      sucursalId: params.sucursalId,
-      varianteId: params.varianteId,
-      // Se serializa aqui el decimal: el repositorio no recibe nunca un `number`
-      // para una columna Decimal.
-      precio: precioATextoDecimal(params.precio),
-      estado: params.estado ?? ESTADO_POR_DEFECTO,
+    return this.productsRepository.enTransaccion(async (cliente) => {
+      const previa = await this.productsRepository.buscarOferta(
+        params.productoId,
+        params.sucursalId,
+        params.varianteId,
+        cliente,
+      );
+
+      const oferta = await this.productsRepository.upsertOferta(
+        {
+          productoId: params.productoId,
+          sucursalId: params.sucursalId,
+          varianteId: params.varianteId,
+          // Se serializa aqui el decimal: el repositorio no recibe nunca un
+          // `number` para una columna Decimal.
+          precio: precioATextoDecimal(params.precio),
+          estado: params.estado ?? ESTADO_POR_DEFECTO,
+        },
+        cliente,
+      );
+
+      await this.registrarCambio(actor.id, params, previa, oferta, cliente);
+
+      return { precio: oferta.precio, estado: oferta.estado };
     });
+  }
+
+  // ------------------------------------------------------------------ privado
+
+  /**
+   * Deriva del estado previo y del nuevo los eventos que correspondan: alta,
+   * cambio de precio y activacion/desactivacion. Un upsert que cambia precio y
+   * estado a la vez deja dos eventos.
+   */
+  private async registrarCambio(
+    actorId: string,
+    params: { sucursalId: string; productoId: string; varianteId: string },
+    previa: OfertaRespuesta | null,
+    oferta: OfertaRespuesta & { id: string },
+    cliente: ClienteProductos,
+  ): Promise<void> {
+    const base = {
+      entidad: 'oferta' as const,
+      entidadId: oferta.id,
+      actorId,
+      sucursalAfectadaId: params.sucursalId,
+    };
+
+    if (previa === null) {
+      await this.auditoria.registrar(
+        {
+          ...base,
+          accion: 'oferta_creada',
+          detalle: {
+            despues: {
+              productoId: params.productoId,
+              varianteId: params.varianteId,
+              precio: oferta.precio,
+              estado: oferta.estado,
+            },
+          },
+        },
+        cliente,
+      );
+      return;
+    }
+
+    if (previa.precio !== oferta.precio) {
+      await this.auditoria.registrar(
+        {
+          ...base,
+          accion: 'oferta_precio_fijado',
+          detalle: {
+            antes: { precio: previa.precio },
+            despues: { precio: oferta.precio },
+          },
+        },
+        cliente,
+      );
+    }
+
+    if (previa.estado !== oferta.estado) {
+      await this.auditoria.registrar(
+        {
+          ...base,
+          accion:
+            oferta.estado === 'activo' ? 'oferta_activada' : 'oferta_desactivada',
+          detalle: {
+            antes: { estado: previa.estado },
+            despues: { estado: oferta.estado },
+          },
+        },
+        cliente,
+      );
+    }
   }
 }

@@ -8,6 +8,10 @@ jest.mock('./products.repository', () => ({
   ProductsRepository: class ProductsRepository {},
 }));
 
+jest.mock('../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import {
   LIMIT_MAXIMO,
   LIMIT_POR_DEFECTO,
@@ -18,8 +22,10 @@ import type {
   ProductoRespuesta,
   ProductsRepository,
 } from './products.repository';
+import type { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 
 type Repo = {
+  enTransaccion: jest.Mock;
   listarProductos: jest.Mock;
   contarProductos: jest.Mock;
   buscarProductoPorId: jest.Mock;
@@ -32,6 +38,7 @@ type Repo = {
   eliminarProducto: jest.Mock;
 };
 
+const ACTOR_ID = 'adm-1';
 const FECHA = new Date('2026-01-01T00:00:00.000Z');
 const CAT_BEBIDAS = 'cat-bebidas';
 const CAT_COMIDAS = 'cat-comidas';
@@ -51,10 +58,14 @@ function producto(over: Partial<ProductoRespuesta> = {}): ProductoRespuesta {
 
 describe('ProductosService', () => {
   let repo: Repo;
+  let auditoria: { registrar: jest.Mock };
   let service: ProductosService;
 
   beforeEach(() => {
     repo = {
+      enTransaccion: jest.fn((operacion: (cliente: unknown) => unknown) =>
+        operacion({}),
+      ),
       listarProductos: jest.fn().mockResolvedValue([producto()]),
       contarProductos: jest.fn().mockResolvedValue(1),
       buscarProductoPorId: jest.fn().mockResolvedValue(producto()),
@@ -67,7 +78,11 @@ describe('ProductosService', () => {
       eliminarProducto: jest.fn().mockResolvedValue(undefined),
     };
 
-    service = new ProductosService(repo as unknown as ProductsRepository);
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
+    service = new ProductosService(
+      repo as unknown as ProductsRepository,
+      auditoria as unknown as AuditoriaRepository,
+    );
   });
 
   describe('listar', () => {
@@ -164,21 +179,24 @@ describe('ProductosService', () => {
 
   describe('crear', () => {
     it('crea el producto en la categoria indicada', async () => {
-      const resultado = await service.crear({
+      const resultado = await service.crear(ACTOR_ID, {
         nombre: '  Cafe  ',
         categoriaId: CAT_BEBIDAS,
       });
 
       expect(resultado).toEqual(producto({ id: 'prod-nuevo' }));
-      expect(repo.crearProducto).toHaveBeenCalledWith({
-        nombre: 'Cafe',
-        categoriaId: CAT_BEBIDAS,
-        descripcion: null,
-      });
+      expect(repo.crearProducto).toHaveBeenCalledWith(
+        {
+          nombre: 'Cafe',
+          categoriaId: CAT_BEBIDAS,
+          descripcion: null,
+        },
+        expect.anything(),
+      );
     });
 
     it('conserva la descripcion si viene', async () => {
-      await service.crear({
+      await service.crear(ACTOR_ID, {
         nombre: 'Cafe',
         categoriaId: CAT_BEBIDAS,
         descripcion: '  Blend de la casa  ',
@@ -186,6 +204,7 @@ describe('ProductosService', () => {
 
       expect(repo.crearProducto).toHaveBeenCalledWith(
         expect.objectContaining({ descripcion: 'Blend de la casa' }),
+        expect.anything(),
       );
     });
 
@@ -193,7 +212,7 @@ describe('ProductosService', () => {
       repo.existeCategoria.mockResolvedValue(false);
 
       await expect(
-        service.crear({ nombre: 'Cafe', categoriaId: 'cat-fantasma' }),
+        service.crear(ACTOR_ID, { nombre: 'Cafe', categoriaId: 'cat-fantasma' }),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(repo.crearProducto).not.toHaveBeenCalled();
     });
@@ -202,7 +221,7 @@ describe('ProductosService', () => {
       repo.nombreProductoEnUso.mockResolvedValue(true);
 
       await expect(
-        service.crear({ nombre: 'Cafe', categoriaId: CAT_BEBIDAS }),
+        service.crear(ACTOR_ID, { nombre: 'Cafe', categoriaId: CAT_BEBIDAS }),
       ).rejects.toBeInstanceOf(ConflictException);
       expect(repo.crearProducto).not.toHaveBeenCalled();
     });
@@ -211,36 +230,48 @@ describe('ProductosService', () => {
       repo.nombreProductoEnUso.mockResolvedValue(true);
 
       await expect(
-        service.crear({ nombre: 'Cafe', categoriaId: CAT_BEBIDAS }),
+        service.crear(ACTOR_ID, { nombre: 'Cafe', categoriaId: CAT_BEBIDAS }),
       ).rejects.toThrow(/categoria/i);
     });
   });
 
   describe('actualizar', () => {
     it('cambia solo el nombre', async () => {
-      await service.actualizar('prod-cafe', { nombre: '  Cafe de olla  ' });
+      await service.actualizar(ACTOR_ID, 'prod-cafe', { nombre: '  Cafe de olla  ' });
 
-      expect(repo.actualizarProducto).toHaveBeenCalledWith('prod-cafe', {
-        nombre: 'Cafe de olla',
-      });
+      expect(repo.actualizarProducto).toHaveBeenCalledWith(
+        'prod-cafe',
+        {
+          nombre: 'Cafe de olla',
+        },
+        expect.anything(),
+      );
     });
 
     it('cambia solo la categoria', async () => {
-      await service.actualizar('prod-cafe', { categoriaId: CAT_COMIDAS });
+      await service.actualizar(ACTOR_ID, 'prod-cafe', { categoriaId: CAT_COMIDAS });
 
-      expect(repo.existeCategoria).toHaveBeenCalledWith(CAT_COMIDAS);
-      expect(repo.actualizarProducto).toHaveBeenCalledWith('prod-cafe', {
-        categoriaId: CAT_COMIDAS,
-      });
+      expect(repo.existeCategoria).toHaveBeenCalledWith(
+        CAT_COMIDAS,
+        expect.anything(),
+      );
+      expect(repo.actualizarProducto).toHaveBeenCalledWith(
+        'prod-cafe',
+        {
+          categoriaId: CAT_COMIDAS,
+        },
+        expect.anything(),
+      );
     });
 
     it('comprueba el nombre contra la categoria de destino al moverlo', async () => {
-      await service.actualizar('prod-cafe', { categoriaId: CAT_COMIDAS });
+      await service.actualizar(ACTOR_ID, 'prod-cafe', { categoriaId: CAT_COMIDAS });
 
       expect(repo.nombreProductoEnUso).toHaveBeenCalledWith(
         'Cafe',
         CAT_COMIDAS,
         'prod-cafe',
+        expect.anything(),
       );
     });
 
@@ -248,7 +279,7 @@ describe('ProductosService', () => {
       repo.nombreProductoEnUso.mockResolvedValue(true);
 
       await expect(
-        service.actualizar('prod-cafe', { categoriaId: CAT_COMIDAS }),
+        service.actualizar(ACTOR_ID, 'prod-cafe', { categoriaId: CAT_COMIDAS }),
       ).rejects.toBeInstanceOf(ConflictException);
       expect(repo.actualizarProducto).not.toHaveBeenCalled();
     });
@@ -257,7 +288,7 @@ describe('ProductosService', () => {
       repo.nombreProductoEnUso.mockResolvedValue(true);
 
       await expect(
-        service.actualizar('prod-cafe', { nombre: 'Latte' }),
+        service.actualizar(ACTOR_ID, 'prod-cafe', { nombre: 'Latte' }),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
@@ -265,67 +296,82 @@ describe('ProductosService', () => {
       repo.existeCategoria.mockResolvedValue(false);
 
       await expect(
-        service.actualizar('prod-cafe', { categoriaId: 'cat-fantasma' }),
+        service.actualizar(ACTOR_ID, 'prod-cafe', { categoriaId: 'cat-fantasma' }),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(repo.actualizarProducto).not.toHaveBeenCalled();
     });
 
     it('permite conservar el nombre al editar la descripcion', async () => {
-      await service.actualizar('prod-cafe', { descripcion: 'Nuevo texto' });
+      await service.actualizar(ACTOR_ID, 'prod-cafe', { descripcion: 'Nuevo texto' });
 
       expect(repo.nombreProductoEnUso).not.toHaveBeenCalled();
-      expect(repo.actualizarProducto).toHaveBeenCalledWith('prod-cafe', {
-        descripcion: 'Nuevo texto',
-      });
+      expect(repo.actualizarProducto).toHaveBeenCalledWith(
+        'prod-cafe',
+        {
+          descripcion: 'Nuevo texto',
+        },
+        expect.anything(),
+      );
     });
 
     it('limpia la descripcion vacia a null', async () => {
-      await service.actualizar('prod-cafe', { descripcion: '   ' });
+      await service.actualizar(ACTOR_ID, 'prod-cafe', { descripcion: '   ' });
 
-      expect(repo.actualizarProducto).toHaveBeenCalledWith('prod-cafe', { descripcion: null });
+      expect(repo.actualizarProducto).toHaveBeenCalledWith(
+        'prod-cafe',
+        { descripcion: null },
+        expect.anything(),
+      );
     });
 
     it('da 404 si el producto no existe', async () => {
       repo.buscarProductoPorId.mockResolvedValue(null);
 
       await expect(
-        service.actualizar('prod-inexistente', { nombre: 'X' }),
+        service.actualizar(ACTOR_ID, 'prod-inexistente', { nombre: 'X' }),
       ).rejects.toBeInstanceOf(NotFoundException);
       expect(repo.actualizarProducto).not.toHaveBeenCalled();
     });
 
     it('no toca la base si no viene nada que editar', async () => {
-      await service.actualizar('prod-cafe', {});
+      await service.actualizar(ACTOR_ID, 'prod-cafe', {});
 
       expect(repo.nombreProductoEnUso).not.toHaveBeenCalled();
-      expect(repo.actualizarProducto).toHaveBeenCalledWith('prod-cafe', {});
+      expect(repo.actualizarProducto).toHaveBeenCalledWith(
+        'prod-cafe',
+        {},
+        expect.anything(),
+      );
     });
   });
 
   describe('eliminar', () => {
     it('borra un producto sin precios', async () => {
-      await service.eliminar('prod-cafe');
+      await service.eliminar(ACTOR_ID, 'prod-cafe');
 
-      expect(repo.eliminarProducto).toHaveBeenCalledWith('prod-cafe');
+      expect(repo.eliminarProducto).toHaveBeenCalledWith(
+        'prod-cafe',
+        expect.anything(),
+      );
     });
 
     it('da 409 si el producto tiene precios en alguna sucursal', async () => {
       repo.contarOfertasDeProducto.mockResolvedValue(2);
 
-      await expect(service.eliminar('prod-cafe')).rejects.toBeInstanceOf(ConflictException);
+      await expect(service.eliminar(ACTOR_ID, 'prod-cafe')).rejects.toBeInstanceOf(ConflictException);
       expect(repo.eliminarProducto).not.toHaveBeenCalled();
     });
 
     it('el 409 dice que se desactive en cada sucursal, no que se borre', async () => {
       repo.contarOfertasDeProducto.mockResolvedValue(1);
 
-      await expect(service.eliminar('prod-cafe')).rejects.toThrow(/desactiva/i);
+      await expect(service.eliminar(ACTOR_ID, 'prod-cafe')).rejects.toThrow(/desactiva/i);
     });
 
     it('da 404 si el producto no existe', async () => {
       repo.buscarProductoPorId.mockResolvedValue(null);
 
-      await expect(service.eliminar('prod-inexistente')).rejects.toBeInstanceOf(
+      await expect(service.eliminar(ACTOR_ID, 'prod-inexistente')).rejects.toBeInstanceOf(
         NotFoundException,
       );
       expect(repo.contarOfertasDeProducto).not.toHaveBeenCalled();

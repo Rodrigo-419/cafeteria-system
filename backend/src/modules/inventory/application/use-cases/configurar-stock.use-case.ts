@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import {
   exigirAccesoSucursal,
   type ActorInventario,
@@ -43,6 +44,7 @@ export class ConfigurarStockUseCase {
   constructor(
     private readonly inventoryRepository: InventoryRepository,
     private readonly reevaluarAlertasService: ReevaluarAlertasService,
+    private readonly auditoria: AuditoriaRepository,
   ) {}
 
   async ejecutar(
@@ -66,6 +68,14 @@ export class ConfigurarStockUseCase {
       await this.exigirSucursal(sucursalId, cliente);
       await this.exigirInsumo(insumoId, cliente);
 
+      // Fila previa (o null si el insumo no estaba dado de alta aqui): distingue
+      // un alta de un cambio y permite registrar que campos se movieron.
+      const previa = await this.inventoryRepository.buscarStock(
+        insumoId,
+        sucursalId,
+        cliente,
+      );
+
       const fila = await this.inventoryRepository.configurarStock(
         insumoId,
         sucursalId,
@@ -76,10 +86,83 @@ export class ConfigurarStockUseCase {
         cliente,
       );
 
+      await this.registrarAuditoria(actor.id, sucursalId, previa, fila, cliente);
+
       await this.reevaluarAlertasService.ejecutar(fila.id, cliente);
 
       return fila;
     });
+  }
+
+  /**
+   * Deja el evento (o eventos) de la configuracion, en la misma transaccion.
+   *
+   * Un alta emite `insumo_sucursal_creado`. Un cambio puede mover el minimo y el
+   * estado a la vez, y entonces emite un evento por cada campo que cambio: asi el
+   * historial distingue "cambiar el minimo" de "descontinuar", que son decisiones
+   * distintas aunque lleguen en la misma peticion.
+   */
+  private async registrarAuditoria(
+    actorId: string,
+    sucursalId: string,
+    previa: StockFila | null,
+    fila: StockFila,
+    cliente: ClienteInventario,
+  ): Promise<void> {
+    if (previa === null) {
+      await this.auditoria.registrar(
+        {
+          entidad: 'insumo_sucursal',
+          entidadId: fila.id,
+          accion: 'insumo_sucursal_creado',
+          actorId,
+          sucursalAfectadaId: sucursalId,
+          detalle: {
+            despues: { stockMinimo: fila.stockMinimo, estado: fila.estado },
+          },
+        },
+        cliente,
+      );
+
+      return;
+    }
+
+    if (fila.stockMinimo !== previa.stockMinimo) {
+      await this.auditoria.registrar(
+        {
+          entidad: 'insumo_sucursal',
+          entidadId: fila.id,
+          accion: 'insumo_sucursal_stock_minimo_cambiado',
+          actorId,
+          sucursalAfectadaId: sucursalId,
+          detalle: {
+            antes: { stockMinimo: previa.stockMinimo },
+            despues: { stockMinimo: fila.stockMinimo },
+          },
+        },
+        cliente,
+      );
+    }
+
+    if (fila.estado !== previa.estado) {
+      await this.auditoria.registrar(
+        {
+          entidad: 'insumo_sucursal',
+          entidadId: fila.id,
+          accion:
+            fila.estado === 'descontinuado'
+              ? 'insumo_sucursal_descontinuado'
+              : 'insumo_sucursal_activado',
+          actorId,
+          sucursalAfectadaId: sucursalId,
+          detalle: {
+            antes: { estado: previa.estado },
+            despues: { estado: fila.estado },
+          },
+        },
+        cliente,
+      );
+    }
   }
 
   private validarStockMinimo(valor: number | undefined): string | undefined {

@@ -11,6 +11,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { fechaIsoDe } from '../../domain/fechas';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import {
   filtroAlcanceTurnos,
   type ActorTurnos,
@@ -35,7 +36,10 @@ export type EntradaActualizarTurno = {
 
 @Injectable()
 export class ActualizarTurnoUseCase {
-  constructor(private readonly shiftsRepository: ShiftsRepository) {}
+  constructor(
+    private readonly shiftsRepository: ShiftsRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   async ejecutar(
     actor: ActorTurnos,
@@ -126,11 +130,43 @@ export class ActualizarTurnoUseCase {
         }
       }
 
-      return this.shiftsRepository.actualizarTurno(
+      const actualizado = await this.shiftsRepository.actualizarTurno(
         id,
         { horaInicio, horaFin, diasSemana },
         cliente,
       );
+
+      const antes: Record<string, unknown> = {};
+      const despues: Record<string, unknown> = {};
+
+      if (actualizado.horaInicio !== turno.horaInicio) {
+        antes.horaInicio = turno.horaInicio;
+        despues.horaInicio = actualizado.horaInicio;
+      }
+      if (actualizado.horaFin !== turno.horaFin) {
+        antes.horaFin = turno.horaFin;
+        despues.horaFin = actualizado.horaFin;
+      }
+      if (actualizado.diasSemana !== turno.diasSemana) {
+        antes.diasSemana = turno.diasSemana;
+        despues.diasSemana = actualizado.diasSemana;
+      }
+
+      if (Object.keys(despues).length > 0) {
+        await this.auditoria.registrar(
+          {
+            entidad: 'turno',
+            entidadId: id,
+            accion: 'turno_editado',
+            actorId: actor.id,
+            sucursalAfectadaId: actualizado.sucursalId,
+            detalle: { antes, despues },
+          },
+          cliente,
+        );
+      }
+
+      return actualizado;
     });
   }
 }

@@ -56,8 +56,8 @@ export class ProductsController {
   @Post()
   @RequirePermission('productos.catalogo.editar')
   @ApiOperation({ summary: 'Crea un producto en una categoria' })
-  crear(@User() _usuario: UsuarioAutenticado, @Body() dto: CrearProductoDto) {
-    return this.productosService.crear({
+  crear(@User() usuario: UsuarioAutenticado, @Body() dto: CrearProductoDto) {
+    return this.productosService.crear(usuario.id, {
       nombre: dto.nombre,
       categoriaId: dto.categoriaId,
       descripcion: dto.descripcion,
@@ -68,11 +68,11 @@ export class ProductsController {
   @RequirePermission('productos.catalogo.editar')
   @ApiOperation({ summary: 'Edita un producto' })
   actualizar(
-    @User() _usuario: UsuarioAutenticado,
+    @User() usuario: UsuarioAutenticado,
     @Param('id', UUID_PIPE) id: string,
     @Body() dto: ActualizarProductoDto,
   ) {
-    return this.productosService.actualizar(id, {
+    return this.productosService.actualizar(usuario.id, id, {
       nombre: dto.nombre,
       categoriaId: dto.categoriaId,
       descripcion: dto.descripcion,
@@ -84,9 +84,9 @@ export class ProductsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Borra un producto sin precios asociados' })
   async eliminar(
-    @User() _usuario: UsuarioAutenticado,
+    @User() usuario: UsuarioAutenticado,
     @Param('id', UUID_PIPE) id: string,
   ): Promise<void> {
-    await this.productosService.eliminar(id);
+    await this.productosService.eliminar(usuario.id, id);
   }
 }

@@ -2,17 +2,19 @@
 //
 // Cesas es una baja, no un borrado: el empleado queda `inactivo` y conserva su
 // historico, y ademas hay que bloquear la cuenta de usuario vinculada. Ambas
-// cosas ocurren en la misma transaccion: si el bloqueo falla, el cese no se
-// aplica, y al reves.
+// cosas, mas sus eventos de auditoria, ocurren en la misma transaccion: si el
+// bloqueo falla, el cese no se aplica, y al reves.
 //
 // El bloqueo pasa por el caso de uso de users para no saltarse sus invariantes
-// (por ejemplo, no dejar el sistema sin ningun Admin activo).
+// (por ejemplo, no dejar el sistema sin ningun Admin activo); ese caso de uso
+// deja su propio evento `usuario_bloqueado`.
 import {
   BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { CambiarEstadoUseCase } from '../../../users/application/use-cases/cambiar-estado.use-case';
 import { diaUtc, fechaLocalDe } from '../../domain/fechas';
 import {
@@ -30,6 +32,7 @@ export class CesarEmpleadoUseCase {
   constructor(
     private readonly employeesRepository: EmployeesRepository,
     private readonly cambiarEstado: CambiarEstadoUseCase,
+    private readonly auditoria: AuditoriaRepository,
   ) {}
 
   async ejecutar(
@@ -37,30 +40,32 @@ export class CesarEmpleadoUseCase {
     id: string,
     entrada: { fechaCese?: string },
   ): Promise<EmpleadoRespuesta> {
-    const empleado = await this.employeesRepository.buscarAlcanceEnAlcance(
-      id,
-      filtroAlcanceEmpleados(actor),
-    );
-
-    if (!empleado) {
-      throw new NotFoundException('Empleado no encontrado');
-    }
-
-    if (empleadoYaCesado(empleado.estado)) {
-      throw new ConflictException('El empleado ya esta cesado');
-    }
-
     const fechaCese = diaUtc(entrada.fechaCese ?? fechaLocalDe(new Date()));
-    const problemas = problemasFechaCese(empleado.fechaContratacion, fechaCese);
-
-    if (problemas.length > 0) {
-      throw new BadRequestException({
-        message: 'La fecha de cese no es valida',
-        problemas,
-      });
-    }
 
     return this.employeesRepository.enTransaccion(async (cliente) => {
+      const empleado = await this.employeesRepository.buscarAlcanceEnAlcance(
+        id,
+        filtroAlcanceEmpleados(actor),
+        cliente,
+      );
+
+      if (!empleado) {
+        throw new NotFoundException('Empleado no encontrado');
+      }
+
+      if (empleadoYaCesado(empleado.estado)) {
+        throw new ConflictException('El empleado ya esta cesado');
+      }
+
+      const problemas = problemasFechaCese(empleado.fechaContratacion, fechaCese);
+
+      if (problemas.length > 0) {
+        throw new BadRequestException({
+          message: 'La fecha de cese no es valida',
+          problemas,
+        });
+      }
+
       await this.cambiarEstado.ejecutar(
         actor,
         empleado.usuarioId,
@@ -78,6 +83,22 @@ export class CesarEmpleadoUseCase {
         // Otra peticion ceso al empleado entre la lectura y la escritura.
         throw new ConflictException('El empleado ya esta cesado');
       }
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'empleado',
+          entidadId: id,
+          accion: 'empleado_cesado',
+          actorId: actor.id,
+          usuarioAfectadoId: empleado.usuarioId,
+          sucursalAfectadaId: empleado.sucursalId,
+          detalle: {
+            antes: { estado: empleado.estado, fechaCese: null },
+            despues: { estado: cesado.estado, fechaCese: cesado.fechaCese },
+          },
+        },
+        cliente,
+      );
 
       return cesado;
     });

@@ -1,4 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { validarNombreInsumo } from '../../domain/rules/nombres';
 import { validarPresentacionInsumo } from '../../domain/rules/presentacion-insumo';
 import {
@@ -15,12 +16,18 @@ import {
  */
 @Injectable()
 export class CrearInsumoUseCase {
-  constructor(private readonly inventoryRepository: InventoryRepository) {}
+  constructor(
+    private readonly inventoryRepository: InventoryRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
-  async ejecutar(entrada: {
-    nombre: string;
-    presentacion: string;
-  }): Promise<InsumoFila> {
+  async ejecutar(
+    actorId: string,
+    entrada: {
+      nombre: string;
+      presentacion: string;
+    },
+  ): Promise<InsumoFila> {
     // La validacion va antes de abrir la transaccion: un nombre malo no tiene por
     // que esperar a nadie, y no deja nada a medias.
     const nombre = validarNombreInsumo(entrada.nombre);
@@ -37,7 +44,25 @@ export class CrearInsumoUseCase {
         throw new ConflictException('Ya existe un insumo con ese nombre');
       }
 
-      return this.inventoryRepository.crearInsumo({ nombre, presentacion }, cliente);
+      const insumo = await this.inventoryRepository.crearInsumo(
+        { nombre, presentacion },
+        cliente,
+      );
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'insumo',
+          entidadId: insumo.id,
+          accion: 'insumo_creado',
+          actorId,
+          detalle: {
+            despues: { nombre: insumo.nombre, presentacion: insumo.presentacion },
+          },
+        },
+        cliente,
+      );
+
+      return insumo;
     });
   }
 }

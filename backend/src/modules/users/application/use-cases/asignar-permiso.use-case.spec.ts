@@ -4,12 +4,18 @@ jest.mock('../../infrastructure/users.repository', () => ({
   UsersRepository: class UsersRepository {},
 }));
 
+jest.mock('../../../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import { AsignarPermisoUseCase } from './asignar-permiso.use-case';
 import type { UsersRepository } from '../../infrastructure/users.repository';
+import type { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { Actor } from '../../domain/rules/alcance';
 import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../../domain/roles';
 
 type Repo = {
+  enTransaccion: jest.Mock;
   buscarPorIdEnAlcance: jest.Mock;
   obtenerPermisoPorId: jest.Mock;
   permisosPorDefectoDeRol: jest.Mock;
@@ -19,6 +25,9 @@ type Repo = {
 
 function repo(): Repo {
   return {
+    enTransaccion: jest.fn((operacion: (cliente: unknown) => unknown) =>
+      operacion({}),
+    ),
     buscarPorIdEnAlcance: jest.fn().mockResolvedValue({
       id: 'objetivo-1',
       rol: ROL_EMPLEADO,
@@ -46,12 +55,15 @@ function repo(): Repo {
 
 describe('AsignarPermisoUseCase', () => {
   let repository: Repo;
+  let auditoria: { registrar: jest.Mock };
   let useCase: AsignarPermisoUseCase;
 
   beforeEach(() => {
     repository = repo();
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
     useCase = new AsignarPermisoUseCase(
       repository as unknown as UsersRepository,
+      auditoria as unknown as AuditoriaRepository,
     );
   });
 
@@ -66,13 +78,16 @@ describe('AsignarPermisoUseCase', () => {
     it('concede un permiso y escribe el historial en la misma transaccion', async () => {
       await useCase.ejecutar(gerente, 'objetivo-1', 'perm-1', 'concedido');
 
-      expect(repository.asignarPermisoIndividual).toHaveBeenCalledWith({
-        usuarioId: 'objetivo-1',
-        permisoId: 'perm-1',
-        tipo: 'concedido',
-        usuarioEjecutorId: 'ger-1',
-        valorAnterior: 'rol',
-      });
+      expect(repository.asignarPermisoIndividual).toHaveBeenCalledWith(
+        {
+          usuarioId: 'objetivo-1',
+          permisoId: 'perm-1',
+          tipo: 'concedido',
+          usuarioEjecutorId: 'ger-1',
+          valorAnterior: 'rol',
+        },
+        expect.anything(),
+      );
     });
 
     it('guarda "concedido" como valor anterior si ya estaba concedido', async () => {
@@ -89,6 +104,7 @@ describe('AsignarPermisoUseCase', () => {
 
       expect(repository.asignarPermisoIndividual).toHaveBeenCalledWith(
         expect.objectContaining({ valorAnterior: 'concedido' }),
+        expect.anything(),
       );
     });
 
@@ -120,6 +136,7 @@ describe('AsignarPermisoUseCase', () => {
 
       expect(repository.asignarPermisoIndividual).toHaveBeenCalledWith(
         expect.objectContaining({ usuarioId: 'gerente-1', tipo: 'concedido' }),
+        expect.anything(),
       );
     });
   });
@@ -214,6 +231,7 @@ describe('AsignarPermisoUseCase', () => {
 
       expect(repository.asignarPermisoIndividual).toHaveBeenCalledWith(
         expect.objectContaining({ tipo: 'revocado', valorAnterior: 'rol' }),
+        expect.anything(),
       );
     });
   });

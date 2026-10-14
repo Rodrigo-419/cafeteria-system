@@ -17,12 +17,18 @@ jest.mock('../../infrastructure/users.repository', () => ({
   UsersRepository: class UsersRepository {},
 }));
 
+jest.mock('../../../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import { ActualizarUsuarioUseCase } from './actualizar-usuario.use-case';
 import type { UsersRepository } from '../../infrastructure/users.repository';
+import type { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { Actor } from '../../domain/rules/alcance';
 import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../../domain/roles';
 
 type Repo = {
+  enTransaccion: jest.Mock;
   buscarPorIdEnAlcance: jest.Mock;
   actualizarUsuario: jest.Mock;
   nombreUsuarioEnUso: jest.Mock;
@@ -42,6 +48,7 @@ const ROLES_REGISTRADOS: Record<string, string> = {
 
 describe('ActualizarUsuarioUseCase', () => {
   let repository: Repo;
+  let auditoria: { registrar: jest.Mock };
   let useCase: ActualizarUsuarioUseCase;
 
   const admin: Actor = {
@@ -61,6 +68,8 @@ describe('ActualizarUsuarioUseCase', () => {
   /** Empleado de la sucursal del Gerente: esta dentro de su alcance. */
   const empleadoEnAlcance = {
     id: 'emp-1',
+    nombre: 'Nombre Actual',
+    nombreUsuario: 'a.b',
     rol: ROL_EMPLEADO,
     rolId: ROLES_REGISTRADOS[ROL_EMPLEADO],
     sucursalId: SUC_CENTRO,
@@ -77,6 +86,9 @@ describe('ActualizarUsuarioUseCase', () => {
 
   beforeEach(() => {
     repository = {
+      enTransaccion: jest.fn((operacion: (cliente: unknown) => unknown) =>
+        operacion({}),
+      ),
       buscarPorIdEnAlcance: jest.fn().mockResolvedValue(empleadoEnAlcance),
       actualizarUsuario: jest.fn().mockImplementation(async (id: string) => ({
         id,
@@ -97,7 +109,11 @@ describe('ActualizarUsuarioUseCase', () => {
       contarAdminsActivos: jest.fn().mockResolvedValue(1),
     };
 
-    useCase = new ActualizarUsuarioUseCase(repository as unknown as UsersRepository);
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
+    useCase = new ActualizarUsuarioUseCase(
+      repository as unknown as UsersRepository,
+      auditoria as unknown as AuditoriaRepository,
+    );
   });
 
   describe('Gerente que intenta cambiar rol o sucursal', () => {
@@ -148,10 +164,14 @@ describe('ActualizarUsuarioUseCase', () => {
         }),
       ).resolves.toBeDefined();
 
-      expect(repository.actualizarUsuario).toHaveBeenCalledWith(empleadoEnAlcance.id, {
-        nombre: 'Nuevo Nombre',
-        nombreUsuario: 'nuevo.usuario',
-      });
+      expect(repository.actualizarUsuario).toHaveBeenCalledWith(
+        empleadoEnAlcance.id,
+        {
+          nombre: 'Nuevo Nombre',
+          nombreUsuario: 'nuevo.usuario',
+        },
+        expect.anything(),
+      );
     });
   });
 
@@ -171,10 +191,14 @@ describe('ActualizarUsuarioUseCase', () => {
         }),
       ).resolves.toBeDefined();
 
-      expect(repository.actualizarUsuario).toHaveBeenCalledWith(adminObjetivo.id, {
-        rolId: ROLES_REGISTRADOS[ROL_GERENTE],
-        sucursalId: SUC_CENTRO,
-      });
+      expect(repository.actualizarUsuario).toHaveBeenCalledWith(
+        adminObjetivo.id,
+        {
+          rolId: ROLES_REGISTRADOS[ROL_GERENTE],
+          sucursalId: SUC_CENTRO,
+        },
+        expect.anything(),
+      );
     });
 
     it('exige la sucursal al cambiar de rol: sin ella la combinacion es invalida', async () => {

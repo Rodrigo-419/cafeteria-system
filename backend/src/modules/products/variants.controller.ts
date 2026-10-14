@@ -49,19 +49,19 @@ export class VariantsController {
   @Post()
   @RequirePermission('productos.catalogo.editar')
   @ApiOperation({ summary: 'Crea una variante de producto' })
-  crear(@User() _usuario: UsuarioAutenticado, @Body() dto: CrearVarianteDto) {
-    return this.variantesService.crear(dto.nombre);
+  crear(@User() usuario: UsuarioAutenticado, @Body() dto: CrearVarianteDto) {
+    return this.variantesService.crear(usuario.id, dto.nombre);
   }
 
   @Patch(':id')
   @RequirePermission('productos.catalogo.editar')
   @ApiOperation({ summary: 'Renombra una variante de producto' })
   actualizar(
-    @User() _usuario: UsuarioAutenticado,
+    @User() usuario: UsuarioAutenticado,
     @Param('id', UUID_PIPE) id: string,
     @Body() dto: ActualizarVarianteDto,
   ) {
-    return this.variantesService.actualizar(id, dto.nombre);
+    return this.variantesService.actualizar(usuario.id, id, dto.nombre);
   }
 
   @Delete(':id')
@@ -69,9 +69,9 @@ export class VariantsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Borra una variante sin precios asociados' })
   async eliminar(
-    @User() _usuario: UsuarioAutenticado,
+    @User() usuario: UsuarioAutenticado,
     @Param('id', UUID_PIPE) id: string,
   ): Promise<void> {
-    await this.variantesService.eliminar(id);
+    await this.variantesService.eliminar(usuario.id, id);
   }
 }

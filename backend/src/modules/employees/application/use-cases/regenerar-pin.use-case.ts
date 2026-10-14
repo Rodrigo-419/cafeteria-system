@@ -2,9 +2,11 @@
 //
 // El PIN nuevo se genera aqui, se guarda como hash bcrypt y se devuelve UNA vez
 // en la respuesta. En la base no queda el PIN en claro y en ninguna respuesta
-// posterior vuelve a aparecer.
+// posterior vuelve a aparecer; tampoco viaja en el evento de auditoria. El
+// guardado y su evento van en la misma transaccion.
 import { Injectable, NotFoundException } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { RONDAS_BCRYPT } from '../../../users/application/use-cases/crear-usuario.use-case';
 import {
   filtroAlcanceEmpleados,
@@ -17,23 +19,43 @@ export type PinGenerado = { pin: string };
 
 @Injectable()
 export class RegenerarPinUseCase {
-  constructor(private readonly employeesRepository: EmployeesRepository) {}
+  constructor(
+    private readonly employeesRepository: EmployeesRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   async ejecutar(actor: ActorEmpleados, id: string): Promise<PinGenerado> {
-    const empleado = await this.employeesRepository.buscarAlcanceEnAlcance(
-      id,
-      filtroAlcanceEmpleados(actor),
-    );
+    return this.employeesRepository.enTransaccion(async (cliente) => {
+      const empleado = await this.employeesRepository.buscarAlcanceEnAlcance(
+        id,
+        filtroAlcanceEmpleados(actor),
+        cliente,
+      );
 
-    if (!empleado) {
-      throw new NotFoundException('Empleado no encontrado');
-    }
+      if (!empleado) {
+        throw new NotFoundException('Empleado no encontrado');
+      }
 
-    const pin = generarPin();
-    const pinHash = await bcrypt.hash(pin, RONDAS_BCRYPT);
+      const pin = generarPin();
+      const pinHash = await bcrypt.hash(pin, RONDAS_BCRYPT);
 
-    await this.employeesRepository.guardarPinHash(id, pinHash);
+      await this.employeesRepository.guardarPinHash(id, pinHash, cliente);
 
-    return { pin };
+      // El detalle NO lleva el PIN ni su hash.
+      await this.auditoria.registrar(
+        {
+          entidad: 'empleado',
+          entidadId: id,
+          accion: 'empleado_pin_regenerado',
+          actorId: actor.id,
+          usuarioAfectadoId: empleado.usuarioId,
+          sucursalAfectadaId: empleado.sucursalId,
+          detalle: {},
+        },
+        cliente,
+      );
+
+      return { pin };
+    });
   }
 }

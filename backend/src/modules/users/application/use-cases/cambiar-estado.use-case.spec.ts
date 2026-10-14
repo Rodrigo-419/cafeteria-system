@@ -8,12 +8,18 @@ jest.mock('../../infrastructure/users.repository', () => ({
   UsersRepository: class UsersRepository {},
 }));
 
+jest.mock('../../../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import { CambiarEstadoUseCase } from './cambiar-estado.use-case';
 import type { UsersRepository } from '../../infrastructure/users.repository';
+import type { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { Actor } from '../../domain/rules/alcance';
 import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../../domain/roles';
 
 type Repo = {
+  enTransaccion: jest.Mock;
   buscarPorIdEnAlcance: jest.Mock;
   contarAdminsActivos: jest.Mock;
   actualizarEstado: jest.Mock;
@@ -33,16 +39,22 @@ function objetivo(overrides = {}) {
 
 describe('CambiarEstadoUseCase', () => {
   let repository: Repo;
+  let auditoria: { registrar: jest.Mock };
   let useCase: CambiarEstadoUseCase;
 
   beforeEach(() => {
     repository = {
+      enTransaccion: jest.fn((operacion: (cliente: unknown) => unknown) =>
+        operacion({}),
+      ),
       buscarPorIdEnAlcance: jest.fn().mockResolvedValue(objetivo()),
       contarAdminsActivos: jest.fn().mockResolvedValue(2),
       actualizarEstado: jest.fn().mockResolvedValue({}),
     };
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
     useCase = new CambiarEstadoUseCase(
       repository as unknown as UsersRepository,
+      auditoria as unknown as AuditoriaRepository,
     );
   });
 
@@ -59,7 +71,7 @@ describe('CambiarEstadoUseCase', () => {
     expect(repository.actualizarEstado).toHaveBeenCalledWith(
       'objetivo-1',
       'bloqueado',
-      undefined,
+      expect.anything(),
     );
   });
 
@@ -138,7 +150,7 @@ describe('CambiarEstadoUseCase', () => {
     expect(repository.actualizarEstado).toHaveBeenCalledWith(
       'admin-2',
       'activo',
-      undefined,
+      expect.anything(),
     );
   });
 });

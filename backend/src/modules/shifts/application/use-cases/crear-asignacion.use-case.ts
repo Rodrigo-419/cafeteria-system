@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 import { filtroAlcanceEmpleados } from '../../../employees/domain/rules/alcance';
 import { EmployeesRepository } from '../../../employees/infrastructure/employees.repository';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { diaUtc, fechaIsoDe } from '../../domain/fechas';
 import {
   filtroAlcanceTurnos,
@@ -42,6 +43,7 @@ export class CrearAsignacionUseCase {
   constructor(
     private readonly shiftsRepository: ShiftsRepository,
     private readonly employeesRepository: EmployeesRepository,
+    private readonly auditoria: AuditoriaRepository,
   ) {}
 
   async ejecutar(
@@ -126,7 +128,7 @@ export class CrearAsignacionUseCase {
         );
       }
 
-      return this.shiftsRepository.crearAsignacion(
+      const asignacion = await this.shiftsRepository.crearAsignacion(
         {
           empleadoId: empleado.id,
           turnoId: turno.id,
@@ -135,6 +137,30 @@ export class CrearAsignacionUseCase {
         },
         cliente,
       );
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'asignacion',
+          entidadId: asignacion.id,
+          accion: 'asignacion_creada',
+          actorId: actor.id,
+          sucursalAfectadaId: asignacion.empleado.sucursalId,
+          detalle: {
+            despues: {
+              empleadoId: asignacion.empleadoId,
+              turnoId: asignacion.turnoId,
+              fechaInicio: fechaIsoDe(asignacion.fechaInicio),
+              fechaFin:
+                asignacion.fechaFin === null
+                  ? null
+                  : fechaIsoDe(asignacion.fechaFin),
+            },
+          },
+        },
+        cliente,
+      );
+
+      return asignacion;
     });
   }
 }

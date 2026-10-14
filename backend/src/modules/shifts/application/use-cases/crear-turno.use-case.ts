@@ -10,6 +10,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { $Enums } from '../../../../generated/prisma/client';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { esAdmin, esGerente } from '../../../users/domain/roles';
 import type { ActorTurnos } from '../../domain/rules/alcance';
 import { problemasHorarioTurno } from '../../domain/rules/horario';
@@ -29,7 +30,10 @@ export type EntradaCrearTurno = {
 
 @Injectable()
 export class CrearTurnoUseCase {
-  constructor(private readonly shiftsRepository: ShiftsRepository) {}
+  constructor(
+    private readonly shiftsRepository: ShiftsRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   async ejecutar(
     actor: ActorTurnos,
@@ -50,12 +54,38 @@ export class CrearTurnoUseCase {
     const diasSemana = normalizarDiasSemana(entrada.diasSemana, tipo);
     const sucursalId = await this.resolverSucursal(actor, entrada.sucursalId);
 
-    return this.shiftsRepository.crearTurno({
-      sucursalId,
-      tipo,
-      horaInicio,
-      horaFin,
-      diasSemana,
+    return this.shiftsRepository.enTransaccion(async (cliente) => {
+      const turno = await this.shiftsRepository.crearTurno(
+        {
+          sucursalId,
+          tipo,
+          horaInicio,
+          horaFin,
+          diasSemana,
+        },
+        cliente,
+      );
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'turno',
+          entidadId: turno.id,
+          accion: 'turno_creado',
+          actorId: actor.id,
+          sucursalAfectadaId: turno.sucursalId,
+          detalle: {
+            despues: {
+              tipo: turno.tipo,
+              horaInicio: turno.horaInicio,
+              horaFin: turno.horaFin,
+              diasSemana: turno.diasSemana,
+            },
+          },
+        },
+        cliente,
+      );
+
+      return turno;
     });
   }
 

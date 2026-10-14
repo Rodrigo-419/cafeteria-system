@@ -8,6 +8,9 @@ import { PrismaService } from '../../database/prisma.service';
 import { Prisma } from '../../generated/prisma/client';
 import { type EstadoOferta, mismoNombre } from './products.rules';
 
+/** Cliente con el que se puede trabajar fuera o dentro de una transaccion. */
+export type ClienteProductos = PrismaService | Prisma.TransactionClient;
+
 // ------------------------------------------------------------------ respuestas
 
 export type CategoriaRespuesta = {
@@ -57,6 +60,13 @@ export type CartaFila = {
   variante: { id: string; nombre: string };
 };
 
+export type FiltrosListadoProductos = {
+  page: number;
+  limit: number;
+  categoriaId?: string;
+  busqueda?: string;
+};
+
 /** Envoltorio de listado paginado, con la misma forma que usa el modulo users. */
 export type ResultadoListado<T> = {
   data: T[];
@@ -66,17 +76,11 @@ export type ResultadoListado<T> = {
   totalPaginas: number;
 };
 
-export type FiltrosListadoProductos = {
-  page: number;
-  limit: number;
-  categoriaId?: string;
-  busqueda?: string;
+type NombreYId = {
+
+  id: string;
+  nombre: string;
 };
-
-/** Fila minima para decidir unicidad de nombre. */
-type NombreYId = { id: string; nombre: string };
-
-// -------------------------------------------------------------------- selects
 
 const SELECT_CATEGORIA = {
   id: true,
@@ -108,6 +112,7 @@ const SELECT_NOMBRE_Y_ID = {
 } satisfies Prisma.CategoriaProductoSelect;
 
 const SELECT_OFERTA = {
+  id: true,
   precio: true,
   estado: true,
 } satisfies Prisma.ProductoSucursalVarianteSelect;
@@ -133,6 +138,23 @@ const SELECT_CARTA = {
 export class ProductsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Ejecuta `operacion` dentro de una transaccion y le pasa el cliente.
+   *
+   * Las lecturas que condicionan una escritura (comprobar duplicados, leer la
+   * oferta previa) tienen que usar ese cliente para que la operacion y su evento
+   * de auditoria sean atomicos.
+   */
+  async enTransaccion<T>(
+    operacion: (cliente: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(operacion);
+  }
+
+  private db(cliente?: ClienteProductos): ClienteProductos {
+    return cliente ?? this.prisma;
+  }
+
   // -------------------------------------------------------------- categorias
 
   async listarCategorias(): Promise<CategoriaRespuesta[]> {
@@ -142,20 +164,29 @@ export class ProductsRepository {
     });
   }
 
-  async buscarCategoriaPorId(id: string): Promise<CategoriaRespuesta | null> {
-    return this.prisma.categoriaProducto.findUnique({
+  async buscarCategoriaPorId(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<CategoriaRespuesta | null> {
+    return this.db(cliente).categoriaProducto.findUnique({
       where: { id },
       select: SELECT_CATEGORIA,
     });
   }
 
   /** Numero de productos de una categoria. Lo usa el borrado. */
-  async contarProductosDeCategoria(categoriaId: string): Promise<number> {
-    return this.prisma.producto.count({ where: { categoriaId } });
+  async contarProductosDeCategoria(
+    categoriaId: string,
+    cliente?: ClienteProductos,
+  ): Promise<number> {
+    return this.db(cliente).producto.count({ where: { categoriaId } });
   }
 
-  async existeCategoria(id: string): Promise<boolean> {
-    const categoria = await this.prisma.categoriaProducto.findUnique({
+  async existeCategoria(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<boolean> {
+    const categoria = await this.db(cliente).categoriaProducto.findUnique({
       where: { id },
       select: { id: true },
     });
@@ -172,8 +203,9 @@ export class ProductsRepository {
   async nombreCategoriaEnUso(
     nombre: string,
     exceptoCategoriaId?: string,
+    cliente?: ClienteProductos,
   ): Promise<boolean> {
-    const categorias = await this.prisma.categoriaProducto.findMany({
+    const categorias = await this.db(cliente).categoriaProducto.findMany({
       select: SELECT_NOMBRE_Y_ID,
     });
 
@@ -182,8 +214,11 @@ export class ProductsRepository {
     );
   }
 
-  async crearCategoria(nombre: string): Promise<CategoriaRespuesta> {
-    return this.prisma.categoriaProducto.create({
+  async crearCategoria(
+    nombre: string,
+    cliente?: ClienteProductos,
+  ): Promise<CategoriaRespuesta> {
+    return this.db(cliente).categoriaProducto.create({
       data: { nombre },
       select: SELECT_CATEGORIA,
     });
@@ -192,8 +227,9 @@ export class ProductsRepository {
   async actualizarCategoria(
     id: string,
     nombre: string,
+    cliente?: ClienteProductos,
   ): Promise<CategoriaRespuesta> {
-    return this.prisma.categoriaProducto.update({
+    return this.db(cliente).categoriaProducto.update({
       where: { id },
       data: { nombre },
       select: SELECT_CATEGORIA,
@@ -201,8 +237,11 @@ export class ProductsRepository {
   }
 
   /** Borra la categoria. La base restringe el borrado si tiene productos. */
-  async eliminarCategoria(id: string): Promise<void> {
-    await this.prisma.categoriaProducto.delete({
+  async eliminarCategoria(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<void> {
+    await this.db(cliente).categoriaProducto.delete({
       where: { id },
       select: { id: true },
     });
@@ -217,20 +256,31 @@ export class ProductsRepository {
     });
   }
 
-  async buscarVariantePorId(id: string): Promise<VarianteRespuesta | null> {
-    return this.prisma.variante.findUnique({
+  async buscarVariantePorId(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<VarianteRespuesta | null> {
+    return this.db(cliente).variante.findUnique({
       where: { id },
       select: SELECT_VARIANTE,
     });
   }
 
   /** Numero de ofertas en cualquier sucursal que usen esta variante. */
-  async contarOfertasDeVariante(varianteId: string): Promise<number> {
-    return this.prisma.productoSucursalVariante.count({ where: { varianteId } });
+  async contarOfertasDeVariante(
+    varianteId: string,
+    cliente?: ClienteProductos,
+  ): Promise<number> {
+    return this.db(cliente).productoSucursalVariante.count({
+      where: { varianteId },
+    });
   }
 
-  async existeVariante(id: string): Promise<boolean> {
-    const variante = await this.prisma.variante.findUnique({
+  async existeVariante(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<boolean> {
+    const variante = await this.db(cliente).variante.findUnique({
       where: { id },
       select: { id: true },
     });
@@ -240,8 +290,9 @@ export class ProductsRepository {
   async nombreVarianteEnUso(
     nombre: string,
     exceptoVarianteId?: string,
+    cliente?: ClienteProductos,
   ): Promise<boolean> {
-    const variantes: NombreYId[] = await this.prisma.variante.findMany({
+    const variantes: NombreYId[] = await this.db(cliente).variante.findMany({
       select: SELECT_NOMBRE_Y_ID,
     });
 
@@ -250,8 +301,11 @@ export class ProductsRepository {
     );
   }
 
-  async crearVariante(nombre: string): Promise<VarianteRespuesta> {
-    return this.prisma.variante.create({
+  async crearVariante(
+    nombre: string,
+    cliente?: ClienteProductos,
+  ): Promise<VarianteRespuesta> {
+    return this.db(cliente).variante.create({
       data: { nombre },
       select: SELECT_VARIANTE,
     });
@@ -260,16 +314,20 @@ export class ProductsRepository {
   async actualizarVariante(
     id: string,
     nombre: string,
+    cliente?: ClienteProductos,
   ): Promise<VarianteRespuesta> {
-    return this.prisma.variante.update({
+    return this.db(cliente).variante.update({
       where: { id },
       data: { nombre },
       select: SELECT_VARIANTE,
     });
   }
 
-  async eliminarVariante(id: string): Promise<void> {
-    await this.prisma.variante.delete({
+  async eliminarVariante(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<void> {
+    await this.db(cliente).variante.delete({
       where: { id },
       select: { id: true },
     });
@@ -299,15 +357,21 @@ export class ProductsRepository {
     return this.prisma.producto.count({ where: this.whereProductos(filtros) });
   }
 
-  async buscarProductoPorId(id: string): Promise<ProductoRespuesta | null> {
-    return this.prisma.producto.findUnique({
+  async buscarProductoPorId(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<ProductoRespuesta | null> {
+    return this.db(cliente).producto.findUnique({
       where: { id },
       select: SELECT_PRODUCTO,
     });
   }
 
-  async existeProducto(id: string): Promise<boolean> {
-    const producto = await this.prisma.producto.findUnique({
+  async existeProducto(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<boolean> {
+    const producto = await this.db(cliente).producto.findUnique({
       where: { id },
       select: { id: true },
     });
@@ -315,21 +379,27 @@ export class ProductsRepository {
   }
 
   /** Numero de ofertas en cualquier sucursal de este producto. */
-  async contarOfertasDeProducto(productoId: string): Promise<number> {
-    return this.prisma.productoSucursalVariante.count({ where: { productoId } });
+  async contarOfertasDeProducto(
+    productoId: string,
+    cliente?: ClienteProductos,
+  ): Promise<number> {
+    return this.db(cliente).productoSucursalVariante.count({
+      where: { productoId },
+    });
   }
 
   /**
    * true si el nombre ya lo usa otro producto DE LA MISMA CATEGORIA, ignorando
-   * mayusculas y espacios sobrantes. El nombre no es unico en toda la tabla: dos
-   * categorias distintas pueden tener un "Cafe".
+   * mayusculas y espacios sobrantes. `exceptoProductoId` deja que conserve su
+   * nombre al editarlo.
    */
   async nombreProductoEnUso(
     nombre: string,
     categoriaId: string,
     exceptoProductoId?: string,
+    cliente?: ClienteProductos,
   ): Promise<boolean> {
-    const productos: NombreYId[] = await this.prisma.producto.findMany({
+    const productos = await this.db(cliente).producto.findMany({
       where: { categoriaId },
       select: SELECT_NOMBRE_Y_ID,
     });
@@ -339,16 +409,19 @@ export class ProductsRepository {
     );
   }
 
-  async crearProducto(data: {
-    nombre: string;
-    categoriaId: string;
-    descripcion: string | null;
-  }): Promise<ProductoRespuesta> {
-    return this.prisma.producto.create({
+  async crearProducto(
+    datos: {
+      nombre: string;
+      categoriaId: string;
+      descripcion?: string | null;
+    },
+    cliente?: ClienteProductos,
+  ): Promise<ProductoRespuesta> {
+    return this.db(cliente).producto.create({
       data: {
-        nombre: data.nombre,
-        categoriaId: data.categoriaId,
-        descripcion: data.descripcion,
+        nombre: datos.nombre,
+        categoriaId: datos.categoriaId,
+        descripcion: datos.descripcion ?? null,
       },
       select: SELECT_PRODUCTO,
     });
@@ -357,16 +430,20 @@ export class ProductsRepository {
   async actualizarProducto(
     id: string,
     data: { nombre?: string; categoriaId?: string; descripcion?: string | null },
+    cliente?: ClienteProductos,
   ): Promise<ProductoRespuesta> {
-    return this.prisma.producto.update({
+    return this.db(cliente).producto.update({
       where: { id },
       data,
       select: SELECT_PRODUCTO,
     });
   }
 
-  async eliminarProducto(id: string): Promise<void> {
-    await this.prisma.producto.delete({
+  async eliminarProducto(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<void> {
+    await this.db(cliente).producto.delete({
       where: { id },
       select: { id: true },
     });
@@ -374,8 +451,11 @@ export class ProductsRepository {
 
   // ----------------------------------------------------------------- ofertas
 
-  async existeSucursal(id: string): Promise<boolean> {
-    const sucursal = await this.prisma.sucursal.findUnique({
+  async existeSucursal(
+    id: string,
+    cliente?: ClienteProductos,
+  ): Promise<boolean> {
+    const sucursal = await this.db(cliente).sucursal.findUnique({
       where: { id },
       select: { id: true },
     });
@@ -428,18 +508,49 @@ export class ProductsRepository {
     }));
   }
 
+  /** Oferta previa (precio y estado) si existe, para derivar el evento. */
+  async buscarOferta(
+    productoId: string,
+    sucursalId: string,
+    varianteId: string,
+    cliente?: ClienteProductos,
+  ): Promise<OfertaRespuesta | null> {
+    const oferta = await this.db(cliente).productoSucursalVariante.findUnique({
+      where: {
+        productoId_sucursalId_varianteId: {
+          productoId,
+          sucursalId,
+          varianteId,
+        },
+      },
+      select: SELECT_OFERTA,
+    });
+
+    if (oferta === null) {
+      return null;
+    }
+
+    return {
+      precio: oferta.precio.toFixed(2),
+      estado: oferta.estado as EstadoOferta,
+    };
+  }
+
   /**
    * Crea o actualiza la oferta de una variante de un producto en una sucursal.
    * El `precio` llega ya como texto con dos decimales desde el servicio.
    */
-  async upsertOferta(params: {
-    productoId: string;
-    sucursalId: string;
-    varianteId: string;
-    precio: string;
-    estado: EstadoOferta;
-  }): Promise<OfertaRespuesta> {
-    const oferta = await this.prisma.productoSucursalVariante.upsert({
+  async upsertOferta(
+    params: {
+      productoId: string;
+      sucursalId: string;
+      varianteId: string;
+      precio: string;
+      estado: EstadoOferta;
+    },
+    cliente?: ClienteProductos,
+  ): Promise<OfertaRespuesta & { id: string }> {
+    const oferta = await this.db(cliente).productoSucursalVariante.upsert({
       where: {
         productoId_sucursalId_varianteId: {
           productoId: params.productoId,
@@ -459,6 +570,7 @@ export class ProductsRepository {
     });
 
     return {
+      id: oferta.id,
       precio: oferta.precio.toFixed(2),
       estado: oferta.estado as EstadoOferta,
     };

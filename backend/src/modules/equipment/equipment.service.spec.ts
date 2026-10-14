@@ -8,12 +8,17 @@ jest.mock('./equipment.repository', () => ({
   EquipmentRepository: class EquipmentRepository {},
 }));
 
+jest.mock('../auditoria/infrastructure/auditoria.repository', () => ({
+  AuditoriaRepository: class AuditoriaRepository {},
+}));
+
 import { EquipmentService } from './equipment.service';
 import type {
   EquipmentRepository,
   EquipoFila,
   HistorialEquipoFila,
 } from './equipment.repository';
+import type { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 import { ROL_ADMIN, ROL_EMPLEADO, ROL_GERENTE } from '../users/domain/roles';
 
 type Repo = {
@@ -68,6 +73,7 @@ const empleado = { id: 'emp-1', rol: ROL_EMPLEADO, sucursalId: 's1' };
 
 describe('EquipmentService', () => {
   let repository: Repo;
+  let auditoria: { registrar: jest.Mock };
   let service: EquipmentService;
 
   beforeEach(() => {
@@ -87,7 +93,11 @@ describe('EquipmentService', () => {
       contarHistorial: jest.fn().mockResolvedValue(0),
     };
 
-    service = new EquipmentService(repository as unknown as EquipmentRepository);
+    auditoria = { registrar: jest.fn().mockResolvedValue(undefined) };
+    service = new EquipmentService(
+      repository as unknown as EquipmentRepository,
+      auditoria as unknown as AuditoriaRepository,
+    );
   });
 
   describe('crear', () => {
@@ -99,13 +109,16 @@ describe('EquipmentService', () => {
         observaciones: ' Texto ',
       });
 
-      expect(repository.existeSucursal).toHaveBeenCalledWith('s1');
-      expect(repository.crearEquipo).toHaveBeenCalledWith({
-        sucursalId: 's1',
-        nombre: 'Cafetera Nuevo',
-        tipo: 'Cafetera',
-        observaciones: 'Texto',
-      });
+      expect(repository.existeSucursal).toHaveBeenCalledWith('s1', TX);
+      expect(repository.crearEquipo).toHaveBeenCalledWith(
+        {
+          sucursalId: 's1',
+          nombre: 'Cafetera Nuevo',
+          tipo: 'Cafetera',
+          observaciones: 'Texto',
+        },
+        TX,
+      );
     });
 
     it('un admin recibe 404 si la sucursal no existe', async () => {
@@ -126,6 +139,7 @@ describe('EquipmentService', () => {
 
       expect(repository.crearEquipo).toHaveBeenCalledWith(
         expect.objectContaining({ sucursalId: 's1' }),
+        TX,
       );
       expect(repository.existeSucursal).not.toHaveBeenCalled();
     });
@@ -151,6 +165,7 @@ describe('EquipmentService', () => {
 
       expect(repository.crearEquipo).toHaveBeenCalledWith(
         expect.objectContaining({ observaciones: null }),
+        TX,
       );
     });
   });

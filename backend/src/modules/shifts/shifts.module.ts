@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuditoriaModule } from '../auditoria/auditoria.module';
 import { EmployeesModule } from '../employees/employees.module';
 import { ActualizarTurnoUseCase } from './application/use-cases/actualizar-turno.use-case';
 import { CrearAsignacionUseCase } from './application/use-cases/crear-asignacion.use-case';
@@ -12,7 +13,7 @@ import { AssignmentsController } from './presentation/assignments.controller';
 import { ShiftsController } from './presentation/shifts.controller';
 
 @Module({
-  imports: [EmployeesModule],
+  imports: [AuditoriaModule, EmployeesModule],
   controllers: [ShiftsController, AssignmentsController],
   providers: [
     ShiftsRepository,

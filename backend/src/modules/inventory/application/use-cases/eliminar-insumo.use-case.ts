@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { InventoryRepository } from '../../infrastructure/inventory.repository';
 
 /**
@@ -12,9 +13,12 @@ import { InventoryRepository } from '../../infrastructure/inventory.repository';
  */
 @Injectable()
 export class EliminarInsumoUseCase {
-  constructor(private readonly inventoryRepository: InventoryRepository) {}
+  constructor(
+    private readonly inventoryRepository: InventoryRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
-  async ejecutar(id: string): Promise<void> {
+  async ejecutar(actorId: string, id: string): Promise<void> {
     const insumo = await this.inventoryRepository.buscarInsumoPorId(id);
 
     if (!insumo) {
@@ -29,6 +33,23 @@ export class EliminarInsumoUseCase {
       );
     }
 
-    await this.inventoryRepository.eliminarInsumo(id);
+    // El borrado y su evento son atomicos: o desaparece el insumo y queda
+    // registrado quien lo hizo, o no pasa ninguna de las dos cosas.
+    await this.inventoryRepository.enTransaccion(async (cliente) => {
+      await this.inventoryRepository.eliminarInsumo(id, cliente);
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'insumo',
+          entidadId: insumo.id,
+          accion: 'insumo_eliminado',
+          actorId,
+          detalle: {
+            antes: { nombre: insumo.nombre, presentacion: insumo.presentacion },
+          },
+        },
+        cliente,
+      );
+    });
   }
 }

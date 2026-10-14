@@ -4,6 +4,7 @@
 // sucursal se fuerza a la suya, ignorando la que envie el cliente.
 import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { validarPassword } from '../../../auth/domain/rules/password-policy';
 import {
   normalizarNombreUsuario,
@@ -35,7 +36,10 @@ export type EntradaCrearUsuario = {
 
 @Injectable()
 export class CrearUsuarioUseCase {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   async ejecutar(
     actor: ActorCrearUsuario,
@@ -84,27 +88,68 @@ export class CrearUsuarioUseCase {
       });
     }
 
-    if (await this.usersRepository.nombreUsuarioEnUso(nombreUsuario)) {
-      throw new ConflictException('El nombre de usuario ya esta registrado');
-    }
-
-    if (sucursalId !== null && !(await this.usersRepository.existeSucursal(sucursalId))) {
-      throw new BadRequestException('La sucursal indicada no existe');
-    }
-
-    const rolRegistrado = await this.usersRepository.obtenerRolPorNombre(rol);
-    if (!rolRegistrado) {
-      throw new BadRequestException(`El rol ${rol} no existe`);
-    }
-
     const passwordHash = await bcrypt.hash(entrada.password, RONDAS_BCRYPT);
 
-    return this.usersRepository.crearUsuario({
-      nombre: entrada.nombre,
-      nombreUsuario,
-      passwordHash,
-      rolId: rolRegistrado.id,
-      sucursalId,
+    return this.usersRepository.enTransaccion(async (cliente) => {
+      // Las comprobaciones de unicidad van DENTRO de la transaccion, junto a la
+      // escritura y al evento de auditoria: todo confirma o falla junto.
+      if (
+        await this.usersRepository.nombreUsuarioEnUso(
+          nombreUsuario,
+          undefined,
+          cliente,
+        )
+      ) {
+        throw new ConflictException('El nombre de usuario ya esta registrado');
+      }
+
+      if (
+        sucursalId !== null &&
+        !(await this.usersRepository.existeSucursal(sucursalId, cliente))
+      ) {
+        throw new BadRequestException('La sucursal indicada no existe');
+      }
+
+      const rolRegistrado = await this.usersRepository.obtenerRolPorNombre(
+        rol,
+        cliente,
+      );
+      if (!rolRegistrado) {
+        throw new BadRequestException(`El rol ${rol} no existe`);
+      }
+
+      const usuario = await this.usersRepository.crearUsuario(
+        {
+          nombre: entrada.nombre,
+          nombreUsuario,
+          passwordHash,
+          rolId: rolRegistrado.id,
+          sucursalId,
+        },
+        cliente,
+      );
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'usuario',
+          entidadId: usuario.id,
+          accion: 'usuario_creado',
+          actorId: actor.id,
+          usuarioAfectadoId: usuario.id,
+          sucursalAfectadaId: usuario.sucursalId,
+          detalle: {
+            despues: {
+              nombre: usuario.nombre,
+              nombreUsuario: usuario.nombreUsuario,
+              rol: usuario.rol,
+              sucursalId: usuario.sucursalId,
+            },
+          },
+        },
+        cliente,
+      );
+
+      return usuario;
     });
   }
 }

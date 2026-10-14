@@ -49,19 +49,19 @@ export class ProductCategoriesController {
   @Post()
   @RequirePermission('productos.catalogo.editar')
   @ApiOperation({ summary: 'Crea una categoria de producto' })
-  crear(@User() _usuario: UsuarioAutenticado, @Body() dto: CrearCategoriaDto) {
-    return this.categoriasService.crear(dto.nombre);
+  crear(@User() usuario: UsuarioAutenticado, @Body() dto: CrearCategoriaDto) {
+    return this.categoriasService.crear(usuario.id, dto.nombre);
   }
 
   @Patch(':id')
   @RequirePermission('productos.catalogo.editar')
   @ApiOperation({ summary: 'Renombra una categoria de producto' })
   actualizar(
-    @User() _usuario: UsuarioAutenticado,
+    @User() usuario: UsuarioAutenticado,
     @Param('id', UUID_PIPE) id: string,
     @Body() dto: ActualizarCategoriaDto,
   ) {
-    return this.categoriasService.actualizar(id, dto.nombre);
+    return this.categoriasService.actualizar(usuario.id, id, dto.nombre);
   }
 
   @Delete(':id')
@@ -69,9 +69,9 @@ export class ProductCategoriesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Borra una categoria vacia' })
   async eliminar(
-    @User() _usuario: UsuarioAutenticado,
+    @User() usuario: UsuarioAutenticado,
     @Param('id', UUID_PIPE) id: string,
   ): Promise<void> {
-    await this.categoriasService.eliminar(id);
+    await this.categoriasService.eliminar(usuario.id, id);
   }
 }

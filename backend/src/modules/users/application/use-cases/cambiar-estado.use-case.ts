@@ -8,6 +8,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { Actor, filtroAlcanceListado } from '../../domain/rules/alcance';
 import {
   dejaSinAdminActivo,
@@ -21,20 +22,38 @@ import {
 
 @Injectable()
 export class CambiarEstadoUseCase {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   /**
-   * `cliente` es opcional: sin el se usa `PrismaService`. Cuando se pasa un
-   * cliente transaccional, todo el cambio de estado (lectura del objetivo,
-   * conteo de Admins y escritura) ocurre dentro de esa transaccion, para que
-   * otro caso de uso pueda encadenar el cambio de estado con sus propias
-   * escrituras y que todas confirmen o fallen juntas.
+   * `cliente` es opcional: sin el se abre una transaccion propia. Cuando se
+   * pasa un cliente transaccional, todo el cambio de estado (lectura del
+   * objetivo, conteo de Admins, escritura y evento de auditoria) ocurre dentro
+   * de esa transaccion, para que otro caso de uso (p. ej. el cese de un
+   * empleado) pueda encadenarlo con sus propias escrituras.
    */
   async ejecutar(
     actor: Actor,
     id: string,
     estado: 'activo' | 'bloqueado',
     cliente?: ClienteUsuarios,
+  ): Promise<UsuarioRespuesta> {
+    if (cliente !== undefined) {
+      return this.enCliente(actor, id, estado, cliente);
+    }
+
+    return this.usersRepository.enTransaccion((tx) =>
+      this.enCliente(actor, id, estado, tx),
+    );
+  }
+
+  private async enCliente(
+    actor: Actor,
+    id: string,
+    estado: 'activo' | 'bloqueado',
+    cliente: ClienteUsuarios,
   ): Promise<UsuarioRespuesta> {
     const alcance = filtroAlcanceListado(actor);
     const objetivo = await this.usersRepository.buscarPorIdEnAlcance(
@@ -67,6 +86,28 @@ export class CambiarEstadoUseCase {
       );
     }
 
-    return this.usersRepository.actualizarEstado(id, estado, cliente);
+    const actualizado = await this.usersRepository.actualizarEstado(
+      id,
+      estado,
+      cliente,
+    );
+
+    await this.auditoria.registrar(
+      {
+        entidad: 'usuario',
+        entidadId: id,
+        accion: estado === 'bloqueado' ? 'usuario_bloqueado' : 'usuario_activado',
+        actorId: actor.id,
+        usuarioAfectadoId: id,
+        sucursalAfectadaId: objetivo.sucursalId,
+        detalle: {
+          antes: { estado: objetivo.estado },
+          despues: { estado },
+        },
+      },
+      cliente,
+    );
+
+    return actualizado;
   }
 }

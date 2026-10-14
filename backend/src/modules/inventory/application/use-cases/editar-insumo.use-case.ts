@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditoriaRepository } from '../../../auditoria/infrastructure/auditoria.repository';
 import { validarNombreInsumo } from '../../domain/rules/nombres';
 import {
   validarPresentacionInsumo,
@@ -22,9 +23,13 @@ import {
  */
 @Injectable()
 export class EditarInsumoUseCase {
-  constructor(private readonly inventoryRepository: InventoryRepository) {}
+  constructor(
+    private readonly inventoryRepository: InventoryRepository,
+    private readonly auditoria: AuditoriaRepository,
+  ) {}
 
   async ejecutar(
+    actorId: string,
     id: string,
     entrada: { nombre?: string; presentacion?: string },
   ): Promise<InsumoFila> {
@@ -60,22 +65,45 @@ export class EditarInsumoUseCase {
       return actual;
     }
 
-    if (candado === undefined) {
-      return this.inventoryRepository.actualizarInsumo(id, cambios);
-    }
-
+    // La edicion y su evento van en la misma transaccion, tambien cuando solo
+    // cambia la presentacion: el evento no puede quedar sin la fila que describe.
     return this.inventoryRepository.enTransaccion(async (cliente) => {
-      // Mismo candado que en el alta: sin el, dos renombrados simultaneos a un
-      // mismo nombre pasarian los dos el `count` y quedaria el duplicado.
-      await this.inventoryRepository.bloquearNombreInsumo(candado, cliente);
+      if (candado !== undefined) {
+        // Mismo candado que en el alta: sin el, dos renombrados simultaneos a un
+        // mismo nombre pasarian los dos el `count` y quedaria el duplicado.
+        await this.inventoryRepository.bloquearNombreInsumo(candado, cliente);
 
-      // El propio insumo no cuenta como duplicado: sin el `NOT`, reenviar el mismo
-      // nombre seria un 409 absurdo.
-      if (await this.inventoryRepository.nombreInsumoEnUso(candado, id, cliente)) {
-        throw new ConflictException('Ya existe un insumo con ese nombre');
+        // El propio insumo no cuenta como duplicado: sin el `NOT`, reenviar el mismo
+        // nombre seria un 409 absurdo.
+        if (await this.inventoryRepository.nombreInsumoEnUso(candado, id, cliente)) {
+          throw new ConflictException('Ya existe un insumo con ese nombre');
+        }
       }
 
-      return this.inventoryRepository.actualizarInsumo(id, cambios, cliente);
+      const actualizado = await this.inventoryRepository.actualizarInsumo(
+        id,
+        cambios,
+        cliente,
+      );
+
+      await this.auditoria.registrar(
+        {
+          entidad: 'insumo',
+          entidadId: actualizado.id,
+          accion: 'insumo_editado',
+          actorId,
+          detalle: {
+            antes: { nombre: actual.nombre, presentacion: actual.presentacion },
+            despues: {
+              nombre: actualizado.nombre,
+              presentacion: actualizado.presentacion,
+            },
+          },
+        },
+        cliente,
+      );
+
+      return actualizado;
     });
   }
 }
