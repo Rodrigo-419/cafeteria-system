@@ -156,6 +156,91 @@ export interface PaginadoAsistenciaApi<T> {
   limit: number
 }
 
+/** Empleado de la pantalla de marcación (`GET /attendance/terminal/employees`). */
+export interface EmpleadoTerminalApi {
+  id: string
+  nombre: string
+}
+
+/** Tipo de marcaje admitido por el backend. */
+export type TipoMarcaje = 'entrada' | 'salida'
+
+/**
+ * Corrección de un registro de asistencia (`correcciones[]` del detalle). Es una
+ * fila inmutable que apunta al registro original; su `motivo` explica el cambio.
+ */
+export interface CorreccionAsistenciaApi {
+  id: string
+  /** "entrada" o "salida". */
+  tipo: string
+  fechaHora: string
+  metodo: string
+  motivo: string | null
+  usuarioCorrectorId: string | null
+  createdAt: string
+}
+
+/**
+ * Registro de asistencia con su historial de correcciones
+ * (`GET /attendance/records/:id`).
+ */
+export interface RegistroAsistenciaDetalleApi extends RegistroAsistenciaApi {
+  correcciones: CorreccionAsistenciaApi[]
+}
+
+/**
+ * Registro devuelto por marcar (`POST /attendance/mark`) y corregir
+ * (`POST /attendance/records/:id/correct`): la fila cruda, sin el sobre de
+ * listado ni la relación del empleado.
+ */
+export interface RegistroMarcajeApi {
+  id: string
+  empleadoId: string
+  sucursalId: string
+  tipo: string
+  fechaHora: string
+  metodo: string
+  esCorreccion: boolean
+  registroOriginalId: string | null
+  motivo: string | null
+  usuarioCorrectorId: string | null
+  createdAt: string
+}
+
+/** Turno asociado a una falta (`turno` del listado de faltas). */
+export interface TurnoDeFaltaApi {
+  tipo: 'fijo' | 'variable'
+  /** Días ISO 1-7 separados por comas ("1,2,3") o `null`. */
+  diasSemana: string | null
+}
+
+/** Una falta calculada (`GET /attendance/absences`). */
+export interface FaltaApi {
+  empleadoId: string
+  empleadoNombre: string
+  sucursalId: string
+  /** Día de negocio en America/Lima ("AAAA-MM-DD"). */
+  fecha: string
+  turno: TurnoDeFaltaApi
+}
+
+/** Respuesta del listado de faltas (`GET /attendance/absences`). */
+export interface ListadoFaltasApi {
+  items: FaltaApi[]
+  total: number
+}
+
+/** Respuesta de justificar una falta (`POST /attendance/absences/justify`). */
+export interface JustificacionFaltaApi {
+  id: string
+  empleadoId: string
+  /** Día justificado (ISO/UTC a medianoche). */
+  fecha: string
+  motivo: string
+  usuarioJustificadorId: string
+  createdAt: string
+}
+
 /** Estados posibles de un equipo (`GET /equipment`). */
 export type EstadoEquipo =
   | 'funcionando'

@@ -76,10 +76,21 @@ export async function peticionApi<T>(
     if (respuesta.status === 401 && auth) {
       alNoAutorizado?.()
     }
-    throw parsearErrorApi(respuesta.status, datos)
+    throw parsearErrorApi(
+      respuesta.status,
+      datos,
+      leerRetryAfter(respuesta.headers.get('Retry-After')),
+    )
   }
 
   return datos as T
+}
+
+/** Lee `Retry-After` como segundos; `undefined` si falta o no es un número. */
+function leerRetryAfter(valor: string | null): number | undefined {
+  if (valor === null) return undefined
+  const segundos = Number(valor)
+  return Number.isFinite(segundos) && segundos >= 0 ? segundos : undefined
 }
 
 function parsearCuerpo(texto: string): unknown {

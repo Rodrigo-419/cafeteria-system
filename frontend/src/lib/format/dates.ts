@@ -74,6 +74,21 @@ export function esFechaLocalValida(valor: string): boolean {
   )
 }
 
+/**
+ * Convierte un instante a un valor para `<input type="datetime-local">`
+ * ("AAAA-MM-DDTHH:mm") en la zona del navegador. Es la operación inversa de
+ * `new Date(valor)` al enviar el formulario.
+ */
+export function aInputDatetimeLocal(iso: string | Date): string {
+  const fecha = aFecha(iso)
+  const dosDigitos = (valor: number) => String(valor).padStart(2, '0')
+  return (
+    `${fecha.getFullYear()}-${dosDigitos(fecha.getMonth() + 1)}-` +
+    `${dosDigitos(fecha.getDate())}T${dosDigitos(fecha.getHours())}:` +
+    `${dosDigitos(fecha.getMinutes())}`
+  )
+}
+
 function aFecha(iso: string | Date): Date {
   return iso instanceof Date ? iso : new Date(iso)
 }

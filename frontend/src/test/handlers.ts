@@ -5,14 +5,17 @@ import type {
   AsignacionApi,
   CartaOferta,
   CategoriaProductoApi,
+  CorreccionAsistenciaApi,
   EmpleadoApi,
   EquipoApi,
   EstadoEquipo,
   EstadoStockInsumo,
   EstadoUsuario,
   EventoAuditoriaApi,
+  FaltaApi,
   HistorialEquipoApi,
   InsumoApi,
+  JustificacionFaltaApi,
   LineaRecuentoApi,
   MovimientoInventarioApi,
   PresentacionInsumo,
@@ -20,6 +23,7 @@ import type {
   ProductoApi,
   RecuentoDetalleApi,
   RegistroAsistenciaApi,
+  RegistroMarcajeApi,
   ReporteComparativoApi,
   RespuestaLogin,
   StockInsumoApi,
@@ -641,6 +645,17 @@ function mensajeCantidadInvalida(
 
 export const REGISTROS_PRUEBA: RegistroAsistenciaApi[] = [
   {
+    id: 'registro-0',
+    empleadoId: 'usuario-2',
+    sucursalId: 'sucursal-1',
+    tipo: 'salida',
+    fechaHora: '2026-10-10T21:00:00.000Z',
+    metodo: 'pin',
+    abierta: false,
+    corregido: false,
+    empleado: { id: 'usuario-2', nombre: 'Beto Turno' },
+  },
+  {
     id: 'registro-1',
     empleadoId: 'usuario-2',
     sucursalId: 'sucursal-1',
@@ -651,7 +666,211 @@ export const REGISTROS_PRUEBA: RegistroAsistenciaApi[] = [
     corregido: false,
     empleado: { id: 'usuario-2', nombre: 'Beto Turno' },
   },
+  {
+    id: 'registro-2',
+    empleadoId: 'usuario-3',
+    sucursalId: 'sucursal-2',
+    tipo: 'entrada',
+    fechaHora: '2026-10-11T13:00:00.000Z',
+    metodo: 'pin',
+    abierta: true,
+    corregido: false,
+    empleado: { id: 'usuario-3', nombre: 'Ciro Ruiz' },
+  },
 ]
+
+// ---------------------------------------------------------------- asistencia
+//
+// Fixtures y estado mutable del módulo de asistencia. El alcance depende del
+// actor, que fija `iniciarSesionDePrueba` (o `establecerActorAsistencia`); el
+// estado se reinicia entre pruebas con `reiniciarAsistenciaPrueba`.
+
+/** PIN de seis dígitos válido para todos los empleados del terminal de prueba. */
+export const PIN_TERMINAL_VALIDO = '123456'
+
+/**
+ * Empleados activos por sucursal que ofrece el terminal. El backend solo
+ * devuelve `{ id, nombre }`; `sucursalId` se usa aquí para acotar el alcance.
+ */
+export const EMPLEADOS_TERMINAL_PRUEBA = [
+  { id: 'usuario-2', nombre: 'Beto Turno', sucursalId: 'sucursal-1' },
+  { id: 'usuario-4', nombre: 'Dora Nueva', sucursalId: 'sucursal-1' },
+  { id: 'usuario-3', nombre: 'Ciro Ruiz', sucursalId: 'sucursal-2' },
+]
+
+/** Faltas calculadas de referencia (`GET /attendance/absences`). */
+export const FALTAS_PRUEBA: FaltaApi[] = [
+  {
+    empleadoId: 'usuario-2',
+    empleadoNombre: 'Beto Turno',
+    sucursalId: 'sucursal-1',
+    fecha: '2026-10-05',
+    turno: { tipo: 'fijo', diasSemana: '1,2,3,4,5' },
+  },
+  {
+    empleadoId: 'usuario-4',
+    empleadoNombre: 'Dora Nueva',
+    sucursalId: 'sucursal-1',
+    fecha: '2026-10-06',
+    turno: { tipo: 'fijo', diasSemana: '1,2,3,4,5' },
+  },
+]
+
+interface IntentosPin {
+  fallos: number
+  inicioVentanaMs: number | null
+}
+
+interface EstadoAsistencia {
+  registros: RegistroAsistenciaApi[]
+  correcciones: Map<string, CorreccionAsistenciaApi[]>
+  justificaciones: JustificacionFaltaApi[]
+  fallosPin: Map<string, IntentosPin>
+  secuencia: number
+}
+
+function clonarRegistroAsistencia(
+  registro: RegistroAsistenciaApi,
+): RegistroAsistenciaApi {
+  return { ...registro, empleado: { ...registro.empleado } }
+}
+
+/** Día de negocio lima ("AAAA-MM-DD") de un instante ISO. */
+function diaLimaDeIso(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
+}
+
+function registroDeHoy(
+  id: string,
+  empleado: { id: string; nombre: string; sucursalId: string },
+  tipo: 'entrada' | 'salida',
+  abierta: boolean,
+): RegistroAsistenciaApi {
+  return {
+    id,
+    empleadoId: empleado.id,
+    sucursalId: empleado.sucursalId,
+    tipo,
+    fechaHora: `${diaNegocioPrueba()}T13:00:00.000Z`,
+    metodo: 'pin',
+    abierta,
+    corregido: false,
+    empleado: { id: empleado.id, nombre: empleado.nombre },
+  }
+}
+
+function crearEstadoAsistencia(): EstadoAsistencia {
+  const dora = EMPLEADOS_TERMINAL_PRUEBA.find(
+    (empleado) => empleado.id === 'usuario-4',
+  )!
+  return {
+    registros: [
+      ...REGISTROS_PRUEBA.map(clonarRegistroAsistencia),
+      // Dora ya marcó entrada hoy y sigue abierta: una entrada nueva da 409.
+      registroDeHoy('registro-dora-hoy', dora, 'entrada', true),
+    ],
+    correcciones: new Map(),
+    justificaciones: [],
+    fallosPin: new Map(),
+    secuencia: 0,
+  }
+}
+
+let asistencia: EstadoAsistencia = crearEstadoAsistencia()
+
+// Actor vigente para el alcance de asistencia. Si es `null` no se aplica
+// alcance (útil para pruebas que no inician sesión); `iniciarSesionDePrueba`
+// lo fija.
+let actorAsistencia: UsuarioApi | null = null
+
+export function establecerActorAsistencia(usuario: UsuarioApi | null): void {
+  actorAsistencia = usuario
+}
+
+/** Restaura el estado de asistencia y limpia el actor de alcance. */
+export function reiniciarAsistenciaPrueba(): void {
+  asistencia = crearEstadoAsistencia()
+  actorAsistencia = null
+}
+
+function asistenciaEsAdmin(): boolean {
+  if (!actorAsistencia) return true
+  return (actorAsistencia.rol ?? '').toLowerCase() === 'admin'
+}
+
+function asistenciaEsEmpleado(): boolean {
+  if (!actorAsistencia) return false
+  return (actorAsistencia.rol ?? '').toLowerCase() === 'empleado'
+}
+
+function sucursalAsistencia(): string | null {
+  return actorAsistencia?.sucursalId ?? null
+}
+
+/** true si hay un actor sin sucursal (Admin), que no puede marcar. */
+function sinSucursalParaMarcar(): boolean {
+  return actorAsistencia !== null && sucursalAsistencia() === null
+}
+
+/**
+ * Alcance de lectura (mismo criterio que `alcance.ts` del backend): el Admin ve
+ * todo, el Gerente su sucursal y el Empleado solo lo suyo. En las fixtures el
+ * `empleadoId` coincide con el id del usuario, así que un Empleado solo ve los
+ * registros de su propio id.
+ */
+function registroVisible(registro: RegistroAsistenciaApi): boolean {
+  if (asistenciaEsAdmin()) return true
+  if (asistenciaEsEmpleado()) return registro.empleadoId === actorAsistencia?.id
+  return registro.sucursalId === sucursalAsistencia()
+}
+
+/** Alcance de lectura de faltas, con el mismo criterio que los registros. */
+function faltaVisible(falta: FaltaApi): boolean {
+  if (asistenciaEsAdmin()) return true
+  if (asistenciaEsEmpleado()) return falta.empleadoId === actorAsistencia?.id
+  return falta.sucursalId === sucursalAsistencia()
+}
+
+const VENTANA_FALLOS_PIN_MS = 60_000
+const MAXIMO_FALLOS_PIN = 5
+
+function pinBloqueado(empleadoId: string, ahoraMs: number): boolean {
+  const estado = asistencia.fallosPin.get(empleadoId)
+  if (!estado || estado.inicioVentanaMs === null) return false
+  return (
+    estado.fallos >= MAXIMO_FALLOS_PIN &&
+    ahoraMs - estado.inicioVentanaMs < VENTANA_FALLOS_PIN_MS
+  )
+}
+
+function registrarFalloPin(empleadoId: string, ahoraMs: number): void {
+  const estado = asistencia.fallosPin.get(empleadoId)
+  const vigente =
+    estado !== null &&
+    estado !== undefined &&
+    estado.inicioVentanaMs !== null &&
+    ahoraMs - estado.inicioVentanaMs < VENTANA_FALLOS_PIN_MS
+  if (!vigente) {
+    asistencia.fallosPin.set(empleadoId, {
+      fallos: 1,
+      inicioVentanaMs: ahoraMs,
+    })
+    return
+  }
+  asistencia.fallosPin.set(empleadoId, {
+    fallos: estado.fallos + 1,
+    inicioVentanaMs: estado.inicioVentanaMs,
+  })
+}
+
+/** true si la falta (empleado + día) ya fue justificada. */
+function faltaJustificada(empleadoId: string, fecha: string): boolean {
+  return asistencia.justificaciones.some(
+    (justificacion) =>
+      justificacion.empleadoId === empleadoId &&
+      justificacion.fecha.slice(0, 10) === fecha,
+  )
+}
 
 export const ESTADOS_EQUIPO_PRUEBA: EstadoEquipo[] = [
   'funcionando',
@@ -2433,9 +2652,21 @@ export const handlers = [
   http.get(`${BASE_API}/attendance/records`, ({ request }) => {
     const url = new URL(request.url)
     const abierta = url.searchParams.get('abierta')
-    let registros = REGISTROS_PRUEBA
+    const empleadoId = url.searchParams.get('empleadoId')
+    const desde = url.searchParams.get('desde')
+    const hasta = url.searchParams.get('hasta')
+    let registros = asistencia.registros.filter(registroVisible)
     if (abierta !== null) {
       registros = registros.filter((r) => String(r.abierta) === abierta)
+    }
+    if (empleadoId) {
+      registros = registros.filter((r) => r.empleadoId === empleadoId)
+    }
+    if (desde) {
+      registros = registros.filter((r) => diaLimaDeIso(r.fechaHora) >= desde)
+    }
+    if (hasta) {
+      registros = registros.filter((r) => diaLimaDeIso(r.fechaHora) <= hasta)
     }
     return HttpResponse.json({
       items: registros,
@@ -2443,6 +2674,275 @@ export const handlers = [
       page: 1,
       limit: 20,
     })
+  }),
+
+  http.get(`${BASE_API}/attendance/records/:id`, ({ params }) => {
+    const registro = asistencia.registros.find((r) => r.id === params.id)
+    if (!registro || !registroVisible(registro)) {
+      return errorApi(
+        404,
+        'El registro no existe o esta fuera de tu alcance',
+        'Not Found',
+      )
+    }
+    return HttpResponse.json({
+      ...registro,
+      correcciones: asistencia.correcciones.get(registro.id) ?? [],
+    })
+  }),
+
+  http.get(`${BASE_API}/attendance/terminal/employees`, () => {
+    if (sinSucursalParaMarcar()) {
+      return errorApi(
+        403,
+        'Tu cuenta no tiene una sucursal asignada para marcar asistencia',
+        'Forbidden',
+      )
+    }
+    const sucursalId = sucursalAsistencia()
+    const empleados = sucursalId
+      ? EMPLEADOS_TERMINAL_PRUEBA.filter(
+          (empleado) => empleado.sucursalId === sucursalId,
+        )
+      : EMPLEADOS_TERMINAL_PRUEBA
+    return HttpResponse.json(
+      empleados.map(({ id, nombre }) => ({ id, nombre })),
+    )
+  }),
+
+  http.post(`${BASE_API}/attendance/mark`, async ({ request }) => {
+    if (sinSucursalParaMarcar()) {
+      return errorApi(
+        403,
+        'Tu cuenta no tiene una sucursal asignada para marcar asistencia',
+        'Forbidden',
+      )
+    }
+    const cuerpo = (await request.json()) as {
+      empleadoId?: string
+      tipo?: string
+      pin?: string
+    }
+    if (cuerpo.tipo !== 'entrada' && cuerpo.tipo !== 'salida') {
+      return errorApi(
+        400,
+        'El tipo debe ser uno de: entrada, salida',
+        'Bad Request',
+      )
+    }
+    const empleado = EMPLEADOS_TERMINAL_PRUEBA.find(
+      (candidato) =>
+        candidato.id === cuerpo.empleadoId &&
+        (asistenciaEsAdmin() ||
+          candidato.sucursalId === sucursalAsistencia()),
+    )
+    if (!empleado) {
+      return errorApi(404, 'Empleado no encontrado', 'Not Found')
+    }
+    const ahoraMs = Date.now()
+    if (pinBloqueado(empleado.id, ahoraMs)) {
+      return errorApi(
+        429,
+        'Demasiados intentos de PIN. Espera un minuto e intentalo de nuevo',
+        'Too Many Requests',
+      )
+    }
+    if (cuerpo.pin !== PIN_TERMINAL_VALIDO) {
+      registrarFalloPin(empleado.id, ahoraMs)
+      return errorApi(403, 'PIN incorrecto', 'Forbidden')
+    }
+    asistencia.fallosPin.delete(empleado.id)
+
+    const diaHoy = diaNegocioPrueba()
+    const entradaAbiertaHoy = asistencia.registros.find(
+      (r) =>
+        r.empleadoId === empleado.id &&
+        r.tipo === 'entrada' &&
+        r.abierta &&
+        diaLimaDeIso(r.fechaHora) === diaHoy,
+    )
+    if (cuerpo.tipo === 'entrada' && entradaAbiertaHoy) {
+      return errorApi(409, 'Ya hay una entrada abierta de hoy', 'Conflict')
+    }
+    if (cuerpo.tipo === 'salida' && !entradaAbiertaHoy) {
+      return errorApi(
+        409,
+        'No hay una entrada abierta de hoy para cerrar',
+        'Conflict',
+      )
+    }
+    if (cuerpo.tipo === 'salida' && entradaAbiertaHoy) {
+      entradaAbiertaHoy.abierta = false
+    }
+
+    asistencia.secuencia += 1
+    const fechaHora = new Date().toISOString()
+    const nuevo: RegistroAsistenciaApi = {
+      id: `registro-mark-${asistencia.secuencia}`,
+      empleadoId: empleado.id,
+      sucursalId: empleado.sucursalId,
+      tipo: cuerpo.tipo,
+      fechaHora,
+      metodo: 'pin',
+      abierta: cuerpo.tipo === 'entrada',
+      corregido: false,
+      empleado: { id: empleado.id, nombre: empleado.nombre },
+    }
+    asistencia.registros.push(nuevo)
+    return HttpResponse.json(
+      {
+        id: nuevo.id,
+        empleadoId: nuevo.empleadoId,
+        sucursalId: nuevo.sucursalId,
+        tipo: nuevo.tipo,
+        fechaHora: nuevo.fechaHora,
+        metodo: nuevo.metodo,
+        esCorreccion: false,
+        registroOriginalId: null,
+        motivo: null,
+        usuarioCorrectorId: null,
+        createdAt: nuevo.fechaHora,
+      } satisfies RegistroMarcajeApi,
+      { status: 201 },
+    )
+  }),
+
+  http.post(
+    `${BASE_API}/attendance/records/:id/correct`,
+    async ({ request, params }) => {
+      const original = asistencia.registros.find((r) => r.id === params.id)
+      if (!original || !registroVisible(original)) {
+        return errorApi(
+          404,
+          'El registro no existe o esta fuera de tu alcance',
+          'Not Found',
+        )
+      }
+      const cuerpo = (await request.json()) as {
+        motivo?: unknown
+        fechaHora?: unknown
+        tipo?: unknown
+      }
+      const motivo = typeof cuerpo.motivo === 'string' ? cuerpo.motivo.trim() : ''
+      if (motivo === '' || motivo.length > 200) {
+        return errorApi(
+          400,
+          'El motivo es obligatorio y no puede superar 200 caracteres',
+          'Bad Request',
+        )
+      }
+      const tipo = cuerpo.tipo ?? original.tipo
+      if (tipo !== 'entrada' && tipo !== 'salida') {
+        return errorApi(
+          400,
+          'El tipo debe ser uno de: entrada, salida',
+          'Bad Request',
+        )
+      }
+      if (
+        typeof cuerpo.fechaHora !== 'string' ||
+        Number.isNaN(new Date(cuerpo.fechaHora).getTime())
+      ) {
+        return errorApi(
+          400,
+          'La fecha y hora debe tener formato ISO 8601',
+          'Bad Request',
+        )
+      }
+      const fechaHora = new Date(cuerpo.fechaHora).toISOString()
+      // Igual que el backend: nadie corrige sus propios registros. El cliente no
+      // puede saberlo de antemano (el registro no expone el usuario dueño), así
+      // que la interfaz siempre ofrece la acción y muestra este 403 con su texto.
+      if (actorAsistencia && original.empleadoId === actorAsistencia.id) {
+        return errorApi(
+          403,
+          'No puedes corregir tus propios registros',
+          'Forbidden',
+        )
+      }
+      asistencia.secuencia += 1
+      const correccion: CorreccionAsistenciaApi = {
+        id: `correccion-${asistencia.secuencia}`,
+        tipo,
+        fechaHora,
+        metodo: 'manual',
+        motivo,
+        usuarioCorrectorId: actorAsistencia?.id ?? 'usuario-1',
+        createdAt: new Date().toISOString(),
+      }
+      const historial = asistencia.correcciones.get(original.id) ?? []
+      historial.push(correccion)
+      asistencia.correcciones.set(original.id, historial)
+      original.corregido = true
+      return HttpResponse.json(
+        {
+          id: `registro-correccion-${asistencia.secuencia}`,
+          empleadoId: original.empleadoId,
+          sucursalId: original.sucursalId,
+          tipo,
+          fechaHora,
+          metodo: 'manual',
+          esCorreccion: true,
+          registroOriginalId: original.id,
+          motivo,
+          usuarioCorrectorId: correccion.usuarioCorrectorId,
+          createdAt: correccion.createdAt,
+        } satisfies RegistroMarcajeApi,
+        { status: 201 },
+      )
+    },
+  ),
+
+  http.get(`${BASE_API}/attendance/absences`, ({ request }) => {
+    const url = new URL(request.url)
+    const desde = url.searchParams.get('desde')
+    const hasta = url.searchParams.get('hasta')
+    if (!desde || !hasta) {
+      return errorApi(400, 'Debes indicar el rango de fechas', 'Bad Request')
+    }
+    if (desde > hasta) {
+      return errorApi(400, 'El rango de fechas es invalido', 'Bad Request')
+    }
+    const items = FALTAS_PRUEBA.filter((falta) => {
+      if (!faltaVisible(falta)) return false
+      if (falta.fecha < desde || falta.fecha > hasta) return false
+      return !faltaJustificada(falta.empleadoId, falta.fecha)
+    })
+    return HttpResponse.json({ items, total: items.length })
+  }),
+
+  http.post(`${BASE_API}/attendance/absences/justify`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      empleadoId?: unknown
+      fecha?: unknown
+      motivo?: unknown
+    }
+    if (typeof cuerpo.empleadoId !== 'string' || typeof cuerpo.fecha !== 'string') {
+      return errorApi(
+        400,
+        'El empleado y la fecha son obligatorios',
+        'Bad Request',
+      )
+    }
+    const motivo = typeof cuerpo.motivo === 'string' ? cuerpo.motivo.trim() : ''
+    if (motivo === '' || motivo.length > 200) {
+      return errorApi(
+        400,
+        'El motivo es obligatorio y no puede superar 200 caracteres',
+        'Bad Request',
+      )
+    }
+    asistencia.secuencia += 1
+    const justificacion: JustificacionFaltaApi = {
+      id: `justificacion-${asistencia.secuencia}`,
+      empleadoId: cuerpo.empleadoId,
+      fecha: new Date(`${cuerpo.fecha}T00:00:00.000Z`).toISOString(),
+      motivo,
+      usuarioJustificadorId: actorAsistencia?.id ?? 'usuario-1',
+      createdAt: new Date().toISOString(),
+    }
+    asistencia.justificaciones.push(justificacion)
+    return HttpResponse.json(justificacion, { status: 201 })
   }),
 
   http.get(`${BASE_API}/equipment`, ({ request }) => {

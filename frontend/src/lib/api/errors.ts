@@ -8,28 +8,43 @@ export class ApiError extends Error {
   readonly status: number
   readonly mensajes: string[]
   readonly cuerpo?: unknown
+  /**
+   * Segundos sugeridos de espera (`Retry-After`), cuando el servidor los envía
+   * (p. ej. el 429 de marcación). `undefined` si no vienen o no son un número.
+   */
+  readonly retryAfter?: number
 
-  constructor(status: number, mensajes: string[], cuerpo?: unknown) {
+  constructor(
+    status: number,
+    mensajes: string[],
+    cuerpo?: unknown,
+    retryAfter?: number,
+  ) {
     super(mensajes[0] ?? `Error ${status}`)
     this.name = 'ApiError'
     this.status = status
     this.mensajes = mensajes
     this.cuerpo = cuerpo
+    this.retryAfter = retryAfter
   }
 }
 
 /** Traduce el cuerpo de error de Nest a un `ApiError`. */
-export function parsearErrorApi(status: number, cuerpo: unknown): ApiError {
+export function parsearErrorApi(
+  status: number,
+  cuerpo: unknown,
+  retryAfter?: number,
+): ApiError {
   if (cuerpo && typeof cuerpo === 'object') {
     const mensaje = (cuerpo as { message?: unknown }).message
     if (Array.isArray(mensaje)) {
-      return new ApiError(status, mensaje.map(String), cuerpo)
+      return new ApiError(status, mensaje.map(String), cuerpo, retryAfter)
     }
     if (typeof mensaje === 'string' && mensaje.length > 0) {
-      return new ApiError(status, [mensaje], cuerpo)
+      return new ApiError(status, [mensaje], cuerpo, retryAfter)
     }
   }
-  return new ApiError(status, [`Error ${status}`], cuerpo)
+  return new ApiError(status, [`Error ${status}`], cuerpo, retryAfter)
 }
 
 /** `true` si el error es un 401 (sesion invalida o expirada). */

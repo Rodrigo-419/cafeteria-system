@@ -32,6 +32,8 @@ import { AsignacionesPage } from '@/features/shifts/AsignacionesPage'
 import { CalendarioTurnosPage } from '@/features/shifts/CalendarioTurnosPage'
 import { UsuariosPage } from '@/features/users/UsuariosPage'
 import { AuditoriaPage } from '@/features/audit/AuditoriaPage'
+import { MarcacionPage } from '@/features/attendance/MarcacionPage'
+import { AsistenciaPage } from '@/features/attendance/AsistenciaPage'
 
 function crearQueryClient() {
   return new QueryClient({
@@ -68,7 +70,8 @@ export function App({
       item.to !== '/shifts/asignaciones' &&
       item.to !== '/shifts/calendario' &&
       item.to !== '/users' &&
-      item.to !== '/auditoria',
+      item.to !== '/auditoria' &&
+      item.to !== '/attendance',
   )
 
   return (
@@ -77,6 +80,17 @@ export function App({
         <ProveedorAutenticacion>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            {/* Terminal de marcación: pantalla completa, fuera del layout. */}
+            <Route
+              path="/attendance/terminal"
+              element={
+                <ProtectedRoute>
+                  <RequirePermission permiso="asistencia.marcar">
+                    <MarcacionPage />
+                  </RequirePermission>
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/"
               element={
@@ -275,14 +289,28 @@ export function App({
                 }
               />
               <Route
+                path="attendance"
+                element={
+                  <RequirePermission
+                    permiso={[
+                      'asistencia.ver',
+                      'asistencia.marcar',
+                      'asistencia.corregir',
+                    ]}
+                    modo="any"
+                  >
+                    <AsistenciaPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
                 path="auditoria"
                 element={
                   <RequirePermission permiso="usuarios.crear_editar">
                     <AuditoriaPage />
                   </RequirePermission>
                 }
-              />
-              {import.meta.env.DEV && (
+              />              {import.meta.env.DEV && (
                 <Route path="design-system" element={<DesignSystemPage />} />
               )}
               <Route path="403" element={<Forbidden />} />

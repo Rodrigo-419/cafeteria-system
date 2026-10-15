@@ -9,6 +9,7 @@ import {
   ArrowRightIcon,
   BanIcon,
   BanknoteIcon,
+  KeyRoundIcon,
   PlusIcon,
   ReceiptIcon,
 } from 'lucide-react'
@@ -448,13 +449,19 @@ export function ReporteComparativoSucursales() {
   )
 }
 
-/** Accesos directos a las acciones de ventas permitidas. */
+/**
+ * Accesos directos del panel: acciones de ventas permitidas y, si además hay
+ * permiso de marcación y sesión con sucursal, el atajo al terminal de
+ * asistencia (misma condición que la ruta, sin duplicar reglas por rol).
+ */
 export function AccesosRapidos() {
-  const { permisos } = useAuth()
+  const { permisos, usuario } = useAuth()
   const puedeRegistrar = tienePermiso(permisos, 'ventas.registrar')
   const puedeVer = tienePermiso(permisos, 'ventas.ver')
+  const puedeMarcar =
+    tienePermiso(permisos, 'asistencia.marcar') && usuario?.sucursalId != null
 
-  if (!puedeRegistrar && !puedeVer) {
+  if (!puedeRegistrar && !puedeVer && !puedeMarcar) {
     return null
   }
 
@@ -471,6 +478,14 @@ export function AccesosRapidos() {
       {puedeVer && (
         <Button asChild variant="outline">
           <Link to="/sales">Ver ventas</Link>
+        </Button>
+      )}
+      {puedeMarcar && (
+        <Button asChild variant="outline">
+          <Link to="/attendance/terminal">
+            <KeyRoundIcon />
+            Marcar asistencia
+          </Link>
         </Button>
       )}
     </div>

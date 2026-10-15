@@ -8,6 +8,7 @@ import { crearSesion, guardarSesion } from '@/lib/auth/session'
 import type { UsuarioApi } from '@/types/api'
 import {
   BASE_API,
+  establecerActorAsistencia,
   establecerActorEmpleados,
   establecerActorEquipos,
   establecerActorTurnos,
@@ -52,6 +53,7 @@ export function iniciarSesionDePrueba(
   guardarSesion(crearSesion(token, usuario, 3600))
   server.use(http.get(`${BASE_API}/auth/me`, () => HttpResponse.json(usuario)))
   // Los alcances de los mocks dependen del actor con sesión.
+  establecerActorAsistencia(usuario)
   establecerActorEquipos(usuario)
   establecerActorEmpleados(usuario)
   establecerActorTurnos(usuario)

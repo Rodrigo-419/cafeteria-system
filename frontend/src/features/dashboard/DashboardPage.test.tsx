@@ -109,6 +109,10 @@ describe('DashboardPage', () => {
     expect(
       screen.queryByRole('link', { name: /nueva venta/i }),
     ).not.toBeInTheDocument()
+    // El Admin no tiene sucursal: no ve el atajo al terminal de asistencia.
+    expect(
+      screen.queryByRole('link', { name: /marcar asistencia/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('oculta el reporte comparativo al Gerente y no llama a su ruta', async () => {
@@ -122,6 +126,11 @@ describe('DashboardPage', () => {
       screen.queryByText('Comparativo entre sucursales'),
     ).not.toBeInTheDocument()
     expect(llamadas.reporte).toBe(0)
+
+    // Con permiso de marcación y sucursal ve el atajo al terminal.
+    expect(
+      screen.getByRole('link', { name: /marcar asistencia/i }),
+    ).toHaveAttribute('href', '/attendance/terminal')
   })
 
   it('para un Empleado con permisos mínimos muestra solo su bloque', async () => {
@@ -143,6 +152,11 @@ describe('DashboardPage', () => {
     expect(llamadas.alertas).toBe(0)
     expect(llamadas.equipos).toBe(0)
     expect(llamadas.reporte).toBe(0)
+
+    // Con permiso de marcación y sucursal ve el atajo al terminal.
+    expect(
+      screen.getByRole('link', { name: /marcar asistencia/i }),
+    ).toHaveAttribute('href', '/attendance/terminal')
   })
 
   it('aísla el error de un bloque sin romper los demás', async () => {

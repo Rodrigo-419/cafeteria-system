@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { App } from '@/App'
-import { puedeAccederRuta, rutaInicio } from '@/lib/navigation/menu'
+import { filtrarMenu, puedeAccederRuta, rutaInicio } from '@/lib/navigation/menu'
 import {
   BASE_API,
   CREDENCIALES_VALIDAS,
@@ -64,6 +64,19 @@ describe('ruta de inicio por permisos efectivos', () => {
   it('trata el panel y una ruta desconocida según corresponda', () => {
     expect(puedeAccederRuta(PERMISOS_EMPLEADO, '/')).toBe(true)
     expect(puedeAccederRuta(PERMISOS_EMPLEADO, '/ruta-inexistente')).toBe(false)
+  })
+
+  it('reconoce el terminal de marcación como ruta de la sección de asistencia', () => {
+    // Se resuelve con la misma entrada del menú (`/attendance`), sin duplicar
+    // reglas; quien no tiene ningún permiso de asistencia no puede acceder.
+    expect(puedeAccederRuta(PERMISOS_EMPLEADO, '/attendance/terminal')).toBe(true)
+    expect(rutaInicio(PERMISOS_EMPLEADO, '/attendance/terminal')).toBe(
+      '/attendance/terminal',
+    )
+    expect(puedeAccederRuta(['productos.ver'], '/attendance/terminal')).toBe(false)
+    expect(
+      filtrarMenu(['asistencia.marcar']).some((item) => item.to === '/attendance'),
+    ).toBe(true)
   })
 })
 
