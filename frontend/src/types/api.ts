@@ -399,3 +399,113 @@ export interface PermisoEfectivoApi {
   /** `false` solo cuando el permiso está revocado individualmente. */
   efectivo: boolean
 }
+
+// ------------------------------------------------------------- auditoría
+
+/**
+ * Entidad auditada (`auditoria_entidad`). El backend la envía como texto, por
+ * lo que se declara como unión cerrada para tipar los filtros pero con acceso
+ * por índice en los mapas de etiquetas.
+ */
+export type EntidadAuditoria =
+  | 'usuario'
+  | 'empleado'
+  | 'sucursal'
+  | 'categoria'
+  | 'variante'
+  | 'producto'
+  | 'oferta'
+  | 'insumo'
+  | 'insumo_sucursal'
+  | 'turno'
+  | 'asignacion'
+  | 'equipo'
+
+/**
+ * Acción auditada (`auditoria_accion`, 44 valores). Igual que con las
+ * entidades: unión cerrada para los filtros, acceso libre en los mapas.
+ */
+export type AccionAuditoria =
+  | 'usuario_creado'
+  | 'usuario_editado'
+  | 'usuario_rol_cambiado'
+  | 'usuario_sucursal_cambiada'
+  | 'usuario_bloqueado'
+  | 'usuario_activado'
+  | 'usuario_password_restablecida'
+  | 'usuario_password_cambiada'
+  | 'permiso_concedido'
+  | 'permiso_revocado'
+  | 'permiso_restablecido'
+  | 'empleado_creado'
+  | 'empleado_editado'
+  | 'empleado_cesado'
+  | 'empleado_pin_regenerado'
+  | 'sucursal_creada'
+  | 'sucursal_editada'
+  | 'categoria_creada'
+  | 'categoria_editada'
+  | 'categoria_eliminada'
+  | 'variante_creada'
+  | 'variante_editada'
+  | 'variante_eliminada'
+  | 'producto_creado'
+  | 'producto_editado'
+  | 'producto_eliminado'
+  | 'oferta_creada'
+  | 'oferta_precio_fijado'
+  | 'oferta_activada'
+  | 'oferta_desactivada'
+  | 'insumo_creado'
+  | 'insumo_editado'
+  | 'insumo_eliminado'
+  | 'insumo_sucursal_creado'
+  | 'insumo_sucursal_stock_minimo_cambiado'
+  | 'insumo_sucursal_activado'
+  | 'insumo_sucursal_descontinuado'
+  | 'turno_creado'
+  | 'turno_editado'
+  | 'asignacion_creada'
+  | 'asignacion_retirada'
+  | 'equipo_creado'
+  | 'equipo_editado'
+  | 'equipo_estado_cambiado'
+
+/**
+ * Detalle semántico de un evento. El backend lo sanitiza antes de persistirlo
+ * (nunca incluye contraseñas ni PIN) y lo envía como `{ antes?, despues? }`
+ * con un par clave/valor por campo cambiado.
+ */
+export interface DetalleAuditoriaApi {
+  antes?: Record<string, unknown> | null
+  despues?: Record<string, unknown> | null
+}
+
+/** Un evento del log de auditoría (`GET /api/auditoria`). */
+export interface EventoAuditoriaApi {
+  id: string
+  entidad: EntidadAuditoria
+  entidadId: string
+  accion: AccionAuditoria
+  /** Quién ejecutó la acción. */
+  actor: { id: string; nombre: string; nombreUsuario: string }
+  /** Usuario afectado por la acción, si la acción es sobre un usuario. */
+  usuarioAfectadoId: string | null
+  /** Sucursal del usuario afectado, si el backend la resuelve. */
+  sucursalAfectadaId: string | null
+  detalle: DetalleAuditoriaApi | null
+  /** Instante ISO en que ocurrió la acción. */
+  fecha: string
+}
+
+/**
+ * Sobre de paginado propio de auditoría (`eventos` en vez de `data`, y sin
+ * `totalPaginas`). El backend lo calcula en el servidor; el frontend lo deriva
+ * de `total`/`limit` cuando necesita el número de páginas.
+ */
+export interface PaginaAuditoriaApi<T> {
+  eventos: T[]
+  total: number
+  page: number
+  limit: number
+}

@@ -32,6 +32,7 @@ import {
   ETIQUETA_ORIGEN_PERMISO,
   areaDePermiso,
 } from '@/lib/permissions/etiquetas'
+import { HistorialUsuario } from '@/features/audit/HistorialUsuario'
 import { mensajeDeError } from './mensajes'
 import { PERMISOS_CONCEDIBLES_A_EMPLEADO } from './presentacion'
 import {
@@ -55,6 +56,9 @@ export function PermisosUsuarioDialog({
   const asignar = useAsignarPermisoUsuario()
   const eliminar = useEliminarPermisoUsuario()
   const esPropia = actor?.id === usuario.id
+
+  const puedeVerHistorial =
+    actor != null && tienePermiso(actor.permisos, 'usuarios.crear_editar')
 
   const [error, setError] = useState<string | null>(null)
   const [cambiando, setCambiando] = useState<string | null>(null)
@@ -293,6 +297,15 @@ export function PermisosUsuarioDialog({
               <AlertTitle>No se pudo aplicar el cambio</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
+          )}
+
+          {puedeVerHistorial && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                Historial
+              </h3>
+              <HistorialUsuario usuarioId={usuario.id} />
+            </div>
           )}
         </div>
 

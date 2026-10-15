@@ -26,6 +26,7 @@ import { MovimientosPage } from '@/features/inventory/MovimientosPage'
 import { EquiposPage } from '@/features/equipment/EquiposPage'
 import { EquipoDetallePage } from '@/features/equipment/EquipoDetallePage'
 import { UsuariosPage } from '@/features/users/UsuariosPage'
+import { AuditoriaPage } from '@/features/audit/AuditoriaPage'
 
 function crearQueryClient() {
   return new QueryClient({
@@ -57,7 +58,8 @@ export function App({
       item.to !== '/inventory/movimientos' &&
       item.to !== '/alerts' &&
       item.to !== '/equipment' &&
-      item.to !== '/users',
+      item.to !== '/users' &&
+      item.to !== '/auditoria',
   )
 
   return (
@@ -220,6 +222,14 @@ export function App({
                     modo="any"
                   >
                     <UsuariosPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="auditoria"
+                element={
+                  <RequirePermission permiso="usuarios.crear_editar">
+                    <AuditoriaPage />
                   </RequirePermission>
                 }
               />

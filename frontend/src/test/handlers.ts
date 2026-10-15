@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import type {
+  AccionAuditoria,
   AlertaStockApi,
   CartaOferta,
   CategoriaProductoApi,
@@ -7,6 +8,7 @@ import type {
   EstadoEquipo,
   EstadoStockInsumo,
   EstadoUsuario,
+  EventoAuditoriaApi,
   HistorialEquipoApi,
   InsumoApi,
   LineaRecuentoApi,
@@ -962,6 +964,136 @@ export const REPORTE_COMPARATIVO_PRUEBA: ReporteComparativoApi = {
       estadoActual: { insumosConAlertaAbierta: 1, entradasAbiertas: 1 },
     },
   ],
+}
+
+// Auditoría: log de eventos de solo lectura.
+//
+// Fixtures estáticas que cubren los casos que la interfaz debe resolver:
+// cambios de rol/estado, un precio (dinero), un detalle vacío, una acción
+// desconocida y un valor anidado (que nunca debe mostrarse como JSON crudo).
+// El estado es mutable y se reinicia entre pruebas con `reiniciarAuditoriaPrueba`.
+const ACTOR_ADMIN_AUDITORIA = {
+  id: 'admin-1',
+  nombre: 'Administrador',
+  nombreUsuario: 'admin',
+}
+
+export const EVENTOS_AUDITORIA_PRUEBA: EventoAuditoriaApi[] = [
+  {
+    id: 'ev-rol',
+    entidad: 'usuario',
+    entidadId: 'usuario-2',
+    accion: 'usuario_rol_cambiado',
+    actor: { ...ACTOR_ADMIN_AUDITORIA },
+    usuarioAfectadoId: 'usuario-2',
+    sucursalAfectadaId: 'sucursal-1',
+    detalle: { antes: { rol: 'Empleado' }, despues: { rol: 'Gerente' } },
+    fecha: '2026-10-12T15:00:00.000Z',
+  },
+  {
+    id: 'ev-estado',
+    entidad: 'usuario',
+    entidadId: 'usuario-3',
+    accion: 'usuario_bloqueado',
+    actor: { ...ACTOR_ADMIN_AUDITORIA },
+    usuarioAfectadoId: 'usuario-3',
+    sucursalAfectadaId: 'sucursal-2',
+    detalle: { antes: { estado: 'activo' }, despues: { estado: 'bloqueado' } },
+    fecha: '2026-10-12T14:00:00.000Z',
+  },
+  {
+    id: 'ev-precio',
+    entidad: 'oferta',
+    entidadId: 'pv-cafe-mediano',
+    accion: 'oferta_precio_fijado',
+    actor: { ...ACTOR_ADMIN_AUDITORIA },
+    usuarioAfectadoId: null,
+    sucursalAfectadaId: 'sucursal-1',
+    detalle: { antes: { precio: '10.00' }, despues: { precio: '12.50' } },
+    fecha: '2026-10-12T13:00:00.000Z',
+  },
+  {
+    id: 'ev-password',
+    entidad: 'usuario',
+    entidadId: 'usuario-2',
+    accion: 'usuario_password_restablecida',
+    actor: { ...ACTOR_ADMIN_AUDITORIA },
+    usuarioAfectadoId: 'usuario-2',
+    sucursalAfectadaId: 'sucursal-1',
+    detalle: {},
+    fecha: '2026-10-12T12:00:00.000Z',
+  },
+  {
+    id: 'ev-desconocida',
+    entidad: 'usuario',
+    entidadId: 'usuario-2',
+    accion: 'accion_futura' as AccionAuditoria,
+    actor: { ...ACTOR_ADMIN_AUDITORIA },
+    usuarioAfectadoId: 'usuario-2',
+    sucursalAfectadaId: 'sucursal-2',
+    detalle: {
+      antes: { nombre: 'Beto Turno' },
+      despues: {
+        nombre: 'Beto T.',
+        detalleInterno: { secreto: 'no-debe-mostrarse' },
+      },
+    },
+    fecha: '2026-10-12T11:00:00.000Z',
+  },
+  {
+    id: 'ev-producto',
+    entidad: 'producto',
+    entidadId: 'p-1',
+    accion: 'producto_creado',
+    actor: { ...ACTOR_ADMIN_AUDITORIA },
+    usuarioAfectadoId: null,
+    sucursalAfectadaId: null,
+    detalle: {
+      despues: { nombre: 'Latte', categoriaId: 'c-1', descripcion: null },
+    },
+    fecha: '2026-10-11T10:00:00.000Z',
+  },
+]
+
+let auditoria: EventoAuditoriaApi[] = EVENTOS_AUDITORIA_PRUEBA.map(clonarEvento)
+
+function clonarEvento(evento: EventoAuditoriaApi): EventoAuditoriaApi {
+  return {
+    ...evento,
+    actor: { ...evento.actor },
+    detalle: evento.detalle
+      ? {
+          antes: evento.detalle.antes ? { ...evento.detalle.antes } : undefined,
+          despues: evento.detalle.despues
+            ? { ...evento.detalle.despues }
+            : undefined,
+        }
+      : null,
+  }
+}
+
+/** Restaura el log de auditoría mockeado a su estado inicial. */
+export function reiniciarAuditoriaPrueba(): void {
+  auditoria = EVENTOS_AUDITORIA_PRUEBA.map(clonarEvento)
+}
+
+function paginarAuditoria(items: EventoAuditoriaApi[], page: number, limit: number) {
+  const total = items.length
+  const inicio = (page - 1) * limit
+  return {
+    eventos: items.slice(inicio, inicio + limit),
+    total,
+    page,
+    limit,
+  }
+}
+
+function diasEntreFechas(desde: string, hasta: string): number {
+  const [ay, am, ad] = desde.split('-').map(Number)
+  const [by, bm, bd] = hasta.split('-').map(Number)
+  const inicio = Date.UTC(ay!, am! - 1, ad!)
+  const fin = Date.UTC(by!, bm! - 1, bd!)
+  return (fin - inicio) / (24 * 60 * 60 * 1000)
 }
 
 export const handlers = [
@@ -2357,5 +2489,87 @@ export const handlers = [
     }
     usuarios.individuales.delete(clave)
     return new HttpResponse(null, { status: 204 })
+  }),
+
+  // ------------------------------------------------------------ auditoría
+
+  http.get(`${BASE_API}/auditoria/usuarios/:usuarioId`, ({ request, params }) => {
+    const usuarioId = String(params.usuarioId)
+    const usuario = usuarios.usuarios.find((item) => item.id === usuarioId)
+    if (!usuario || !usuarioVisible(usuario)) {
+      return errorApi(
+        404,
+        'El usuario no existe o esta fuera de tu alcance',
+        'Not Found',
+      )
+    }
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '10')
+    const items = auditoria
+      .filter(
+        (evento) =>
+          evento.usuarioAfectadoId === usuarioId ||
+          evento.actor.id === usuarioId,
+      )
+      .sort((a, b) => b.fecha.localeCompare(a.fecha))
+    return HttpResponse.json(paginarAuditoria(items, page, limit))
+  }),
+
+  http.get(`${BASE_API}/auditoria`, ({ request }) => {
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+    if (limit > 100) {
+      return errorApi(400, 'El limite no puede superar 100', 'Bad Request')
+    }
+
+    const desde = url.searchParams.get('desde') ?? undefined
+    const hasta = url.searchParams.get('hasta') ?? undefined
+    const formatoFecha = /^\d{4}-\d{2}-\d{2}$/
+    if (desde && !formatoFecha.test(desde)) {
+      return errorApi(400, 'La fecha "desde" no es valida', 'Bad Request')
+    }
+    if (hasta && !formatoFecha.test(hasta)) {
+      return errorApi(400, 'La fecha "hasta" no es valida', 'Bad Request')
+    }
+    if (desde && hasta) {
+      if (hasta <= desde) {
+        return errorApi(
+          400,
+          'La fecha "hasta" no puede ser anterior a "desde"',
+          'Bad Request',
+        )
+      }
+      if (diasEntreFechas(desde, hasta) > 92) {
+        return errorApi(
+          400,
+          'El rango de fechas no puede superar 92 dias',
+          'Bad Request',
+        )
+      }
+    }
+
+    let items = auditoria
+    const entidad = url.searchParams.get('entidad')
+    const accion = url.searchParams.get('accion')
+    const actorId = url.searchParams.get('actorId')
+    const sucursalId = url.searchParams.get('sucursalId')
+    if (entidad) items = items.filter((evento) => evento.entidad === entidad)
+    if (accion) items = items.filter((evento) => evento.accion === accion)
+    if (actorId) items = items.filter((evento) => evento.actor.id === actorId)
+    if (sucursalId) {
+      items = items.filter(
+        (evento) => evento.sucursalAfectadaId === sucursalId,
+      )
+    }
+    if (desde) {
+      items = items.filter((evento) => evento.fecha.slice(0, 10) >= desde)
+    }
+    if (hasta) {
+      items = items.filter((evento) => evento.fecha.slice(0, 10) <= hasta)
+    }
+    items = [...items].sort((a, b) => b.fecha.localeCompare(a.fecha))
+    return HttpResponse.json(paginarAuditoria(items, page, limit))
   }),
 ]

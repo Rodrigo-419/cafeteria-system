@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import {
+  reiniciarAuditoriaPrueba,
   reiniciarCatalogoPrueba,
   reiniciarEquiposPrueba,
   reiniciarInventarioPrueba,
@@ -37,6 +38,7 @@ afterEach(() => {
   reiniciarInventarioPrueba()
   reiniciarEquiposPrueba()
   reiniciarUsuariosPrueba()
+  reiniciarAuditoriaPrueba()
   sessionStorage.clear()
   localStorage.clear()
   window.history.pushState({}, '', '/')
