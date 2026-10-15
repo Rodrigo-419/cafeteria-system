@@ -88,6 +88,16 @@ export const MENU_ITEMS: readonly MenuItemConfig[] = [
   },
   { label: 'Turnos', to: '/shifts', permisos: ['turnos.editar'] },
   {
+    label: 'Asignaciones',
+    to: '/shifts/asignaciones',
+    permisos: ['turnos.editar'],
+  },
+  {
+    label: 'Calendario de turnos',
+    to: '/shifts/calendario',
+    permisos: ['turnos.editar'],
+  },
+  {
     label: 'Asistencia',
     to: '/attendance',
     modo: 'any',

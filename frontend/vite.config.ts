@@ -24,6 +24,13 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    // Cada archivo de pruebas levanta su propio entorno jsdom con MSW y
+    // navegacion (React Router + React Query). En paralelo, el CI dispone de
+    // menos nucleos que una maquina local y esas suites tardan mas de los 5 s
+    // por defecto, produciendo falsos positivos ("Test timed out"). No se toca
+    // para relentizar pruebas: es el suelo para que la carga no decida. Ver
+    // docs/estrategia-de-pruebas.md.
+    testTimeout: 15000,
     setupFiles: ['./src/test/setup.ts'],
     css: true,
     include: ['src/**/*.{test,spec}.{ts,tsx}'],

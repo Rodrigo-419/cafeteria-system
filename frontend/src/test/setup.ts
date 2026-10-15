@@ -3,8 +3,10 @@ import { afterAll, afterEach, beforeAll } from 'vitest'
 import {
   reiniciarAuditoriaPrueba,
   reiniciarCatalogoPrueba,
+  reiniciarEmpleadosPrueba,
   reiniciarEquiposPrueba,
   reiniciarInventarioPrueba,
+  reiniciarTurnosPrueba,
   reiniciarUsuariosPrueba,
 } from './handlers'
 import { server } from './server'
@@ -37,6 +39,8 @@ afterEach(() => {
   reiniciarCatalogoPrueba()
   reiniciarInventarioPrueba()
   reiniciarEquiposPrueba()
+  reiniciarEmpleadosPrueba()
+  reiniciarTurnosPrueba()
   reiniciarUsuariosPrueba()
   reiniciarAuditoriaPrueba()
   sessionStorage.clear()

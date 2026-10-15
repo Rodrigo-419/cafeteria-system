@@ -2,8 +2,10 @@ import { http, HttpResponse } from 'msw'
 import type {
   AccionAuditoria,
   AlertaStockApi,
+  AsignacionApi,
   CartaOferta,
   CategoriaProductoApi,
+  EmpleadoApi,
   EquipoApi,
   EstadoEquipo,
   EstadoStockInsumo,
@@ -22,6 +24,7 @@ import type {
   RespuestaLogin,
   StockInsumoApi,
   SucursalApi,
+  TurnoApi,
   UsuarioApi,
   UsuarioGestionApi,
   VarianteApi,
@@ -791,6 +794,126 @@ function equipoFueraDeAlcance() {
   return errorApi(404, 'El equipo no existe', 'Not Found')
 }
 
+// Empleados: personal vinculado a un usuario existente.
+//
+// El estado es mutable y se reinicia entre pruebas con
+// `reiniciarEmpleadosPrueba`. Los fixtures cubren un Admin (todos), un Gerente
+// (solo empleados de usuarios Empleado de su sucursal) y un cesado. El actor de
+// alcance lo fija `iniciarSesionDePrueba` con `establecerActorEmpleados`.
+const USUARIOS_POR_EMPLEADO: Record<
+  string,
+  { nombre: string; nombreUsuario: string; rol: string }
+> = {
+  'usuario-1': { nombre: 'Ada Pruebas', nombreUsuario: 'ada', rol: 'Gerente' },
+  'usuario-2': { nombre: 'Beto Turno', nombreUsuario: 'beto', rol: 'Empleado' },
+  'usuario-3': { nombre: 'Ciro Ruiz', nombreUsuario: 'ciro', rol: 'Empleado' },
+}
+
+export const EMPLEADOS_PRUEBA: EmpleadoApi[] = [
+  {
+    id: 'empleado-1',
+    usuarioId: 'usuario-1',
+    cargo: 'Gerente de tienda',
+    sucursalId: 'sucursal-1',
+    fechaContratacion: '2026-01-15T00:00:00.000Z',
+    fechaCese: null,
+    estado: 'activo',
+    createdAt: '2026-01-15T10:00:00.000Z',
+    updatedAt: '2026-01-15T10:00:00.000Z',
+    usuario: { id: 'usuario-1', ...USUARIOS_POR_EMPLEADO['usuario-1']! },
+  },
+  {
+    id: 'empleado-2',
+    usuarioId: 'usuario-2',
+    cargo: 'Barista',
+    sucursalId: 'sucursal-1',
+    fechaContratacion: '2026-02-01T00:00:00.000Z',
+    fechaCese: null,
+    estado: 'activo',
+    createdAt: '2026-02-01T10:00:00.000Z',
+    updatedAt: '2026-02-01T10:00:00.000Z',
+    usuario: { id: 'usuario-2', ...USUARIOS_POR_EMPLEADO['usuario-2']! },
+  },
+  {
+    id: 'empleado-3',
+    usuarioId: 'usuario-3',
+    cargo: 'Cajero',
+    sucursalId: 'sucursal-2',
+    fechaContratacion: '2026-01-20T00:00:00.000Z',
+    fechaCese: '2026-06-30T00:00:00.000Z',
+    estado: 'inactivo',
+    createdAt: '2026-01-20T10:00:00.000Z',
+    updatedAt: '2026-06-30T10:00:00.000Z',
+    usuario: { id: 'usuario-3', ...USUARIOS_POR_EMPLEADO['usuario-3']! },
+  },
+]
+
+interface EstadoEmpleados {
+  empleados: EmpleadoApi[]
+}
+
+function crearEstadoEmpleados(): EstadoEmpleados {
+  return {
+    empleados: EMPLEADOS_PRUEBA.map((empleado) => ({
+      ...empleado,
+      usuario: { ...empleado.usuario },
+    })),
+  }
+}
+
+let empleadosEstado: EstadoEmpleados = crearEstadoEmpleados()
+
+// Actor vigente para el alcance de empleados. Si es `null` no se aplica alcance
+// (útil para pruebas que no inician sesión); `iniciarSesionDePrueba` lo fija.
+let actorEmpleados: UsuarioApi | null = null
+
+export function establecerActorEmpleados(usuario: UsuarioApi | null): void {
+  actorEmpleados = usuario
+}
+
+/** Restaura los empleados mockeados y limpia el actor de alcance. */
+export function reiniciarEmpleadosPrueba(): void {
+  empleadosEstado = crearEstadoEmpleados()
+  actorEmpleados = null
+}
+
+function actorEmpleadosEsAdmin(): boolean {
+  if (!actorEmpleados) return true
+  return (actorEmpleados.rol ?? '').toLowerCase() === 'admin'
+}
+
+function empleadoVisible(empleado: EmpleadoApi): boolean {
+  if (actorEmpleadosEsAdmin()) return true
+  return (
+    empleado.usuario.rol === 'Empleado' &&
+    empleado.sucursalId === (actorEmpleados?.sucursalId ?? null)
+  )
+}
+
+function empleadoFueraDeAlcance() {
+  return errorApi(404, 'El empleado no existe o esta fuera de tu alcance', 'Not Found')
+}
+
+/** Mensaje de problema del vínculo, o `null`; replica el backend. */
+function problemaVinculoEmpleado(
+  usuario: UsuarioGestionApi,
+  sucursalEmpleado?: string | null,
+): string | null {
+  if (usuario.rol === 'Admin') {
+    return 'Un usuario con rol Admin no puede ser empleado'
+  }
+  if (usuario.rol !== 'Empleado' && usuario.rol !== 'Gerente') {
+    return 'El usuario debe tener rol Empleado o Gerente'
+  }
+  if (!usuario.sucursalId) {
+    return 'El usuario debe tener una sucursal asignada'
+  }
+  if (sucursalEmpleado && sucursalEmpleado !== usuario.sucursalId) {
+    return 'La sucursal del empleado debe coincidir con la del usuario'
+  }
+  return null
+}
+
 // Usuarios: cuentas, su rol y las asignaciones individuales de permisos.
 //
 // El estado es mutable y se reinicia entre pruebas con `reiniciarUsuariosPrueba`.
@@ -836,6 +959,16 @@ export const USUARIOS_PRUEBA: UsuarioGestionApi[] = [
     rol: 'Empleado',
     sucursalId: 'sucursal-2',
     estado: 'bloqueado',
+    createdAt: '2026-10-01T10:00:00.000Z',
+    updatedAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'usuario-4',
+    nombre: 'Dora Nueva',
+    nombreUsuario: 'dora',
+    rol: 'Empleado',
+    sucursalId: 'sucursal-1',
+    estado: 'activo',
     createdAt: '2026-10-01T10:00:00.000Z',
     updatedAt: '2026-10-01T10:00:00.000Z',
   },
@@ -1053,6 +1186,24 @@ export const EVENTOS_AUDITORIA_PRUEBA: EventoAuditoriaApi[] = [
     },
     fecha: '2026-10-11T10:00:00.000Z',
   },
+  {
+    id: 'ev-turno',
+    entidad: 'turno',
+    entidadId: 'turno-1',
+    accion: 'turno_creado',
+    actor: { ...ACTOR_ADMIN_AUDITORIA },
+    usuarioAfectadoId: null,
+    sucursalAfectadaId: 'sucursal-1',
+    detalle: {
+      despues: {
+        tipo: 'fijo',
+        horaInicio: '07:30',
+        horaFin: '16:00',
+        diasSemana: '1,2,3,4,5',
+      },
+    },
+    fecha: '2026-10-11T09:00:00.000Z',
+  },
 ]
 
 let auditoria: EventoAuditoriaApi[] = EVENTOS_AUDITORIA_PRUEBA.map(clonarEvento)
@@ -1094,6 +1245,321 @@ function diasEntreFechas(desde: string, hasta: string): number {
   const inicio = Date.UTC(ay!, am! - 1, ad!)
   const fin = Date.UTC(by!, bm! - 1, bd!)
   return (fin - inicio) / (24 * 60 * 60 * 1000)
+}
+
+// ------------------------------------------------ turnos y asignaciones
+//
+// El estado es mutable y se reinicia entre pruebas con `reiniciarTurnosPrueba`.
+// Los fixtures cubren un turno fijo con días y un variable sin horario (los dos
+// de sucursal-1), un fijo de sucursal-2, y tres asignaciones: una vigente con
+// días (pinta la rejilla), una variable sin días (se lista aparte) y una
+// finalizada de la otra sucursal. El actor de alcance lo fija
+// `iniciarSesionDePrueba` con `establecerActorTurnos`.
+export const TURNOS_PRUEBA: TurnoApi[] = [
+  {
+    id: 'turno-1',
+    sucursalId: 'sucursal-1',
+    tipo: 'fijo',
+    horaInicio: '07:30',
+    horaFin: '16:00',
+    diasSemana: '1,2,3,4,5',
+    createdAt: '2026-01-02T10:00:00.000Z',
+    updatedAt: '2026-01-02T10:00:00.000Z',
+  },
+  {
+    id: 'turno-2',
+    sucursalId: 'sucursal-1',
+    tipo: 'variable',
+    horaInicio: null,
+    horaFin: null,
+    diasSemana: null,
+    createdAt: '2026-01-02T10:05:00.000Z',
+    updatedAt: '2026-01-02T10:05:00.000Z',
+  },
+  {
+    id: 'turno-3',
+    sucursalId: 'sucursal-2',
+    tipo: 'fijo',
+    horaInicio: '09:00',
+    horaFin: '17:00',
+    diasSemana: '6',
+    createdAt: '2026-01-03T10:00:00.000Z',
+    updatedAt: '2026-01-03T10:00:00.000Z',
+  },
+]
+
+/** Día de negocio de hoy en America/Lima ("AAAA-MM-DD"). */
+function diaNegocioPrueba(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
+}
+
+/** Lunes de la semana que contiene un día "AAAA-MM-DD". */
+function lunesDePrueba(iso: string): string {
+  const fecha = new Date(`${iso}T12:00:00.000Z`)
+  const desdeLunes = (fecha.getUTCDay() + 6) % 7
+  fecha.setUTCDate(fecha.getUTCDate() - desdeLunes)
+  return fecha.toISOString().slice(0, 10)
+}
+
+/** Día "AAAA-MM-DD" desplazado `dias` (puede ser negativo). */
+function sumarDiasPrueba(iso: string, dias: number): string {
+  const fecha = new Date(`${iso}T12:00:00.000Z`)
+  fecha.setUTCDate(fecha.getUTCDate() + dias)
+  return fecha.toISOString().slice(0, 10)
+}
+
+function asignacionPrueba(
+  parciales: Partial<AsignacionApi> & Pick<AsignacionApi, 'id'>,
+): AsignacionApi {
+  const turno = TURNOS_PRUEBA[0]!
+  return {
+    empleadoId: 'empleado-2',
+    turnoId: turno.id,
+    fechaInicio: sumarDiasPrueba(lunesDePrueba(diaNegocioPrueba()), -14),
+    fechaFin: null,
+    createdAt: '2026-01-05T10:00:00.000Z',
+    updatedAt: '2026-01-05T10:00:00.000Z',
+    empleado: {
+      id: 'empleado-2',
+      cargo: 'Barista',
+      sucursalId: 'sucursal-1',
+      usuario: { id: 'usuario-2', nombre: 'Beto Turno', nombreUsuario: 'beto' },
+    },
+    turno: { ...turno },
+    ...parciales,
+  }
+}
+
+function crearEstadoTurnos(): EstadoTurnos {
+  const lunes = lunesDePrueba(diaNegocioPrueba())
+  const turno1 = TURNOS_PRUEBA[0]!
+  const turno2 = TURNOS_PRUEBA[1]!
+  const turno3 = TURNOS_PRUEBA[2]!
+  return {
+    turnos: TURNOS_PRUEBA.map((turno) => ({ ...turno })),
+    asignaciones: [
+      asignacionPrueba({
+        id: 'asignacion-1',
+        empleadoId: 'empleado-2',
+        turnoId: turno1.id,
+        fechaInicio: sumarDiasPrueba(lunes, -14),
+        fechaFin: null,
+        turno: { ...turno1 },
+      }),
+      asignacionPrueba({
+        id: 'asignacion-2',
+        empleadoId: 'empleado-1',
+        turnoId: turno2.id,
+        fechaInicio: lunes,
+        fechaFin: null,
+        turno: { ...turno2 },
+        empleado: {
+          id: 'empleado-1',
+          cargo: 'Gerente de tienda',
+          sucursalId: 'sucursal-1',
+          usuario: { id: 'usuario-1', nombre: 'Ada Pruebas', nombreUsuario: 'ada' },
+        },
+      }),
+      asignacionPrueba({
+        id: 'asignacion-3',
+        empleadoId: 'empleado-3',
+        turnoId: turno3.id,
+        fechaInicio: sumarDiasPrueba(lunes, -70),
+        fechaFin: sumarDiasPrueba(lunes, -14),
+        turno: { ...turno3 },
+        empleado: {
+          id: 'empleado-3',
+          cargo: 'Cajero',
+          sucursalId: 'sucursal-2',
+          usuario: { id: 'usuario-3', nombre: 'Ciro Ruiz', nombreUsuario: 'ciro' },
+        },
+      }),
+    ],
+  }
+}
+
+interface EstadoTurnos {
+  turnos: TurnoApi[]
+  asignaciones: AsignacionApi[]
+}
+
+let turnosEstado: EstadoTurnos = crearEstadoTurnos()
+
+// Actor vigente para el alcance de turnos. Si es `null` no se aplica alcance
+// (útil para pruebas que no inician sesión); `iniciarSesionDePrueba` lo fija.
+let actorTurnos: UsuarioApi | null = null
+
+export function establecerActorTurnos(usuario: UsuarioApi | null): void {
+  actorTurnos = usuario
+}
+
+/** Restaura turnos y asignaciones, y limpia el actor de alcance. */
+export function reiniciarTurnosPrueba(): void {
+  turnosEstado = crearEstadoTurnos()
+  actorTurnos = null
+}
+
+function actorTurnosEsAdmin(): boolean {
+  if (!actorTurnos) return true
+  return (actorTurnos.rol ?? '').toLowerCase() === 'admin'
+}
+
+function turnoVisible(turno: TurnoApi): boolean {
+  if (actorTurnosEsAdmin()) return true
+  return turno.sucursalId === (actorTurnos?.sucursalId ?? null)
+}
+
+function asignacionVisible(asignacion: AsignacionApi): boolean {
+  if (actorTurnosEsAdmin()) return true
+  return asignacion.empleado.sucursalId === (actorTurnos?.sucursalId ?? null)
+}
+
+/** Reglas de la franja horaria (mismas que `domain/rules/horario.ts`). */
+function problemasHorarioMock(
+  tipo: string,
+  horaInicio: string | null,
+  horaFin: string | null,
+): string[] {
+  const tieneInicio = horaInicio !== null && horaInicio !== ''
+  const tieneFin = horaFin !== null && horaFin !== ''
+
+  if (tipo === 'fijo' && (!tieneInicio || !tieneFin)) {
+    return ['Un turno fijo debe tener hora de inicio y de fin']
+  }
+  if (!tieneInicio && !tieneFin) return []
+  if (tieneInicio !== tieneFin) {
+    return [
+      'Un turno variable debe indicar hora de inicio y de fin, o ninguna de las dos',
+    ]
+  }
+  if (horaInicio === null || horaFin === null) return []
+
+  const problemas: string[] = []
+  const patron = /^([01]\d|2[0-3]):[0-5]\d$/
+  if (!patron.test(horaInicio)) {
+    problemas.push('La hora de inicio debe tener el formato HH:mm')
+  }
+  if (!patron.test(horaFin)) {
+    problemas.push('La hora de fin debe tener el formato HH:mm')
+  }
+  if (problemas.length > 0) return problemas
+  if (horaFin <= horaInicio) {
+    problemas.push('La hora de fin debe ser posterior a la hora de inicio')
+  }
+  return problemas
+}
+
+/** Reglas de `diasSemana` (mismas que `domain/rules/dias-semana.ts`). */
+function problemasDiasMock(valor: string): string[] {
+  const recortado = valor.trim()
+  if (recortado === '') return ['diasSemana no puede estar vacio']
+
+  const dias: number[] = []
+  const problemas: string[] = []
+  for (const parte of recortado.split(',')) {
+    const limpio = parte.trim()
+    if (!/^\d+$/.test(limpio)) {
+      problemas.push(`"${parte}" no es un numero de dia valido`)
+      continue
+    }
+    const dia = Number(limpio)
+    if (dia < 1 || dia > 7) {
+      problemas.push(`El dia ${dia} esta fuera del rango 1-7`)
+      continue
+    }
+    dias.push(dia)
+  }
+  if (problemas.length > 0) return problemas
+  if (new Set(dias).size !== dias.length) {
+    problemas.push('Los dias de la semana no se pueden repetir')
+  }
+  for (let indice = 1; indice < dias.length; indice += 1) {
+    if (dias[indice] <= dias[indice - 1]) {
+      problemas.push('Los dias de la semana deben venir en orden ascendente')
+      break
+    }
+  }
+  return problemas
+}
+
+/**
+ * Normaliza `diasSemana` como el backend: vacío en un fijo es 400, en un
+ * variable es `null`; el texto válido se guarda en forma canónica "1,2,3".
+ */
+function normalizarDiasMock(
+  valor: string | undefined,
+  tipo: string,
+):
+  | { ok: true; valor: string | null }
+  | { ok: false; mensaje: string; problemas: string[] } {
+  const texto = valor?.trim() ?? ''
+  if (texto === '') {
+    if (tipo === 'fijo') {
+      return {
+        ok: false,
+        mensaje: 'Los dias del turno no son validos',
+        problemas: ['Un turno fijo debe indicar los dias de la semana'],
+      }
+    }
+    return { ok: true, valor: null }
+  }
+  const problemas = problemasDiasMock(texto)
+  if (problemas.length > 0) {
+    return { ok: false, mensaje: 'Los dias del turno no son validos', problemas }
+  }
+  return { ok: true, valor: texto.split(',').map((p) => Number(p.trim())).join(',') }
+}
+
+function normalizarHoraMock(valor: string | undefined): string | null {
+  const texto = valor?.trim() ?? ''
+  return texto === '' ? null : texto
+}
+
+function errorConProblemas(mensaje: string, problemas: string[]) {
+  return HttpResponse.json(
+    { statusCode: 400, message: mensaje, problemas, error: 'Bad Request' },
+    { status: 400 },
+  )
+}
+
+function turnoFueraDeAlcance() {
+  return errorApi(404, 'Turno no encontrado', 'Not Found')
+}
+
+const FORMATO_DIA = /^\d{4}-\d{2}-\d{2}$/
+
+/** Dos rangos de fechas se solapan (extremos inclusivos, sin fin = abierto). */
+function rangosSeCruzanMock(
+  a: { fechaInicio: string; fechaFin: string | null },
+  b: { fechaInicio: string; fechaFin: string | null },
+): boolean {
+  const finA = a.fechaFin ?? '9999-12-31'
+  const finB = b.fechaFin ?? '9999-12-31'
+  return a.fechaInicio <= finB && b.fechaInicio <= finA
+}
+
+/** Dos turnos chocan en el tiempo (regla simplificada de `solapamiento.ts`). */
+function horariosSeCruzanMock(
+  a: TurnoApi,
+  b: TurnoApi,
+): boolean {
+  if (a.tipo === 'variable' || b.tipo === 'variable') return true
+  if (
+    a.horaInicio === null ||
+    a.horaFin === null ||
+    b.horaInicio === null ||
+    b.horaFin === null
+  ) {
+    return true
+  }
+  const diasA = new Set(
+    (a.diasSemana ?? '').split(',').filter(Boolean).map(Number),
+  )
+  const diasB = (b.diasSemana ?? '').split(',').filter(Boolean).map(Number)
+  const seCruzanDias = diasB.some((dia) => diasA.has(dia))
+  return (
+    seCruzanDias && a.horaInicio < b.horaFin && b.horaInicio < a.horaFin
+  )
 }
 
 export const handlers = [
@@ -2177,6 +2643,518 @@ export const handlers = [
   http.get(`${BASE_API}/reports/comparativo`, () =>
     HttpResponse.json(REPORTE_COMPARATIVO_PRUEBA),
   ),
+
+  // ------------------------------------------------------------ empleados
+
+  http.get(`${BASE_API}/employees`, ({ request }) => {
+    const url = new URL(request.url)
+    const q = url.searchParams.get('q')?.trim().toLowerCase()
+    const estado = url.searchParams.get('estado')
+    const sucursalId = url.searchParams.get('sucursalId')
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+
+    let items = empleadosEstado.empleados.filter(empleadoVisible)
+    if (sucursalId) {
+      items = items.filter((empleado) => empleado.sucursalId === sucursalId)
+    }
+    if (estado) items = items.filter((empleado) => empleado.estado === estado)
+    if (q) {
+      items = items.filter(
+        (empleado) =>
+          empleado.usuario.nombre.toLowerCase().includes(q) ||
+          empleado.usuario.nombreUsuario.toLowerCase().includes(q) ||
+          empleado.cargo.toLowerCase().includes(q),
+      )
+    }
+    return HttpResponse.json(paginar(items, page, limit))
+  }),
+
+  http.get(`${BASE_API}/employees/:id`, ({ params }) => {
+    const empleado = empleadosEstado.empleados.find(
+      (item) => item.id === params.id,
+    )
+    if (!empleado || !empleadoVisible(empleado)) return empleadoFueraDeAlcance()
+    return HttpResponse.json(empleado)
+  }),
+
+  http.post(`${BASE_API}/employees`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      usuarioId?: string
+      cargo?: string
+      fechaContratacion?: string
+      sucursalId?: string
+    }
+
+    const usuario = usuarios.usuarios.find(
+      (item) => item.id === cuerpo.usuarioId,
+    )
+    if (!usuario || !usuarioVisible(usuario)) {
+      return errorApi(
+        404,
+        'El usuario no existe o esta fuera de tu alcance',
+        'Not Found',
+      )
+    }
+
+    const problema = problemaVinculoEmpleado(usuario, cuerpo.sucursalId ?? null)
+    if (problema) {
+      return errorApi(400, 'El usuario no puede vincularse a un empleado', 'Bad Request')
+    }
+
+    const cargo = (cuerpo.cargo ?? '').trim()
+    if (cargo.length < 1 || cargo.length > 100) {
+      return errorApi(
+        400,
+        'El cargo no puede exceder 100 caracteres',
+        'Bad Request',
+      )
+    }
+    const fechaContratacion = cuerpo.fechaContratacion ?? ''
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaContratacion)) {
+      return errorApi(
+        400,
+        'La fecha debe ser un dia valido en formato YYYY-MM-DD',
+        'Bad Request',
+      )
+    }
+
+    if (empleadosEstado.empleados.some((item) => item.usuarioId === usuario.id)) {
+      return errorApi(
+        409,
+        'El usuario ya esta registrado como empleado',
+        'Conflict',
+      )
+    }
+
+    const ahora = new Date().toISOString()
+    const empleado: EmpleadoApi = {
+      id: `empleado-${empleadosEstado.empleados.length + 1}`,
+      usuarioId: usuario.id,
+      cargo,
+      sucursalId: usuario.sucursalId ?? '',
+      fechaContratacion: `${fechaContratacion}T00:00:00.000Z`,
+      fechaCese: null,
+      estado: 'activo',
+      createdAt: ahora,
+      updatedAt: ahora,
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        nombreUsuario: usuario.nombreUsuario,
+        rol: usuario.rol,
+      },
+    }
+    empleadosEstado.empleados = [...empleadosEstado.empleados, empleado]
+    return HttpResponse.json(empleado, { status: 201 })
+  }),
+
+  http.patch(`${BASE_API}/employees/:id`, async ({ request, params }) => {
+    const empleado = empleadosEstado.empleados.find(
+      (item) => item.id === params.id,
+    )
+    if (!empleado || !empleadoVisible(empleado)) return empleadoFueraDeAlcance()
+
+    const cuerpo = (await request.json()) as { cargo?: string }
+    const cargo = (cuerpo.cargo ?? '').trim()
+    if (cargo.length < 1 || cargo.length > 100) {
+      return errorApi(
+        400,
+        'El cargo no puede exceder 100 caracteres',
+        'Bad Request',
+      )
+    }
+    empleado.cargo = cargo
+    empleado.updatedAt = new Date().toISOString()
+    return HttpResponse.json(empleado)
+  }),
+
+  http.post(`${BASE_API}/employees/:id/cese`, async ({ request, params }) => {
+    const empleado = empleadosEstado.empleados.find(
+      (item) => item.id === params.id,
+    )
+    if (!empleado || !empleadoVisible(empleado)) return empleadoFueraDeAlcance()
+    if (empleado.estado === 'inactivo') {
+      return errorApi(409, 'El empleado ya esta cesado', 'Conflict')
+    }
+
+    const cuerpo = (await request.json().catch(() => ({}))) as {
+      fechaCese?: string
+    }
+    const fechaCese = cuerpo.fechaCese ?? new Date().toISOString().slice(0, 10)
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(fechaCese) ||
+      fechaCese < empleado.fechaContratacion.slice(0, 10)
+    ) {
+      return errorApi(400, 'La fecha de cese no es valida', 'Bad Request')
+    }
+
+    empleado.estado = 'inactivo'
+    empleado.fechaCese = `${fechaCese}T00:00:00.000Z`
+    empleado.updatedAt = new Date().toISOString()
+
+    // El cese bloquea la cuenta del usuario vinculado en la misma operación.
+    const usuario = usuarios.usuarios.find((item) => item.id === empleado.usuarioId)
+    if (usuario) {
+      usuario.estado = 'bloqueado'
+      usuario.updatedAt = empleado.updatedAt
+    }
+
+    return HttpResponse.json(empleado)
+  }),
+
+  http.post(`${BASE_API}/employees/:id/pin`, ({ params }) => {
+    const empleado = empleadosEstado.empleados.find(
+      (item) => item.id === params.id,
+    )
+    if (!empleado || !empleadoVisible(empleado)) return empleadoFueraDeAlcance()
+    if (empleado.estado !== 'activo') {
+      return errorApi(
+        400,
+        'No se puede generar un PIN para un empleado cesado',
+        'Bad Request',
+      )
+    }
+    const pin = String(Math.floor(100000 + Math.random() * 900000))
+    return HttpResponse.json({ pin })
+  }),
+
+  // ------------------------------------------------ turnos y asignaciones
+
+  http.get(`${BASE_API}/shifts`, ({ request }) => {
+    const url = new URL(request.url)
+    const sucursalId = url.searchParams.get('sucursalId')
+    const tipo = url.searchParams.get('tipo')
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+    if (limit > 100) {
+      return errorApi(400, 'limit no puede exceder 100', 'Bad Request')
+    }
+    if (tipo !== null && tipo !== 'fijo' && tipo !== 'variable') {
+      return errorApi(
+        400,
+        'El filtro tipo debe ser uno de: fijo, variable',
+        'Bad Request',
+      )
+    }
+
+    let items = turnosEstado.turnos.filter(turnoVisible)
+    if (sucursalId) {
+      items = items.filter((turno) => turno.sucursalId === sucursalId)
+    }
+    if (tipo) items = items.filter((turno) => turno.tipo === tipo)
+    return HttpResponse.json(paginar(items, page, limit))
+  }),
+
+  http.get(`${BASE_API}/shifts/:id`, ({ params }) => {
+    const turno = turnosEstado.turnos.find((item) => item.id === params.id)
+    if (!turno || !turnoVisible(turno)) return turnoFueraDeAlcance()
+    return HttpResponse.json(turno)
+  }),
+
+  http.post(`${BASE_API}/shifts`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      sucursalId?: string
+      tipo?: string
+      horaInicio?: string
+      horaFin?: string
+      diasSemana?: string
+    }
+    const tipo = cuerpo.tipo
+    if (tipo !== 'fijo' && tipo !== 'variable') {
+      return errorApi(
+        400,
+        'El tipo debe ser uno de: fijo, variable',
+        'Bad Request',
+      )
+    }
+
+    const horaInicio = normalizarHoraMock(cuerpo.horaInicio)
+    const horaFin = normalizarHoraMock(cuerpo.horaFin)
+    const problemasHorario = problemasHorarioMock(tipo, horaInicio, horaFin)
+    if (problemasHorario.length > 0) {
+      return errorConProblemas('El horario del turno no es valido', problemasHorario)
+    }
+
+    const dias = normalizarDiasMock(cuerpo.diasSemana, tipo)
+    if (!dias.ok) return errorConProblemas(dias.mensaje, dias.problemas)
+
+    // Sucursal: la del Gerente (la suya siempre), o la que elija el Admin.
+    let sucursalId: string
+    if (actorTurnos && !actorTurnosEsAdmin()) {
+      if (!actorTurnos.sucursalId) {
+        return errorApi(
+          403,
+          'Tu cuenta no tiene una sucursal asignada',
+          'Forbidden',
+        )
+      }
+      sucursalId = actorTurnos.sucursalId
+    } else {
+      if (!cuerpo.sucursalId) {
+        return errorApi(
+          400,
+          'Debes indicar la sucursal del turno',
+          'Bad Request',
+        )
+      }
+      if (!sucursalValida(cuerpo.sucursalId)) {
+        return errorApi(404, 'Sucursal no encontrada', 'Not Found')
+      }
+      sucursalId = cuerpo.sucursalId
+    }
+
+    const ahora = new Date().toISOString()
+    const turno: TurnoApi = {
+      id: `turno-${turnosEstado.turnos.length + 1}`,
+      sucursalId,
+      tipo,
+      horaInicio,
+      horaFin,
+      diasSemana: dias.valor,
+      createdAt: ahora,
+      updatedAt: ahora,
+    }
+    turnosEstado.turnos.push(turno)
+    return HttpResponse.json(turno, { status: 201 })
+  }),
+
+  http.patch(`${BASE_API}/shifts/:id`, async ({ request, params }) => {
+    const turno = turnosEstado.turnos.find((item) => item.id === params.id)
+    if (!turno || !turnoVisible(turno)) return turnoFueraDeAlcance()
+
+    const cuerpo = (await request.json()) as {
+      horaInicio?: string
+      horaFin?: string
+      diasSemana?: string
+    }
+    if (
+      cuerpo.horaInicio === undefined &&
+      cuerpo.horaFin === undefined &&
+      cuerpo.diasSemana === undefined
+    ) {
+      return errorApi(400, 'No hay cambios que aplicar al turno', 'Bad Request')
+    }
+
+    // Se valida el resultado completo: cambiar una sola hora no salta la regla.
+    const horaInicio =
+      cuerpo.horaInicio === undefined
+        ? turno.horaInicio
+        : normalizarHoraMock(cuerpo.horaInicio)
+    const horaFin =
+      cuerpo.horaFin === undefined
+        ? turno.horaFin
+        : normalizarHoraMock(cuerpo.horaFin)
+    const problemasHorario = problemasHorarioMock(turno.tipo, horaInicio, horaFin)
+    if (problemasHorario.length > 0) {
+      return errorConProblemas('El horario del turno no es valido', problemasHorario)
+    }
+
+    let diasSemana = turno.diasSemana
+    if (cuerpo.diasSemana !== undefined) {
+      const dias = normalizarDiasMock(cuerpo.diasSemana, turno.tipo)
+      if (!dias.ok) return errorConProblemas(dias.mensaje, dias.problemas)
+      diasSemana = dias.valor
+    }
+
+    // El cambio no puede dejar a un empleado con dos asignaciones solapadas.
+    const candidata = { ...turno, horaInicio, horaFin, diasSemana }
+    for (const asignacion of turnosEstado.asignaciones.filter(
+      (item) => item.turnoId === turno.id,
+    )) {
+      for (const otra of turnosEstado.asignaciones.filter(
+        (item) =>
+          item.empleadoId === asignacion.empleadoId && item.id !== asignacion.id,
+      )) {
+        if (
+          rangosSeCruzanMock(asignacion, otra) &&
+          horariosSeCruzanMock(candidata, otra.turno)
+        ) {
+          return errorApi(
+            409,
+            'El cambio dejaria asignaciones solapadas del mismo empleado',
+            'Conflict',
+          )
+        }
+      }
+    }
+
+    turno.horaInicio = horaInicio
+    turno.horaFin = horaFin
+    turno.diasSemana = diasSemana
+    turno.updatedAt = new Date().toISOString()
+    return HttpResponse.json(turno)
+  }),
+
+  http.get(`${BASE_API}/assignments`, ({ request }) => {
+    const url = new URL(request.url)
+    const empleadoId = url.searchParams.get('empleadoId')
+    const turnoId = url.searchParams.get('turnoId')
+    const vigente = url.searchParams.get('vigente')
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+    if (limit > 100) {
+      return errorApi(400, 'limit no puede exceder 100', 'Bad Request')
+    }
+
+    let items = turnosEstado.asignaciones.filter(asignacionVisible)
+    if (empleadoId) items = items.filter((item) => item.empleadoId === empleadoId)
+    if (turnoId) items = items.filter((item) => item.turnoId === turnoId)
+    if (vigente === 'true') {
+      const hoy = diaNegocioPrueba()
+      items = items.filter(
+        (item) =>
+          item.fechaInicio <= hoy &&
+          (item.fechaFin === null || item.fechaFin >= hoy),
+      )
+    }
+    return HttpResponse.json(paginar(items, page, limit))
+  }),
+
+  http.post(`${BASE_API}/assignments`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      empleadoId?: string
+      turnoId?: string
+      fechaInicio?: string
+      fechaFin?: string
+    }
+
+    const empleado = empleadosEstado.empleados.find(
+      (item) => item.id === cuerpo.empleadoId,
+    )
+    if (!empleado || !empleadoVisible(empleado)) {
+      return errorApi(404, 'Empleado no encontrado', 'Not Found')
+    }
+
+    const turno = turnosEstado.turnos.find((item) => item.id === cuerpo.turnoId)
+    if (!turno || !turnoVisible(turno)) {
+      return errorApi(404, 'Turno no encontrado', 'Not Found')
+    }
+    if (turno.sucursalId !== empleado.sucursalId) {
+      return errorApi(
+        404,
+        'El turno no pertenece a la sucursal del empleado',
+        'Not Found',
+      )
+    }
+    if (empleado.estado !== 'activo') {
+      return errorApi(
+        409,
+        'El empleado esta cesado y no se le pueden asignar turnos',
+        'Conflict',
+      )
+    }
+
+    const fechaInicio = cuerpo.fechaInicio ?? ''
+    if (!FORMATO_DIA.test(fechaInicio)) {
+      return errorApi(
+        400,
+        'La fecha debe ser un dia valido en formato YYYY-MM-DD',
+        'Bad Request',
+      )
+    }
+    const fechaFin = cuerpo.fechaFin ?? null
+    if (fechaFin !== null && !FORMATO_DIA.test(fechaFin)) {
+      return errorApi(
+        400,
+        'La fecha debe ser un dia valido en formato YYYY-MM-DD',
+        'Bad Request',
+      )
+    }
+    if (fechaInicio < empleado.fechaContratacion.slice(0, 10)) {
+      return errorApi(
+        400,
+        'La fecha de inicio no puede ser anterior a la contratacion del empleado',
+        'Bad Request',
+      )
+    }
+    if (fechaFin !== null && fechaFin < fechaInicio) {
+      return errorApi(
+        400,
+        'La fecha de fin no puede ser anterior a la de inicio',
+        'Bad Request',
+      )
+    }
+
+    const candidata = { fechaInicio, fechaFin }
+    const delEmpleado = turnosEstado.asignaciones.filter(
+      (item) => item.empleadoId === empleado.id,
+    )
+    if (
+      delEmpleado.some(
+        (item) =>
+          rangosSeCruzanMock(candidata, item) &&
+          horariosSeCruzanMock(turno, item.turno),
+      )
+    ) {
+      return errorApi(
+        409,
+        'El empleado ya tiene una asignacion que se solapa',
+        'Conflict',
+      )
+    }
+
+    const ahora = new Date().toISOString()
+    const asignacion: AsignacionApi = {
+      id: `asignacion-${turnosEstado.asignaciones.length + 1}`,
+      empleadoId: empleado.id,
+      turnoId: turno.id,
+      fechaInicio,
+      fechaFin,
+      createdAt: ahora,
+      updatedAt: ahora,
+      empleado: {
+        id: empleado.id,
+        cargo: empleado.cargo,
+        sucursalId: empleado.sucursalId,
+        usuario: {
+          id: empleado.usuario.id,
+          nombre: empleado.usuario.nombre,
+          nombreUsuario: empleado.usuario.nombreUsuario,
+        },
+      },
+      turno: { ...turno },
+    }
+    turnosEstado.asignaciones.push(asignacion)
+    return HttpResponse.json(asignacion, { status: 201 })
+  }),
+
+  http.patch(`${BASE_API}/assignments/:id`, async ({ request, params }) => {
+    const asignacion = turnosEstado.asignaciones.find(
+      (item) => item.id === params.id,
+    )
+    if (!asignacion || !asignacionVisible(asignacion)) {
+      return errorApi(404, 'Asignacion no encontrada', 'Not Found')
+    }
+
+    const cuerpo = (await request.json()) as { fechaFin?: string }
+    const fechaFin = cuerpo.fechaFin ?? ''
+    if (!FORMATO_DIA.test(fechaFin)) {
+      return errorApi(
+        400,
+        'La fecha debe ser un dia valido en formato YYYY-MM-DD',
+        'Bad Request',
+      )
+    }
+    if (fechaFin < asignacion.fechaInicio) {
+      return errorApi(
+        400,
+        'La fecha de fin no puede ser anterior a la de inicio',
+        'Bad Request',
+      )
+    }
+    if (fechaFin < diaNegocioPrueba()) {
+      return errorApi(
+        400,
+        'La fecha de fin no puede ser anterior a hoy',
+        'Bad Request',
+      )
+    }
+
+    asignacion.fechaFin = fechaFin
+    asignacion.updatedAt = new Date().toISOString()
+    return HttpResponse.json(asignacion)
+  }),
 
   // ------------------------------------------------------------ usuarios
 

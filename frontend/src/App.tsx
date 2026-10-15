@@ -25,6 +25,11 @@ import { RecuentoNuevoPage } from '@/features/inventory/RecuentoNuevoPage'
 import { MovimientosPage } from '@/features/inventory/MovimientosPage'
 import { EquiposPage } from '@/features/equipment/EquiposPage'
 import { EquipoDetallePage } from '@/features/equipment/EquipoDetallePage'
+import { EmpleadosPage } from '@/features/employees/EmpleadosPage'
+import { EmpleadoDetallePage } from '@/features/employees/EmpleadoDetallePage'
+import { TurnosPage } from '@/features/shifts/TurnosPage'
+import { AsignacionesPage } from '@/features/shifts/AsignacionesPage'
+import { CalendarioTurnosPage } from '@/features/shifts/CalendarioTurnosPage'
 import { UsuariosPage } from '@/features/users/UsuariosPage'
 import { AuditoriaPage } from '@/features/audit/AuditoriaPage'
 
@@ -58,6 +63,10 @@ export function App({
       item.to !== '/inventory/movimientos' &&
       item.to !== '/alerts' &&
       item.to !== '/equipment' &&
+      item.to !== '/employees' &&
+      item.to !== '/shifts' &&
+      item.to !== '/shifts/asignaciones' &&
+      item.to !== '/shifts/calendario' &&
       item.to !== '/users' &&
       item.to !== '/auditoria',
   )
@@ -222,6 +231,46 @@ export function App({
                     modo="any"
                   >
                     <UsuariosPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="employees"
+                element={
+                  <RequirePermission permiso="empleados.crear_editar">
+                    <EmpleadosPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="employees/:id"
+                element={
+                  <RequirePermission permiso="empleados.crear_editar">
+                    <EmpleadoDetallePage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="shifts"
+                element={
+                  <RequirePermission permiso="turnos.editar">
+                    <TurnosPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="shifts/asignaciones"
+                element={
+                  <RequirePermission permiso="turnos.editar">
+                    <AsignacionesPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="shifts/calendario"
+                element={
+                  <RequirePermission permiso="turnos.editar">
+                    <CalendarioTurnosPage />
                   </RequirePermission>
                 }
               />

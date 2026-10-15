@@ -192,6 +192,84 @@ export interface HistorialEquipoApi {
   usuario: { id: string; nombre: string } | null
 }
 
+// -------------------------------------------------------------- empleados
+
+/** Estado de un empleado: `activo` o `inactivo` (cesado). Un cese no borra. */
+export type EstadoEmpleado = 'activo' | 'inactivo'
+
+/**
+ * Empleado vinculado a un usuario existente (`GET /employees`). El hash del PIN
+ * nunca se incluye y el backend no expone si el empleado ya tiene PIN.
+ */
+export interface EmpleadoApi {
+  id: string
+  usuarioId: string
+  cargo: string
+  sucursalId: string
+  /** Día de contratación (ISO/UTC a medianoche). */
+  fechaContratacion: string
+  fechaCese: string | null
+  estado: EstadoEmpleado
+  createdAt: string
+  updatedAt: string
+  usuario: { id: string; nombre: string; nombreUsuario: string; rol: string }
+}
+
+/**
+ * Respuesta de `POST /employees/:id/pin`: el PIN en claro se entrega una sola
+ * vez y no vuelve a estar disponible. No debe guardarse en caché ni en el
+ * navegador.
+ */
+export interface PinEmpleadoApi {
+  pin: string
+}
+
+// ------------------------------------------------------------------ turnos
+
+/**
+ * Tipo de turno: `fijo` (con hora de inicio/fin y días de la semana) o
+ * `variable` (sin horario fijo, para refuerzos). El tipo y la sucursal no se
+ * cambian después del alta.
+ */
+export type TipoTurno = 'fijo' | 'variable'
+
+/** Un turno de una sucursal (`GET /shifts`). */
+export interface TurnoApi {
+  id: string
+  sucursalId: string
+  tipo: TipoTurno
+  /** Hora "HH:mm" o `null` si el turno no tiene franja. */
+  horaInicio: string | null
+  horaFin: string | null
+  /** Días ISO 1-7 separados por comas ("1,2,3") o `null`. */
+  diasSemana: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Asignación de un turno a un empleado (`GET /assignments`). Se retira fijando
+ * `fechaFin`: no existe borrado de asignaciones.
+ */
+export interface AsignacionApi {
+  id: string
+  empleadoId: string
+  turnoId: string
+  /** Día de inicio (ISO/UTC a medianoche). */
+  fechaInicio: string
+  /** Día de fin (ISO/UTC a medianoche); `null` mientras siga vigente. */
+  fechaFin: string | null
+  createdAt: string
+  updatedAt: string
+  empleado: {
+    id: string
+    cargo: string
+    sucursalId: string
+    usuario: { id: string; nombre: string; nombreUsuario: string }
+  }
+  turno: TurnoApi
+}
+
 /** Importes por método de pago del reporte comparativo. */
 export interface ReporteVentasMetodoApi {
   /** Importe en texto con dos decimales. */

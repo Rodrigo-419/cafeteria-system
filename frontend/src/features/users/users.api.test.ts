@@ -61,12 +61,13 @@ describe('Contratos de la API de usuarios', () => {
     sesionAdmin()
     const listado = await listarUsuarios({ limit: 10 })
 
-    expect(listado.total).toBe(4)
+    expect(listado.total).toBe(5)
     expect(listado.data.map((usuario) => usuario.id)).toEqual([
       'admin-1',
       'usuario-1',
       'usuario-2',
       'usuario-3',
+      'usuario-4',
     ])
   })
 
@@ -74,8 +75,11 @@ describe('Contratos de la API de usuarios', () => {
     sesionGerente()
     const listado = await listarUsuarios({ limit: 10 })
 
-    expect(listado.total).toBe(1)
-    expect(listado.data[0]?.id).toBe('usuario-2')
+    expect(listado.total).toBe(2)
+    expect(listado.data.map((usuario) => usuario.id)).toEqual([
+      'usuario-2',
+      'usuario-4',
+    ])
   })
 
   it('crea un Empleado como Admin con la sucursal elegida (201)', async () => {

@@ -6,7 +6,13 @@ import { MemoryRouter } from 'react-router-dom'
 import { ProveedorAutenticacion } from '@/lib/auth/AuthContext'
 import { crearSesion, guardarSesion } from '@/lib/auth/session'
 import type { UsuarioApi } from '@/types/api'
-import { BASE_API, establecerActorEquipos, establecerActorUsuarios } from './handlers'
+import {
+  BASE_API,
+  establecerActorEmpleados,
+  establecerActorEquipos,
+  establecerActorTurnos,
+  establecerActorUsuarios,
+} from './handlers'
 import { server } from './server'
 
 /** Envuelve un componente con QueryClient, Router y proveedor de sesion. */
@@ -47,5 +53,7 @@ export function iniciarSesionDePrueba(
   server.use(http.get(`${BASE_API}/auth/me`, () => HttpResponse.json(usuario)))
   // Los alcances de los mocks dependen del actor con sesión.
   establecerActorEquipos(usuario)
+  establecerActorEmpleados(usuario)
+  establecerActorTurnos(usuario)
   establecerActorUsuarios(usuario)
 }
