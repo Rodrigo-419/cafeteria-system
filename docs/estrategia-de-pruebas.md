@@ -193,9 +193,14 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   permisos sobre `App`), el panel de control (`DashboardPage`) y el catálogo de
   productos y precios (`ProductsPage` y la carta por sucursal), y el inventario
   (`InsumosPage`, `InventarioPage`, `AlertasPage`, los recuentos
-  `RecuentoNuevoPage`/`RecuentosPage` y los movimientos `MovimientosPage`), y la
+  `RecuentoNuevoPage`/`RecuentosPage` y los movimientos `MovimientosPage`), la
   bitácora de auditoría (`AuditoriaPage`, incluido el historial embebido en
-  `PermisosUsuarioDialog`).
+  `PermisosUsuarioDialog`) y la asistencia (`MarcacionPage` —PIN correcto e
+  incorrecto, bloqueo por reintentos, doble marcaje, teclado físico, PIN nunca en
+  caché/storage/URL, doble clic no envía dos veces, aviso a Admin sin sucursal— y
+  `AsistenciaPage` —alcance por sucursal, Empleado solo ve lo suyo, Admin sin
+  acción de corregir, 403 al corregir propio, filtros, historial, corrección,
+  faltas y justificación—).
 - **Integración ligera con MSW**: se mockean `POST /api/auth/login`,
   `GET /api/auth/me`, la carta (`GET /api/branches/:id/products`), las
   sucursales (`GET /api/branches`), las ventas (`GET/POST /api/sales`,
@@ -208,7 +213,11 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   recuentos (`GET /api/inventario/recuentos`, `GET /api/inventario/recuentos/:id`,
   `POST /api/inventario/sucursales/:sucursalId/recuentos`), los movimientos
   (`GET /api/inventario/sucursales/:sucursalId/movimientos`), la asistencia
-  (`GET /api/attendance/records`), los equipos (`GET /api/equipment`,
+  (`GET /api/attendance/records`, `GET /api/attendance/records/:id`,
+  `POST /api/attendance/records/:id/correct`,
+  `GET /api/attendance/terminal/employees`, `POST /api/attendance/mark`,
+  `GET /api/attendance/absences` y `POST /api/attendance/absences/justify`), los
+  equipos (`GET /api/equipment`,
   `GET/POST /api/equipment`, `GET/PATCH /api/equipment/:id` y
   `GET /api/equipment/:id/history`) y el
   reporte comparativo (`GET /api/reports/comparativo`), incluidos los escenarios
