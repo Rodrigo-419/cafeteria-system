@@ -193,7 +193,9 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   permisos sobre `App`), el panel de control (`DashboardPage`) y el catálogo de
   productos y precios (`ProductsPage` y la carta por sucursal), y el inventario
   (`InsumosPage`, `InventarioPage`, `AlertasPage`, los recuentos
-  `RecuentoNuevoPage`/`RecuentosPage` y los movimientos `MovimientosPage`).
+  `RecuentoNuevoPage`/`RecuentosPage` y los movimientos `MovimientosPage`), y la
+  bitácora de auditoría (`AuditoriaPage`, incluido el historial embebido en
+  `PermisosUsuarioDialog`).
 - **Integración ligera con MSW**: se mockean `POST /api/auth/login`,
   `GET /api/auth/me`, la carta (`GET /api/branches/:id/products`), las
   sucursales (`GET /api/branches`), las ventas (`GET/POST /api/sales`,
@@ -210,7 +212,8 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   `GET/POST /api/equipment`, `GET/PATCH /api/equipment/:id` y
   `GET /api/equipment/:id/history`) y el
   reporte comparativo (`GET /api/reports/comparativo`), incluidos los escenarios
-  de error 400/403/404/409.
+  de error 400/403/404/409, y la auditoría (`GET /api/auditoria` y
+  `GET /api/auditoria/usuarios/:usuarioId`).
 
 ### Herramientas
 
@@ -231,8 +234,8 @@ npm run test:watch
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 35
-- **Total de tests**: **196 passed**
+- **Archivos de prueba**: 40
+- **Total de tests**: **260 passed**
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/auth/AuthContext.test.tsx`, `lib/format/money.spec.ts`,
@@ -258,7 +261,8 @@ productos y la carta (`features/products/CatalogoProductos.test.tsx`,
 (`features/inventory/regresion.test.tsx`), los equipos
 (`features/equipment/EquiposPage.test.tsx`,
 `features/equipment/EquipoDetallePage.test.tsx`,
-`features/equipment/equipment.api.test.ts`) y el landing autenticado
+`features/equipment/equipment.api.test.ts`), la bitácora de auditoría
+(`features/audit/AuditoriaPage.test.tsx`) y el landing autenticado
 (`features/auth/landing.test.tsx`).
 
 ### Nada de `setState` tras desmontar (regla)
@@ -385,8 +389,20 @@ por defecto y asignar uno que el actor no posee). El generador de contraseñas s
 prueba de forma aislada en `generador-password.test.ts` (≥16 caracteres,
 alfabeto seguro y valores distintos).
 
-### Detalles relevantes
+Casos de auditoría cubiertos: el listado muestra los eventos con etiquetas en
+español y el autor (`@admin`); el filtro de acción y el de entidad viajan a la
+API y reducen las filas; el detalle de un cambio de rol muestra el resumen
+"antes → después" y el de un precio se formatea como moneda (`S/ 10.00` /
+`S/ 12.50`); una **acción desconocida** se etiqueta de forma genérica y el
+diálogo **nunca** muestra JSON crudo (se afirma que no aparecen el código
+técnico, una clave de `detalle` anidada ni `[object Object]`); los estados vacío,
+de error (500, sin romper el resto de la pantalla) y de carga (promesa diferida)
+del listado; un rango de más de 92 días y un rango invertido muestran el mensaje
+del servidor; sin `usuarios.crear_editar` ni el menú ni la ruta están
+disponibles y la consulta **no se dispara**; y el historial embebido lista los
+eventos del usuario y, ante un 404, muestra el aviso neutro sin revelar nada.
 
+### Detalles relevantes
 - `renderConProveedores` envuelve con `QueryClientProvider`, `MemoryRouter` y
   `ProveedorAutenticacion`.
 - `iniciarSesionDePrueba(usuario, token?)` guarda una sesión válida y fuerza
@@ -429,6 +445,15 @@ alfabeto seguro y valores distintos).
   último Admin activo responde 409, `nombreUsuario` duplicado responde 409 y las
   reglas de permisos (`PUT`/`DELETE`) replican poseer el permiso, la matriz de los
   4 concedibles a un Empleado y revocar solo lo que el rol da por defecto.
+- La **auditoría** mockeada es estado mutable (`EVENTOS_AUDITORIA_PRUEBA` en
+  `src/test/handlers.ts`); `reiniciarAuditoriaPrueba()` la restaura tras cada
+  test. Los handlers replican las reglas del backend: `GET /api/auditoria`
+  valida `limit` ≤ 100, el formato `YYYY-MM-DD`, el rango invertido y el tope de
+  92 días (400), filtra por entidad/acción/fechas y ordena de más reciente a más
+  antiguo; `GET /api/auditoria/usuarios/:usuarioId` devuelve 404 si el usuario no
+  existe o no es visible. Las fixtures incluyen a propósito una acción
+  **desconocida** (`'accion_futura' as AccionAuditoria`) con un `detalle`
+  anidado, para probar que la interfaz degrada a etiquetas genéricas sin romper.
 - El **menú por rol** se prueba con los permisos reales de Admin/Gerente/Empleado
   (tomados del seed del backend) y con un caso de permiso revocado.
 - El **panel de control** se prueba sobre `DashboardPage` con los permisos
