@@ -232,6 +232,31 @@ npm test          # modo single-run (vitest run)
 npm run test:watch
 ```
 
+#### `testTimeout` de 15 s (front)
+
+Vitest se configura con `testTimeout: 15000` en `frontend/vite.config.ts`, frente
+a los 5 s por defecto.
+
+**Motivo:** cada archivo de pruebas levanta su propio entorno **jsdom** con MSW,
+React Router y React Query, y la suite se ejecuta en paralelo. En CI hay
+**menos núcleos** que en una máquina de desarrollo, así que esos entornos se
+vuelven lentos al compartir CPU: pruebas de componentes que rellenan formularios
+con `userEvent` y abren diálogos (por ejemplo "el Admin registra un equipo
+eligiendo la sucursal" o "tras cerrar sesión manualmente, la siguiente cuenta
+aterriza en la ruta de inicio") superaban los 5 s **solo** cuando corrían con el
+resto de la suite. El síntoma era un `Test timed out in 5000ms` intermitente y
+distinto en cada ejecución, mientras que aislado el archivo pasaba sin problemas
+y la causa descartada era de negocio: era el **presupuesto de tiempo**, no un
+bloqueo.
+
+No se sube para "alentar" las pruebas: es el suelo que evita que la carga de la
+máquina decida del resultado. Una prueba que se cuelga de verdad sigue fallando
+porque supera los 15 s, y ningún caso actual se acerca a ese techo (la suite
+completa ronda los 27 s).
+
+> Análogo en backend: el `testTimeout` de e2e es de 120 s (`test/jest-e2e.json`)
+> por la misma razón de varianza bajo carga, descrita en la sección 2.
+
 ### Cobertura (estado actual)
 
 - **Archivos de prueba**: 40
