@@ -200,7 +200,10 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   caché/storage/URL, doble clic no envía dos veces, aviso a Admin sin sucursal— y
   `AsistenciaPage` —alcance por sucursal, Empleado solo ve lo suyo, Admin sin
   acción de corregir, 403 al corregir propio, filtros, historial, corrección,
-  faltas y justificación—).
+  faltas y justificación—), las sucursales (`SucursalesPage` —alta, edición,
+  unicidad con 409 y alcance por rol—) y el reporte comparativo
+  (`ReporteComparativoPage` —KPI, comparativo del período, estado actual, filtro
+  por sucursal, validación del rango, 403 y 404—).
 - **Integración ligera con MSW**: se mockean `POST /api/auth/login`,
   `GET /api/auth/me`, la carta (`GET /api/branches/:id/products`), las
   sucursales (`GET /api/branches`), las ventas (`GET/POST /api/sales`,
