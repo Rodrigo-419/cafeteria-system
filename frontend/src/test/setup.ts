@@ -7,6 +7,7 @@ import {
   reiniciarEmpleadosPrueba,
   reiniciarEquiposPrueba,
   reiniciarInventarioPrueba,
+  reiniciarSucursalesPrueba,
   reiniciarTurnosPrueba,
   reiniciarUsuariosPrueba,
 } from './handlers'
@@ -45,6 +46,7 @@ afterEach(() => {
   reiniciarTurnosPrueba()
   reiniciarUsuariosPrueba()
   reiniciarAuditoriaPrueba()
+  reiniciarSucursalesPrueba()
   sessionStorage.clear()
   localStorage.clear()
   window.history.pushState({}, '', '/')

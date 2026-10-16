@@ -11,6 +11,7 @@ import {
   establecerActorAsistencia,
   establecerActorEmpleados,
   establecerActorEquipos,
+  establecerActorSucursales,
   establecerActorTurnos,
   establecerActorUsuarios,
 } from './handlers'
@@ -58,4 +59,5 @@ export function iniciarSesionDePrueba(
   establecerActorEmpleados(usuario)
   establecerActorTurnos(usuario)
   establecerActorUsuarios(usuario)
+  establecerActorSucursales(usuario)
 }

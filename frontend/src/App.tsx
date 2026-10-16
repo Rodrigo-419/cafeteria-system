@@ -34,6 +34,8 @@ import { UsuariosPage } from '@/features/users/UsuariosPage'
 import { AuditoriaPage } from '@/features/audit/AuditoriaPage'
 import { MarcacionPage } from '@/features/attendance/MarcacionPage'
 import { AsistenciaPage } from '@/features/attendance/AsistenciaPage'
+import { SucursalesPage } from '@/features/branches/SucursalesPage'
+import { ReporteComparativoPage } from '@/features/reports/ReporteComparativoPage'
 
 function crearQueryClient() {
   return new QueryClient({
@@ -71,7 +73,9 @@ export function App({
       item.to !== '/shifts/calendario' &&
       item.to !== '/users' &&
       item.to !== '/auditoria' &&
-      item.to !== '/attendance',
+      item.to !== '/attendance' &&
+      item.to !== '/branches' &&
+      item.to !== '/reports',
   )
 
   return (
@@ -114,6 +118,25 @@ export function App({
                   }
                 />
               ))}
+              <Route
+                path="branches"
+                element={
+                  <RequirePermission
+                    permiso={['sucursales.ver', 'sucursales.crear_editar']}
+                    modo="any"
+                  >
+                    <SucursalesPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="reports"
+                element={
+                  <RequirePermission permiso="reportes.comparativos.ver">
+                    <ReporteComparativoPage />
+                  </RequirePermission>
+                }
+              />
               <Route
                 path="sales"
                 element={

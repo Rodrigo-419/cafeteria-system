@@ -25,6 +25,7 @@ import type {
   RegistroAsistenciaApi,
   RegistroMarcajeApi,
   ReporteComparativoApi,
+  ReporteSucursalApi,
   RespuestaLogin,
   StockInsumoApi,
   SucursalApi,
@@ -1318,6 +1319,66 @@ export const REPORTE_COMPARATIVO_PRUEBA: ReporteComparativoApi = {
   ],
 }
 
+// Reporte comparativo: respuesta dinámica que respeta el contrato real del
+// backend (rango válido de hasta 92 días, `hasta >= desde`, sucursal 404 y 403
+// sin `reportes.comparativos.ver`). Las métricas por sucursal salen del fixture
+// anterior; una sucursal sin datos responde con ceros y `ticketPromedio: null`.
+const MAXIMO_DIAS_REPORTE_MOCK = 92
+
+function esFechaLocalMock(valor: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false
+  const [anio, mes, dia] = valor.split('-').map(Number)
+  const fecha = new Date(Date.UTC(anio!, mes! - 1, dia!))
+  return (
+    fecha.getUTCFullYear() === anio &&
+    fecha.getUTCMonth() === mes! - 1 &&
+    fecha.getUTCDate() === dia
+  )
+}
+
+function diasDelRangoMock(desde: string, hasta: string): number {
+  const inicio = Date.parse(`${desde}T00:00:00.000Z`)
+  const fin = Date.parse(`${hasta}T00:00:00.000Z`)
+  return Math.round((fin - inicio) / 86_400_000) + 1
+}
+
+type MetricasReporte = Omit<ReporteSucursalApi, 'sucursalId' | 'sucursalNombre'>
+
+function metricasReporteVacias(): MetricasReporte {
+  return {
+    ventas: {
+      total: '0.00',
+      cantidad: 0,
+      ticketPromedio: null,
+      porMetodoPago: {
+        efectivo: { total: '0.00', cantidad: 0 },
+        tarjeta: { total: '0.00', cantidad: 0 },
+      },
+      anuladas: { cantidad: 0 },
+    },
+    inventario: {
+      movimientos: {
+        total: 0,
+        entradas: { cantidad: 0, cantidadNeta: '0.00' },
+        ajustes: { cantidad: 0, cantidadNeta: '0.00' },
+      },
+    },
+    asistencia: { faltas: 0, faltasJustificadas: 0 },
+    estadoActual: { insumosConAlertaAbierta: 0, entradasAbiertas: 0 },
+  }
+}
+
+function metricasReporteDeSucursal(sucursalId: string): MetricasReporte {
+  const fila = REPORTE_COMPARATIVO_PRUEBA.sucursales.find(
+    (s) => s.sucursalId === sucursalId,
+  )
+  if (!fila) {
+    return metricasReporteVacias()
+  }
+  const { sucursalId: _id, sucursalNombre: _nombre, ...metricas } = fila
+  return metricas
+}
+
 // Auditoría: log de eventos de solo lectura.
 //
 // Fixtures estáticas que cubren los casos que la interfaz debe resolver:
@@ -1781,6 +1842,62 @@ function horariosSeCruzanMock(
   )
 }
 
+// Sucursales: CRUD con alcance por rol.
+//
+// El estado es mutable y se reinicia entre pruebas con
+// `reiniciarSucursalesPrueba`. El Admin ve todas (ordenadas por nombre); un
+// Gerente o Empleado solo la suya y cualquier otra devuelve 404. La unicidad de
+// nombre ignora mayúsculas y espacios internos, como `branches.rules.ts`. El
+// actor de alcance lo fija `iniciarSesionDePrueba` con
+// `establecerActorSucursales`.
+let sucursalesEstado: SucursalApi[] = SUCURSALES_PRUEBA.map((s) => ({ ...s }))
+
+let actorSucursales: UsuarioApi | null = null
+
+export function establecerActorSucursales(usuario: UsuarioApi | null): void {
+  actorSucursales = usuario
+}
+
+/** Restaura las sucursales mockeadas y limpia el actor de alcance. */
+export function reiniciarSucursalesPrueba(): void {
+  sucursalesEstado = SUCURSALES_PRUEBA.map((s) => ({ ...s }))
+  actorSucursales = null
+}
+
+function sucursalesEsAdmin(): boolean {
+  if (!actorSucursales) return true
+  return (actorSucursales.rol ?? '').toLowerCase() === 'admin'
+}
+
+function sucursalVisible(sucursal: SucursalApi): boolean {
+  if (sucursalesEsAdmin()) return true
+  return sucursal.id === (actorSucursales?.sucursalId ?? null)
+}
+
+function sucursalFueraDeAlcance() {
+  return errorApi(404, 'Sucursal no encontrada', 'Not Found')
+}
+
+// El reporte comparativo reutiliza el actor de sesión para decidir el 403: solo
+// quien tiene `reportes.comparativos.ver` (Admin) puede consultarlo.
+function reportesPermitido(): boolean {
+  if (!actorSucursales) return true
+  return actorSucursales.permisos.includes('reportes.comparativos.ver')
+}
+
+function normalizarNombreSucursalMock(nombre: string): string {
+  return nombre.trim().replace(/\s+/gu, ' ').toLowerCase()
+}
+
+function nombreSucursalEnUso(nombre: string, exceptoId?: string): boolean {
+  const normalizado = normalizarNombreSucursalMock(nombre)
+  return sucursalesEstado.some(
+    (sucursal) =>
+      sucursal.id !== exceptoId &&
+      normalizarNombreSucursalMock(sucursal.nombre) === normalizado,
+  )
+}
+
 export const handlers = [
   http.post(`${BASE_API}/auth/login`, async ({ request }) => {
     const cuerpo = (await request.json()) as {
@@ -1806,6 +1923,178 @@ export const handlers = [
   }),
 
   http.get(`${BASE_API}/auth/me`, () => HttpResponse.json(USUARIO_PRUEBA)),
+
+  http.get(`${BASE_API}/branches`, () => {
+    const visibles = sucursalesEstado
+      .filter(sucursalVisible)
+      .sort((a, b) => a.nombre.localeCompare(b.nombre))
+      .map((sucursal) => ({ ...sucursal }))
+    return HttpResponse.json(visibles)
+  }),
+
+  http.post(`${BASE_API}/branches`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      nombre?: unknown
+      direccion?: unknown
+      telefono?: unknown
+    }
+
+    if (typeof cuerpo.nombre !== 'string' || cuerpo.nombre.trim().length < 2) {
+      return errorApi(
+        400,
+        'El nombre debe tener al menos 2 caracteres',
+        'Bad Request',
+      )
+    }
+    if (typeof cuerpo.direccion !== 'string' || cuerpo.direccion.trim().length < 1) {
+      return errorApi(
+        400,
+        'La direccion no puede estar vacia',
+        'Bad Request',
+      )
+    }
+    const nombre = cuerpo.nombre.trim()
+    if (nombre.length > 100) {
+      return errorApi(
+        400,
+        'El nombre no puede exceder 100 caracteres',
+        'Bad Request',
+      )
+    }
+    const direccion = cuerpo.direccion.trim()
+    if (direccion.length > 200) {
+      return errorApi(
+        400,
+        'La direccion no puede exceder 200 caracteres',
+        'Bad Request',
+      )
+    }
+    let telefono: string | null
+    if (cuerpo.telefono === undefined || cuerpo.telefono === null) {
+      telefono = null
+    } else if (typeof cuerpo.telefono === 'string') {
+      telefono = cuerpo.telefono.trim()
+      if (telefono.length > 30) {
+        return errorApi(
+          400,
+          'El telefono no puede exceder 30 caracteres',
+          'Bad Request',
+        )
+      }
+    } else {
+      return errorApi(400, 'El telefono debe ser texto', 'Bad Request')
+    }
+
+    if (nombreSucursalEnUso(nombre)) {
+      return errorApi(
+        409,
+        'Ya existe una sucursal con ese nombre',
+        'Conflict',
+      )
+    }
+
+    const sucursal: SucursalApi = {
+      id: `sucursal-${sucursalesEstado.length + 1}`,
+      nombre,
+      direccion,
+      telefono,
+    }
+    sucursalesEstado = [...sucursalesEstado, sucursal]
+    return HttpResponse.json(sucursal, { status: 201 })
+  }),
+
+  http.get(`${BASE_API}/branches/:id`, ({ params }) => {
+    const sucursal = sucursalesEstado.find((s) => s.id === params.id)
+    if (!sucursal || !sucursalVisible(sucursal)) {
+      return sucursalFueraDeAlcance()
+    }
+    return HttpResponse.json({ ...sucursal })
+  }),
+
+  http.patch(`${BASE_API}/branches/:id`, async ({ request, params }) => {
+    const sucursal = sucursalesEstado.find((s) => s.id === params.id)
+    if (!sucursal || !sucursalVisible(sucursal)) {
+      return sucursalFueraDeAlcance()
+    }
+    const cuerpo = (await request.json()) as {
+      nombre?: unknown
+      direccion?: unknown
+      telefono?: unknown
+    }
+
+    let nombre = sucursal.nombre
+    if (cuerpo.nombre !== undefined) {
+      if (typeof cuerpo.nombre !== 'string' || cuerpo.nombre.trim().length < 2) {
+        return errorApi(
+          400,
+          'El nombre debe tener al menos 2 caracteres',
+          'Bad Request',
+        )
+      }
+      nombre = cuerpo.nombre.trim()
+      if (nombre.length > 100) {
+        return errorApi(
+          400,
+          'El nombre no puede exceder 100 caracteres',
+          'Bad Request',
+        )
+      }
+    }
+
+    let direccion = sucursal.direccion
+    if (cuerpo.direccion !== undefined) {
+      if (
+        typeof cuerpo.direccion !== 'string' ||
+        cuerpo.direccion.trim().length < 1
+      ) {
+        return errorApi(
+          400,
+          'La direccion no puede estar vacia',
+          'Bad Request',
+        )
+      }
+      direccion = cuerpo.direccion.trim()
+      if (direccion.length > 200) {
+        return errorApi(
+          400,
+          'La direccion no puede exceder 200 caracteres',
+          'Bad Request',
+        )
+      }
+    }
+
+    let telefono = sucursal.telefono
+    if (cuerpo.telefono !== undefined) {
+      if (cuerpo.telefono === null) {
+        telefono = null
+      } else if (typeof cuerpo.telefono === 'string') {
+        telefono = cuerpo.telefono.trim()
+        if (telefono.length > 30) {
+          return errorApi(
+            400,
+            'El telefono no puede exceder 30 caracteres',
+            'Bad Request',
+          )
+        }
+      } else {
+        return errorApi(400, 'El telefono debe ser texto', 'Bad Request')
+      }
+    }
+
+    if (nombre !== sucursal.nombre && nombreSucursalEnUso(nombre, sucursal.id)) {
+      return errorApi(
+        409,
+        'Ya existe una sucursal con ese nombre',
+        'Conflict',
+      )
+    }
+
+    const actualizado: SucursalApi = { ...sucursal, nombre, direccion, telefono }
+    sucursalesEstado = sucursalesEstado.map((s) =>
+      s.id === sucursal.id ? actualizado : s,
+    )
+    return HttpResponse.json({ ...actualizado })
+  }),
 
   http.get(`${BASE_API}/branches/:sucursalId/products`, ({ request }) => {
     const url = new URL(request.url)
@@ -3140,9 +3429,61 @@ export const handlers = [
     return HttpResponse.json(equipo)
   }),
 
-  http.get(`${BASE_API}/reports/comparativo`, () =>
-    HttpResponse.json(REPORTE_COMPARATIVO_PRUEBA),
-  ),
+  http.get(`${BASE_API}/reports/comparativo`, ({ request }) => {
+    if (!reportesPermitido()) {
+      return errorApi(403, 'Acceso denegado', 'Forbidden')
+    }
+
+    const url = new URL(request.url)
+    const desde = url.searchParams.get('desde') ?? ''
+    const hasta = url.searchParams.get('hasta') ?? ''
+    const sucursalId = url.searchParams.get('sucursalId')
+
+    if (!esFechaLocalMock(desde) || !esFechaLocalMock(hasta)) {
+      return errorApi(
+        400,
+        'La fecha debe ser un dia valido en formato YYYY-MM-DD',
+        'Bad Request',
+      )
+    }
+    if (hasta < desde) {
+      return errorApi(
+        400,
+        'El filtro hasta no puede ser anterior a desde',
+        'Bad Request',
+      )
+    }
+    if (diasDelRangoMock(desde, hasta) > MAXIMO_DIAS_REPORTE_MOCK) {
+      return errorApi(
+        400,
+        `El rango del reporte no puede superar ${MAXIMO_DIAS_REPORTE_MOCK} dias`,
+        'Bad Request',
+      )
+    }
+
+    let seleccionadas = sucursalesEstado
+    if (sucursalId !== null) {
+      seleccionadas = sucursalesEstado.filter((s) => s.id === sucursalId)
+      if (seleccionadas.length === 0) {
+        return errorApi(404, 'La sucursal no existe', 'Not Found')
+      }
+    }
+
+    const ordenadas = [...seleccionadas].sort((a, b) =>
+      a.nombre.localeCompare(b.nombre),
+    )
+    const reporte: ReporteComparativoApi = {
+      desde,
+      hasta,
+      generadoEn: '2026-10-11T20:00:00.000Z',
+      sucursales: ordenadas.map((sucursal) => ({
+        sucursalId: sucursal.id,
+        sucursalNombre: sucursal.nombre,
+        ...metricasReporteDeSucursal(sucursal.id),
+      })),
+    }
+    return HttpResponse.json(reporte)
+  }),
 
   // ------------------------------------------------------------ empleados
 

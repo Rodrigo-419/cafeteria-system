@@ -1,0 +1,1 @@
+export { ReporteComparativoPage } from './ReporteComparativoPage'
