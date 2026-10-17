@@ -1,31 +1,163 @@
 # Cafeteria System
 
-Sistema de gestión para una cadena de cafeterías con múltiples sucursales.
-Permite centralizar ventas, inventario, personal y asistencia de cada sede.
-Monorepo con backend NestJS, frontend y documentación técnica.
+Sistema de gestión para una **cadena de cafeterías con varias sucursales**. Centraliza
+en una sola aplicación la operación de cada sede —ventas, catálogo y precios,
+inventario con alertas, equipos, personal con turnos y asistencia— y ofrece a la
+administración una vista comparativa entre sucursales y una bitácora de auditoría.
+Es un **monorepo** con backend (NestJS + Prisma + PostgreSQL), frontend (React + Vite +
+TypeScript) y documentación técnica.
 
-## Estructura del repositorio
+## Qué resuelve
 
-| Ruta                | Contenido                                                      |
-| ------------------- | -------------------------------------------------------------- |
-| `backend/`          | API REST con NestJS, Prisma y PostgreSQL (módulos y pruebas).  |
-| `frontend/`         | Aplicación cliente React + Vite + TypeScript (SPA) independiente, con proxy /api al backend en desarrollo. |
-| `docs/`             | Documentación técnica del sistema.                             |
-| `docker-compose.yml`| Base de datos PostgreSQL para desarrollo.                      |
+- **Ventas de mostrador** con precios congelados en el momento de la venta y anulación
+  con motivo el mismo día.
+- **Catálogo global** (categorías, variantes y productos) y **precios por sucursal**
+  con ofertas activas/inactivas.
+- **Inventario de insumos**: stock por sucursal, entradas, recuentos físicos,
+  movimientos y **alertas de stock que se abren y cierran solas**.
+- **Personal**: usuarios y permisos, equipos por sucursal, empleados con PIN de
+  marcación, turnos fijos/variables, asignaciones y **asistencia** (marcación con PIN,
+  correcciones, justificación de faltas).
+- **Reporte comparativo** entre sucursales (ventas, inventario y asistencia) y una
+  **auditoría inmutable** de las operaciones que cambian estado.
 
-## Requisitos
+## Funcionalidades por módulo
 
-- Node.js 24 y npm (el proyecto declara `engines` en `backend/package.json`).
-- PostgreSQL 17 (o el contenedor de `docker-compose.yml`).
+Todos los módulos del backend están implementados y registrados en `AppModule`.
+
+| Módulo       | Qué hace |
+| ------------ | -------- |
+| `auth`       | Login JWT (8 h), perfil propio y límite de intentos (solo cuenta los fallos). |
+| `users`      | Usuarios, roles, alcance por sucursal y permisos individuales con historial. |
+| `branches`   | Sucursales: crear, editar y consultar con visibilidad por rol (sin borrado). |
+| `products`   | Catálogo global (categorías, variantes, productos) y carta/precios por sucursal. |
+| `inventory`  | Insumos, stock, entradas, recuentos, movimientos y alertas automáticas. |
+| `sales`      | Registro (precios congelados), consulta y anulación de ventas del mismo día. |
+| `equipment`  | Equipos por sucursal con historial de estado y observaciones. |
+| `employees`  | Empleados vinculados a un usuario, cargo, cese y PIN de marcación. |
+| `shifts`     | Turnos fijos/variables y asignaciones con control de solapamiento. |
+| `attendance` | Marcación con PIN, correcciones, justificaciones de faltas y lecturas. |
+| `reports`    | Reporte comparativo entre sucursales (ventas, inventario y asistencia). |
+| `auditoria`  | Rastro inmutable de cambios (personas, sucursales, equipos, turnos y catálogo) con listado e historial por usuario. |
+
+## Roles y permisos
+
+Tres roles fijos —**Admin** (central, sin sucursal; 20 de los 24 permisos), **Gerente**
+(de una sucursal; gestiona Empleados de la suya y fija precios) y **Empleado** (de una
+sucursal; puede recibir permisos individuales)— sobre una matriz de **24 permisos**; cada
+ruta protegida exige un permiso y el alcance por sucursal se aplica en el caso de uso.
+La matriz completa está en [Seguridad y permisos](docs/seguridad-y-permisos.md).
+
+## Stack
+
+- **Backend**: NestJS + TypeScript, Prisma + PostgreSQL 17, `class-validator`,
+  `@nestjs/jwt`, `@nestjs/throttler`, validación de entorno con Zod, Swagger y lint con
+  oxlint.
+- **Frontend**: React 19 + Vite + TypeScript, React Router, TanStack Query,
+  React Hook Form + Zod, Tailwind CSS v4 + shadcn/ui, Vitest + Testing Library + MSW,
+  ESLint + Prettier.
+- **Pruebas de navegador**: Playwright + `@axe-core/playwright` (suite propia, fuera del CI).
+
+## Arquitectura (en pocas líneas)
+
+Monolito modular con NestJS: todo el tráfico pasa por el prefijo `/api`; cada petición
+atraviesa, en orden, los guards globales **JWT → permisos → throttling** y el
+`ValidationPipe` antes del controlador. Cada módulo (`backend/src/modules/*`) se organiza
+en capas **presentation / application / domain / infrastructure**, con las reglas de
+negocio puras en `domain` y una transacción local (Prisma) por caso de uso. Los permisos
+efectivos se **recalculan en cada petición** contra la base. El frontend es una SPA
+independiente que en desarrollo usa el **proxy de Vite** `/api` hacia el backend. Detalle
+en [Visión general de la arquitectura](docs/architecture/vision-general.md).
+
+## Capturas
+
+Generadas con datos de demostración (tema claro, etiquetas en español). El conjunto
+completo de **21 capturas** vive en [`docs/capturas/`](docs/capturas/).
+
+| | |
+| --- | --- |
+| ![Login administrativo](docs/capturas/01-login.png) | ![Panel del administrador](docs/capturas/02-dashboard-admin.png) |
+| ![Registro de ventas](docs/capturas/03-ventas.png) | ![Inventario de insumos](docs/capturas/04-inventario.png) |
+| ![Catálogo de productos](docs/capturas/07-productos.png) | ![Usuarios y permisos](docs/capturas/11-permisos-usuario.png) |
+| ![Bitácora de auditoría](docs/capturas/12-auditoria.png) | ![Reporte comparativo](docs/capturas/14-reporte-comparativo.png) |
+| ![Terminal de marcación](docs/capturas/19-terminal-marcacion.png) | ![Vista móvil del panel](docs/capturas/20-movil-panel.png) |
+
+## Puesta en marcha en local
+
+Requisitos: **Node.js 24** y **PostgreSQL 17** (o el contenedor de `docker-compose.yml`).
+
+```bash
+# 1. Base de datos (PostgreSQL 17)
+docker compose up -d
+
+# 2. Backend: variables de entorno e instalación
+cd backend
+Copy-Item .env.example .env        # edita DATABASE_URL, JWT_SECRET y los seeds
+npm install
+
+# 3. Migraciones y datos base (3 roles, 24 permisos, 3 sucursales, admin)
+npx prisma migrate deploy
+npm run db:seed
+
+# 4. Datos de demostración (solo desarrollo; exige el seed base)
+npm run db:seed:demo
+
+# 5. Servidor de desarrollo  ->  http://localhost:3000/api  (Swagger en /api/docs)
+npm run start:dev
+```
+
+```bash
+# 6. Frontend (en otra terminal)  ->  http://localhost:5173
+cd frontend
+Copy-Item .env.example .env
+npm ci
+npm run dev
+```
+
+El **seed de demostración** crea dos sucursales con un usuario por rol. Los cuatro
+usuarios comparten la contraseña definida en `SEED_DEMO_PASSWORD` (no se muestra):
+
+| Usuario | Rol | Sucursal |
+| ------- | --- | -------- |
+| `gerente.centro`  | Gerente  | Sucursal Centro |
+| `empleado.centro` | Empleado | Sucursal Centro |
+| `gerente.norte`   | Gerente  | Sucursal Norte  |
+| `empleado.norte`  | Empleado | Sucursal Norte  |
+
+Los empleados de demostración usan el PIN fijo `246810` (solo entorno local). Los
+secretos viven únicamente en archivos `.env` no versionados; nunca se suben al
+repositorio. La guía completa (variables, resolución de problemas) está en
+[Guía de inicio](docs/guia-de-inicio.md).
+
+## Pruebas y CI
+
+| Suite | Dónde | Comando |
+| ----- | ----- | ------- |
+| Unitarias backend | `backend/src/**/*.spec.ts` | `cd backend && npm test` |
+| E2E backend (HTTP + base real `*_test`) | `backend/test/*.e2e-spec.ts` | `cd backend && npm run test:e2e` |
+| Unitarias/componentes frontend | `frontend/src/**/*.test.tsx` | `cd frontend && npm test` |
+| Navegador (Playwright + axe) | `frontend/e2e/specs` | `cd frontend && npm run test:e2e` |
+
+Las pruebas e2e del backend usan una base **aparte** (`cafeteria_test`, se aborta si el
+nombre no termina en `_test`):
+
+```bash
+docker exec cafeteria-db psql -U cafeteria -d cafeteria_db -c 'CREATE DATABASE cafeteria_test;'
+```
+
+La suite **Playwright** maneja la aplicación real con un navegador: necesita el backend y
+el frontend arrancados y las variables `VERIF_ADMIN_PASSWORD` / `VERIF_DEMO_PASSWORD` en
+el entorno; **no** se ejecuta en CI.
+
+**Integración continua** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): en cada
+push/PR a `main` corren en paralelo un job de **backend** (`prisma generate`, build, lint,
+unitarias y e2e contra un servicio PostgreSQL 17) y un job de **frontend** (`npm ci`, lint,
+build con comprobación de tipos y `npm test`). Cifras actuales y detalle de cada suite en
+[Estrategia de pruebas](docs/estrategia-de-pruebas.md).
 
 ## Documentación
 
-El índice completo de la documentación técnica está en [docs/README.md](docs/README.md).
-Incluye la guía de inicio, la visión general de la arquitectura, la seguridad y
-permisos, el modelo de datos, la referencia de la API, las decisiones de diseño
-y la estrategia de pruebas.
-
-Documentos destacados:
+El índice completo está en [docs/README.md](docs/README.md). Documentos destacados:
 
 - [Guía de inicio](docs/guia-de-inicio.md)
 - [Visión general de la arquitectura](docs/architecture/vision-general.md)
@@ -34,81 +166,30 @@ Documentos destacados:
 - [Referencia de la API](docs/referencia-api.md)
 - [Decisiones de diseño](docs/architecture/decisiones-de-diseno.md)
 - [Estrategia de pruebas](docs/estrategia-de-pruebas.md)
+- [Frontend](docs/frontend.md)
 
-## Estado por módulo
+## Limitaciones conocidas y mejoras futuras
 
-| Módulo       | Estado      | Descripción |
-| ------------ | ----------- | ----------- |
-| `auth`       | Implementado | Login JWT (8 h), límite de 5 intentos/min/IP y perfil propio. |
-| `users`      | Implementado | Usuarios, roles, alcance por sucursal y permisos individuales con historial. |
-| `branches`   | Implementado | Sucursales: crear, editar y consultar con visibilidad por rol. |
-| `products`   | Implementado | Catálogo global (categorías, variantes, productos) y precios por sucursal. |
-| `inventory`  | Implementado | Insumos, stock, entradas, recuentos, movimientos y alertas automáticas. |
-| `sales`      | Implementado | Registro (precios congelados), consulta y anulación del mismo día. |
-| `equipment`  | Implementado | Equipos por sucursal con historial de estado y observaciones. |
-| `employees`  | Implementado | Empleados vinculados a un usuario, cargo, cese y PIN de marcación. |
-| `shifts`     | Implementado | Turnos fijos/variables y asignaciones con control de solapamiento. |
-| `attendance` | Implementado | Registro de asistencia (marcas inmutables), correcciones, justificaciones y faltas. |
-| `reports`    | Implementado | Reporte comparativo entre sucursales (ventas, inventario y asistencia). |
+- **Ruta para listar usuarios vinculables**: al dar de alta un empleado se vincula un
+  usuario existente por `usuarioId`, pero la API no expone un endpoint que devuelva los
+  usuarios candidatos a vincular.
+- **Idempotencia en recuentos y ventas**: el `POST` de recuento y el de venta no tienen
+  clave de idempotencia en el servidor (un doble envío crearía dos registros); se mitiga
+  en el frontend deshabilitando el botón durante la petición.
+- **Bitácora de accesos y seguridad**: la auditoría cubre operaciones de negocio
+  (personas, sucursales, equipos, turnos y catálogo); no registra inicios de sesión ni
+  otros eventos de seguridad (el login queda expresamente excluido).
+- **Motivo y acta de baja de empleados**: el cese fija la fecha y bloquea la cuenta, pero
+  no guarda un motivo ni un acta de baja.
+- **Reactivación de empleados**: el cese es definitivo (estado `inactivo`); no hay ruta
+  para reactivar a un empleado cesado.
+- **Límite de intentos en memoria**: los contadores de login y de PIN viven en la memoria
+  del proceso; se reinician al reiniciar el servidor y **no se comparten entre instancias**
+  (requiere un almacén compartido para escalar en horizontal).
+- **Tokens vigentes tras cambiar la contraseña**: cambiar la contraseña no invalida los
+  tokens ya emitidos; siguen válidos hasta expirar.
+- **Playwright fuera del CI**: la suite de navegador no se ejecuta en GitHub Actions;
+  depende de servidores locales y variables de entorno.
 
-Todos los módulos del backend están implementados. Ver
-[Decisiones de diseño](docs/architecture/decisiones-de-diseno.md) para las reglas
-de negocio y [Referencia de la API](docs/referencia-api.md) para las rutas.
-
-## Puesta en marcha
-
-La guía paso a paso (base de datos, variables de entorno, migraciones, seed y
-servidor de desarrollo) está en [docs/guia-de-inicio.md](docs/guia-de-inicio.md).
-
-## API
-
-- Base de la API: `http://localhost:3000/api` (el prefijo `/api` lo define
-  `backend/src/app.setup.ts`).
-- Documentación interactiva (Swagger): `http://localhost:3000/api/docs` cuando el
-  entorno de ejecución no es `production`.
-- Autenticación: `POST /api/auth/login` devuelve un token JWT que debe enviarse en
-  la cabecera `Authorization: Bearer <token>`.
-
-## Pruebas
-
-La estrategia, las cifras actuales y el detalle de las suites están en
-[docs/estrategia-de-pruebas.md](docs/estrategia-de-pruebas.md).
-
-GitHub Actions (`.github/workflows/ci.yml`) ejecuta en cada push/PR a `main` el
-build, el lint, las pruebas unitarias y las e2e contra un servicio PostgreSQL 17.
-
-### Unitarias
-
-Prueban lógica aislada: casos de uso y reglas de dominio, sin base de datos.
-
-```bash
-cd backend
-npm test
-```
-
-### E2E
-
-Levantan la aplicación Nest real contra una base de datos **aparte** y la ejercitan por HTTP con Supertest. Reutilizan el mismo `configureApp` que `main.ts`, de modo que el prefijo global y el `ValidationPipe` se prueban tal y como están en producción.
-
-```bash
-cd backend
-npm run test:e2e
-```
-
-La configuración vive en `backend/test/jest-e2e.json` y:
-
-- corre en serie (`--runInBand`) porque las pruebas comparten una única base de datos;
-- fija `DATABASE_URL` y el secreto JWT en `backend/test/entorno-pruebas.ts` como `setupFiles`, antes de que se importe `AppModule`, porque `ConfigModule.forRoot()` lee el entorno en el momento de la importación;
-- redirige los imports del cliente Prisma generado a su `.ts`, ya que Node no resuelve el `.js` que aparece en el código generado.
-
-#### Base de datos de pruebas
-
-Las pruebas nunca tocan la base de desarrollo. El nombre se deriva de `DATABASE_URL` y debe terminar en `_test`; si no, la ejecución se aborta antes de migrar o borrar nada.
-
-```bash
-docker exec cafeteria-db psql -U cafeteria -d cafeteria_db -c 'CREATE DATABASE cafeteria_test;'
-```
-
-Ese es el único paso manual: la URL completa se calcula a partir de `backend/.env` sin imprimirla, `prisma migrate deploy` aplica las migraciones y cada prueba empieza truncando las tablas y volviendo a sembrar los datos mínimos (3 sucursales, 3 roles, permisos y un administrador).
-
-El resto del entorno de pruebas (secreto JWT, credenciales del administrador y puertos) está en `backend/test/utils/constantes-pruebas.ts`.
+Las reglas que todavía no tienen requisito escrito o prueba dedicada se marcan como
+**POR CONFIRMAR** en [Decisiones de diseño](docs/architecture/decisiones-de-diseno.md).

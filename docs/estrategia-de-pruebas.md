@@ -271,8 +271,8 @@ completa ronda los 27 s).
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 40
-- **Total de tests**: **260 passed**
+- **Archivos de prueba**: 53
+- **Total de tests**: **390 passed** (unitaria/componentes, Vitest + MSW)
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/auth/AuthContext.test.tsx`, `lib/format/money.spec.ts`,
@@ -299,8 +299,32 @@ productos y la carta (`features/products/CatalogoProductos.test.tsx`,
 (`features/equipment/EquiposPage.test.tsx`,
 `features/equipment/EquipoDetallePage.test.tsx`,
 `features/equipment/equipment.api.test.ts`), la bitácora de auditoría
-(`features/audit/AuditoriaPage.test.tsx`) y el landing autenticado
+(`features/audit/AuditoriaPage.test.tsx`), el formateo del detalle de auditoría
+(`lib/auditoria/etiquetas.test.ts`), la gestión de usuarios y permisos
+(`features/users/UsuariosPage.test.tsx`, `features/users/PermisosUsuarioDialog.test.tsx`),
+las sucursales y el reporte comparativo
+(`features/branches/SucursalesPage.test.tsx`,
+`features/reports/ReporteComparativoPage.test.tsx`) y el landing autenticado
 (`features/auth/landing.test.tsx`).
+
+### Pruebas de navegador con Playwright (capa adicional)
+
+Además de Vitest/MSW (que mockean la red), hay una suite **Playwright** que
+maneja la aplicación **real** (frontend en Vite + backend + PostgreSQL reales)
+con un navegador Chromium. Vive en `frontend/e2e/` (13 specs, **34 pruebas**),
+se lanza con `npm run test:e2e` y **no** se ejecuta en CI (no requiere levantar
+servidores: usa los ya arrancados). Cubre los flujos de extremo a extremo (login
+por rol, cambio de cuenta, menús/rutas, venta y anulación, inventario y alertas,
+usuarios/permisos/bloqueo, auditoría, marcación con PIN, reportes), una pasada de
+**pulido** que recorre cada pantalla por rol buscando códigos técnicos, UUID,
+JSON crudo, `undefined`/`null`/`NaN`, etiquetas en inglés y errores de consola,
+una auditoría de **accesibilidad** con `@axe-core/playwright` (WCAG 2.1 A/AA; la
+suite falla solo con violaciones `critical`/`serious`), una comprobación **móvil**
+a 390 px (sin scroll horizontal y menú colapsable) y la **generación de
+capturas** para el portafolio en `docs/capturas/`. Las contraseñas se leen de
+`VERIF_ADMIN_PASSWORD`/`VERIF_DEMO_PASSWORD` (nunca del repositorio) y los
+artefactos de Playwright quedan ignorados por git. Detalle de pantallas, hallazgos
+y correcciones en `docs/frontend.md`.
 
 ### Nada de `setState` tras desmontar (regla)
 
