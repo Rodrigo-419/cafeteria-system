@@ -644,7 +644,7 @@ export function DesignSystemPage() {
                 <Input id="ds-input" placeholder="Escribe…" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ds-select">Select</Label>
+                <Label htmlFor="ds-select">Seleccionar</Label>
                 <Select>
                   <SelectTrigger id="ds-select">
                     <SelectValue placeholder="Selecciona" />

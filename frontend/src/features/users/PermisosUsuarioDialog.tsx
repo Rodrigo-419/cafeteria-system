@@ -39,6 +39,7 @@ import {
   useAsignarPermisoUsuario,
   useEliminarPermisoUsuario,
   usePermisosUsuario,
+  useSucursalesUsuarios,
 } from './queries'
 import type { PermisoEfectivoApi, UsuarioGestionApi } from '@/types/api'
 
@@ -56,6 +57,13 @@ export function PermisosUsuarioDialog({
   const asignar = useAsignarPermisoUsuario()
   const eliminar = useEliminarPermisoUsuario()
   const esPropia = actor?.id === usuario.id
+
+  // Nombre de la sucursal para no exponer el identificador crudo en la cabecera.
+  const sucursales = useSucursalesUsuarios(usuario.sucursalId != null)
+  const nombreSucursal = usuario.sucursalId
+    ? sucursales.data?.find((sucursal) => sucursal.id === usuario.sucursalId)
+        ?.nombre
+    : undefined
 
   const puedeVerHistorial =
     actor != null && tienePermiso(actor.permisos, 'usuarios.crear_editar')
@@ -164,7 +172,7 @@ export function PermisosUsuarioDialog({
           <DialogTitle>Permisos de {usuario.nombre}</DialogTitle>
           <DialogDescription>
             Rol {usuario.rol}
-            {usuario.sucursalId ? ` · sucursal ${usuario.sucursalId}` : ''}
+            {usuario.sucursalId ? ` · sucursal ${nombreSucursal ?? '—'}` : ''}
           </DialogDescription>
         </DialogHeader>
 

@@ -294,6 +294,89 @@ export const ETIQUETA_CAMPO_DETALLE: Record<string, string> = {
   observaciones: 'Observaciones',
 }
 
+/** Descripción en español de cada permiso (igual que el catálogo del backend). */
+const DESCRIPCION_PERMISO: Record<string, string> = {
+  'alertas.ver_resolver': 'Ver y resolver alertas de stock',
+  'asistencia.corregir': 'Corregir registros de asistencia',
+  'asistencia.marcar': 'Marcar entradas y salidas',
+  'asistencia.ver': 'Ver registros de asistencia',
+  'empleados.crear_editar': 'Crear y editar empleados',
+  'equipo.registrar_editar': 'Registrar y editar equipos',
+  'equipo.ver': 'Ver equipos y su historial',
+  'insumos.catalogo.editar': 'Editar el catálogo de insumos',
+  'insumos.ver': 'Ver insumos',
+  'inventario.minimo.editar': 'Editar el stock mínimo de los insumos',
+  'inventario.recuento': 'Registrar recuentos de inventario',
+  'inventario.registrar': 'Registrar movimientos de inventario',
+  'permisos.asignar': 'Asignar y revocar permisos de usuarios',
+  'productos.catalogo.editar': 'Editar el catálogo de productos',
+  'productos.precio.editar': 'Editar precios de productos por sucursal',
+  'productos.ver': 'Ver productos',
+  'reportes.comparativos.ver': 'Ver reportes comparativos entre sucursales',
+  'sucursales.crear_editar': 'Crear y editar sucursales',
+  'sucursales.ver': 'Ver sucursales',
+  'turnos.editar': 'Editar turnos y asignaciones',
+  'usuarios.crear_editar': 'Crear y editar usuarios',
+  'ventas.anular': 'Anular ventas del día',
+  'ventas.registrar': 'Registrar ventas',
+  'ventas.ver': 'Ver ventas',
+}
+
+/**
+ * Etiquetas en español de los valores de enumeración que el backend escribe en
+ * `detalle`, por campo. Evita exponer códigos internos (p. ej. `en_mantenimiento`).
+ */
+const ETIQUETA_VALOR_DETALLE: Record<string, Record<string, string>> = {
+  estado: {
+    activo: 'Activo',
+    bloqueado: 'Bloqueado',
+    inactivo: 'Inactivo',
+    descontinuado: 'Descontinuado',
+    funcionando: 'Funcionando',
+    danado: 'Dañado',
+    en_mantenimiento: 'En mantenimiento',
+    retirado: 'Retirado',
+    abierta: 'Abierta',
+    resuelta: 'Resuelta',
+    completada: 'Completada',
+    anulada: 'Anulada',
+  },
+  tipo: {
+    concedido: 'Concedido',
+    revocado: 'Revocado',
+    entrada: 'Entrada',
+    salida: 'Salida',
+    ajuste: 'Ajuste',
+    fijo: 'Fijo',
+    variable: 'Variable',
+  },
+  valorAnterior: {
+    rol: 'Del rol',
+    concedido: 'Concedido',
+    revocado: 'Revocado',
+  },
+  presentacion: {
+    paquete: 'Paquete',
+    bolsa: 'Bolsa',
+    caja: 'Caja',
+    unidad: 'Unidad',
+    paquete_varias_unidades: 'Paquete (varias unidades)',
+  },
+  metodo: {
+    efectivo: 'Efectivo',
+    tarjeta: 'Tarjeta',
+  },
+  diasSemana: {
+    lunes: 'Lunes',
+    martes: 'Martes',
+    miercoles: 'Miércoles',
+    jueves: 'Jueves',
+    viernes: 'Viernes',
+    sabado: 'Sábado',
+    domingo: 'Domingo',
+  },
+}
+
 /** Una fila del resumen "antes → después" de un evento. */
 export interface CampoDetalleAuditoria {
   /** Clave cruda del backend (para depurar). */
@@ -345,6 +428,23 @@ export function formatearValorDetalle(
 
   if (CAMPOS_FECHA_LOCAL.has(campo) && typeof valor === 'string') {
     return formatearFechaLocal(valor)
+  }
+
+  // El permiso se guarda como código (`insumos.ver`): se muestra su descripción
+  // para no exponer identificadores técnicos con puntos.
+  if (campo === 'permiso' && typeof valor === 'string') {
+    return DESCRIPCION_PERMISO[valor] ?? null
+  }
+
+  // Los identificadores (UUID) no se muestran crudos.
+  if (campo.endsWith('Id')) {
+    return null
+  }
+
+  const etiquetaValor =
+    typeof valor === 'string' ? ETIQUETA_VALOR_DETALLE[campo]?.[valor] : undefined
+  if (etiquetaValor !== undefined) {
+    return etiquetaValor
   }
 
   if (typeof valor === 'boolean') {

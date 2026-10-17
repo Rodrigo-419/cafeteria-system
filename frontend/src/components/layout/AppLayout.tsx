@@ -71,12 +71,17 @@ export function AppLayout() {
     <div className="min-h-screen bg-background">
       <div className="flex min-h-screen">
         <div className="hidden md:flex">{Sidebar}</div>
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex h-14 items-center justify-between border-b bg-card px-4">
             <div className="flex items-center gap-2">
               <Sheet open={open} onOpenChange={setOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="md:hidden">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="md:hidden"
+                    aria-label="Abrir menú"
+                  >
                     <MenuIcon className="size-5" />
                   </Button>
                 </SheetTrigger>
@@ -90,7 +95,6 @@ export function AppLayout() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
                   {usuario?.nombre ?? 'Usuario'} — {usuario?.rol ?? '-'}
-                  {usuario?.sucursalId ? ' — ' + usuario.sucursalId : ''}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

@@ -3,7 +3,7 @@ import { cn } from 'cn'
 const VARIANTES = {
   neutral: 'bg-muted text-muted-foreground',
   success: 'bg-success/10 text-success',
-  warning: 'bg-warning/10 text-warning',
+  warning: 'bg-warning/15 text-warning-800 dark:text-warning-300',
   error: 'bg-destructive/10 text-destructive',
   info: 'bg-info/10 text-info',
 } as const
