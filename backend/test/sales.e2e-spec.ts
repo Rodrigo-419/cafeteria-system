@@ -335,7 +335,7 @@ describe('ventas (e2e)', () => {
   });
 
   /** Envia un cuerpo literal a POST /sales. */
-  function enviar(token: string, cuerpo: unknown): request.Test {
+  function enviar(token: string, cuerpo: object): request.Test {
     return request(app.getHttpServer())
       .post('/api/sales')
       .set(...como(token))
@@ -641,7 +641,10 @@ describe('ventas (e2e)', () => {
       ];
 
       for (const comprobacion of comprobaciones) {
-        const respuesta = await enviar(tokenCentro, comprobacion.cuerpo);
+        const respuesta = await enviar(
+          tokenCentro,
+          comprobacion.cuerpo as object,
+        );
         expect(respuesta.status).toBe(400);
         // Los errores de una linea llevan el prefijo de la propiedad
         // (`items.0....`), por eso se buscan y no se comparan tal cual.

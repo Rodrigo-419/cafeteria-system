@@ -22,10 +22,17 @@
 import 'dotenv/config';
 import type { INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import bcrypt from 'bcryptjs';
 import { AppModule } from '../app.module';
 import { PrismaService } from './prisma.service';
 import { asegurarEntornoDemo, leerPasswordDemo } from './seed-demo-ambiente';
+import {
+  analizarDestinoBase,
+  confirmarDestino,
+  describirDestino,
+  leerConfirmacion,
+} from './seed-ambiente';
 import type { Contadores } from './seed';
 import {
   ROL_ADMIN,
@@ -967,6 +974,16 @@ async function ejecutar(): Promise<void> {
       logger: ['error', 'warn'],
     });
     const prisma = app.get(PrismaService);
+
+    // El destino real es el que resolvio ConfigService (que respeta la
+    // `DATABASE_URL` del entorno por encima de `backend/.env`). Se confirma
+    // antes de escribir nada, igual que el seed base.
+    const destino = analizarDestinoBase(
+      app.get(ConfigService).get<string>('DATABASE_URL') ?? '',
+    );
+    console.log(describirDestino(destino));
+    confirmarDestino(destino, leerConfirmacion(process.argv, process.env));
+
     const contadores = await ejecutarDemoSeed(app, prisma, password);
 
     imprimirResumen(contadores);

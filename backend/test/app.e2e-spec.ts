@@ -54,4 +54,18 @@ describe('App (e2e)', () => {
 
     expect(db).toBe(NOMBRE_BASE_PRUEBAS);
   });
+
+  it('GET /api/health responde 200 sin autenticacion', async () => {
+    await request(app.getHttpServer())
+      .get('/api/health')
+      .expect(200)
+      .expect({ estado: 'ok' });
+  });
+
+  it('GET /api responde 200 sin autenticacion', async () => {
+    await request(app.getHttpServer())
+      .get('/api')
+      .expect(200)
+      .expect('Hello World!');
+  });
 });

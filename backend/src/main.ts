@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { configureApp } from './app.setup';
+import { debeHabilitarDocumentacion } from './config/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,8 +20,8 @@ async function bootstrap() {
   // el pool de conexiones al recibir SIGINT/SIGTERM.
   app.enableShutdownHooks();
 
-  // Swagger solo en desarrollo o no produccion
-  if (configService.get<string>('NODE_ENV') !== 'production') {
+  // Swagger solo fuera de produccion: en produccion no se publica.
+  if (debeHabilitarDocumentacion(configService.get<string>('NODE_ENV'))) {
     const config = new DocumentBuilder()
       .setTitle('Cafeteria System API')
       .setDescription('API de gestion de cafeteria')
@@ -32,6 +33,6 @@ async function bootstrap() {
   }
 
   const port = configService.get<number>('app.port', 3000);
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 void bootstrap();

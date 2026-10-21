@@ -1,6 +1,7 @@
 // Repositorio de autenticacion: consultas sobre usuarios, rol y permisos.
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
+import { consultarConReconexion } from '../../../database/reconexion-prisma';
 import { $Enums, Prisma } from '../../../generated/prisma/client';
 
 export type UsuarioConPermisosBrutos = {
@@ -72,10 +73,14 @@ export class AuthRepository {
   async buscarUsuarioPorNombreUsuario(
     nombreUsuario: string,
   ): Promise<UsuarioConPermisosBrutos | null> {
-    return this.prisma.usuario.findUnique({
-      where: { nombreUsuario },
-      select: SELECT_USUARIO_CON_PERMISOS,
-    });
+    // Lectura: se reintenta solo si la base estaba suspendida y cerro la
+    // conexion. Nunca se reintenta si el error es otro (p. ej. validacion).
+    return consultarConReconexion(() =>
+      this.prisma.usuario.findUnique({
+        where: { nombreUsuario },
+        select: SELECT_USUARIO_CON_PERMISOS,
+      }),
+    );
   }
 
   /**
@@ -84,10 +89,13 @@ export class AuthRepository {
    * (la estrategia siempre consulta la base para detectar bloqueos o borrados).
    */
   async buscarUsuarioPorId(id: string): Promise<UsuarioConPermisosBrutos | null> {
-    return this.prisma.usuario.findUnique({
-      where: { id },
-      select: SELECT_USUARIO_CON_PERMISOS,
-    });
+    // Lectura: mismo criterio que `buscarUsuarioPorNombreUsuario`.
+    return consultarConReconexion(() =>
+      this.prisma.usuario.findUnique({
+        where: { id },
+        select: SELECT_USUARIO_CON_PERMISOS,
+      }),
+    );
   }
 
   /**

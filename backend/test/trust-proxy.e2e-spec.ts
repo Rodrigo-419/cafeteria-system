@@ -125,4 +125,39 @@ describe('trust proxy (e2e)', () => {
       expect(estados).toContain(429);
     });
   });
+
+  // Render es un unico proxy inverso delante del servicio, asi que el valor
+  // correcto es un salto ("1"), no "true" (que confiaria en todos los saltos).
+  describe('con un salto (TRUST_PROXY=1, valor de Render)', () => {
+    let app: INestApplication;
+
+    beforeAll(async () => {
+      app = await crearAppConLimiteLoginReal('1');
+    });
+
+    afterAll(async () => {
+      await app.close();
+    });
+
+    it('honra la IP del cliente declarada por el proxy', async () => {
+      const estados = await serieDeIntentos(
+        app,
+        (intento) => `203.0.113.${intento + 1}`,
+        20,
+      );
+
+      expect(estados).not.toContain(429);
+      expect(estados.every((estado) => estado === 401)).toBe(true);
+    });
+
+    it('bloquea la IP del cliente cuando se repite', async () => {
+      const estados = await serieDeIntentos(
+        app,
+        () => '198.51.100.9',
+        20,
+      );
+
+      expect(estados).toContain(429);
+    });
+  });
 });

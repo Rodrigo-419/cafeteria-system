@@ -146,7 +146,7 @@ function rutasDeController(clase: object): Ruta[] {
     return [];
   }
 
-  const proto = clase.prototype as Record<string, unknown>;
+  const proto = (clase as { prototype: Record<string, unknown> }).prototype;
   const rutas: Ruta[] = [];
 
   for (const nombre of Object.getOwnPropertyNames(proto)) {

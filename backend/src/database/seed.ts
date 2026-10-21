@@ -9,6 +9,12 @@ import {
   normalizarNombreUsuario,
   validarNombreUsuario,
 } from '../modules/auth/domain/rules/nombre-usuario';
+import {
+  analizarDestinoBase,
+  confirmarDestino,
+  describirDestino,
+  leerConfirmacion,
+} from './seed-ambiente';
 
 const RONDAS_BCRYPT = 12;
 const LONGITUD_MINIMA_PASSWORD = 12;
@@ -283,11 +289,26 @@ function crearCliente(): PrismaClient {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 }
 
+/**
+ * Muestra el destino y exige confirmacion explicita si es remoto.
+ *
+ * Se llama ANTES de escribir nada. `process.env.DATABASE_URL` es la URL
+ * efectiva: `dotenv` (cargado arriba con `dotenv/config`) no pisa una variable
+ * que ya exista en el entorno, asi que una `DATABASE_URL` de la consola tiene
+ * prioridad sobre `backend/.env`.
+ */
+function confirmarDestinoAntesDeEscribir(connectionString: string): void {
+  const destino = analizarDestinoBase(connectionString);
+  console.log(describirDestino(destino));
+  confirmarDestino(destino, leerConfirmacion(process.argv, process.env));
+}
+
 async function ejecutar(): Promise<void> {
   const prisma = crearCliente();
 
   try {
     const { nombreUsuario, password } = leerCredencialesAdmin();
+    confirmarDestinoAntesDeEscribir(process.env.DATABASE_URL ?? '');
     const contadores = await ejecutarSeed(prisma, { nombreUsuario, password });
 
     imprimirResumen(contadores);

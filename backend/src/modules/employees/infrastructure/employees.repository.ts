@@ -212,6 +212,23 @@ export class EmployeesRepository {
     });
   }
 
+  /**
+   * Empleado completo a partir del id del usuario vinculado, sin filtrar por
+   * alcance (es el propio usuario quien consulta sus datos). Devuelve null si
+   * el usuario no tiene vínculo de empleado.
+   */
+  async buscarRespuestaPorUsuarioId(
+    usuarioId: string,
+    cliente?: ClienteEmpleados,
+  ): Promise<EmpleadoRespuesta | null> {
+    const empleado = await this.db(cliente).empleado.findUnique({
+      where: { usuarioId },
+      select: SELECT_EMPLEADO_RESPUESTA,
+    });
+
+    return empleado ? aEmpleadoRespuesta(empleado) : null;
+  }
+
   /** true si el usuario ya esta vinculado a un empleado. */
   async usuarioYaEsEmpleado(
     usuarioId: string,
