@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filtrarMenu, MENU_ITEMS } from './menu'
+import { filtrarMenu, MENU_ITEMS, puedeAccederRuta, puedeVerItem } from './menu'
 
 const PERMISOS_ADMIN = [
   'sucursales.crear_editar',
@@ -59,31 +59,37 @@ const PERMISOS_EMPLEADO = [
   'asistencia.ver',
 ]
 
-const etiquetas = (permisos: string[]) =>
-  filtrarMenu(permisos).map((item) => item.label)
+const SUCURSAL_ID = 'sucursal-1'
+
+const etiquetas = (permisos: string[], sucursalId?: string | null) =>
+  filtrarMenu(permisos, sucursalId).map((item) => item.label)
 
 describe('menú por rol (según permisos efectivos)', () => {
-  it('el Admin ve todos los módulos', () => {
-    expect(filtrarMenu(PERMISOS_ADMIN)).toHaveLength(MENU_ITEMS.length)
-    expect(etiquetas(PERMISOS_ADMIN)).toContain('Reportes')
-    expect(etiquetas(PERMISOS_ADMIN)).toContain('Usuarios')
-    expect(etiquetas(PERMISOS_ADMIN)).toContain('Equipos')
+  it('el Admin ve todos los módulos excepto Mi horario (no tiene sucursal)', () => {
+    expect(filtrarMenu(PERMISOS_ADMIN)).toHaveLength(MENU_ITEMS.length - 1)
+    const visibles = etiquetas(PERMISOS_ADMIN)
+    expect(visibles).toContain('Reportes')
+    expect(visibles).toContain('Usuarios')
+    expect(visibles).toContain('Equipos')
+    expect(visibles).not.toContain('Mi horario')
   })
 
-  it('el Gerente no ve Reportes pero sí Usuarios e Inventario', () => {
-    const visibles = etiquetas(PERMISOS_GERENTE)
+  it('el Gerente ve Mi horario (tiene sucursal)', () => {
+    const visibles = etiquetas(PERMISOS_GERENTE, SUCURSAL_ID)
     expect(visibles).not.toContain('Reportes')
     expect(visibles).toContain('Usuarios')
     expect(visibles).toContain('Inventario')
     expect(visibles).toContain('Alertas')
+    expect(visibles).toContain('Mi horario')
   })
 
-  it('el Empleado solo ve Inicio, Sucursales, Productos y Asistencia', () => {
-    expect(etiquetas(PERMISOS_EMPLEADO)).toEqual([
+  it('el Empleado ve Inicio, Sucursales, Productos, Asistencia y Mi horario', () => {
+    expect(etiquetas(PERMISOS_EMPLEADO, SUCURSAL_ID)).toEqual([
       'Inicio',
       'Sucursales',
       'Productos',
       'Asistencia',
+      'Mi horario',
     ])
   })
 
@@ -96,5 +102,19 @@ describe('menú por rol (según permisos efectivos)', () => {
       (p) => p !== 'reportes.comparativos.ver',
     )
     expect(etiquetas(sinReportes)).not.toContain('Reportes')
+  })
+
+  it('puedeVerItem respeta requiereSucursal', () => {
+    const item = MENU_ITEMS.find((i) => i.to === '/my/schedule')!
+    expect(item.requiereSucursal).toBe(true)
+    expect(puedeVerItem(item, PERMISOS_ADMIN, null)).toBe(false)
+    expect(puedeVerItem(item, PERMISOS_ADMIN, SUCURSAL_ID)).toBe(true)
+  })
+
+  it('puedeAccederRuta deniega /my/schedule al Admin', () => {
+    expect(puedeAccederRuta(PERMISOS_ADMIN, '/my/schedule', null)).toBe(false)
+    expect(
+      puedeAccederRuta(PERMISOS_GERENTE, '/my/schedule', SUCURSAL_ID),
+    ).toBe(true)
   })
 })

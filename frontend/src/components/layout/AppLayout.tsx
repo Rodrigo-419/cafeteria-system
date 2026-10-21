@@ -20,7 +20,9 @@ export function AppLayout() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
 
-  const items = MENU_ITEMS.filter((it) => puedeVerItem(it, permisos))
+  const items = MENU_ITEMS.filter((it) =>
+    puedeVerItem(it, permisos, usuario?.sucursalId),
+  )
 
   const handleLogout = () => {
     cerrarSesion()

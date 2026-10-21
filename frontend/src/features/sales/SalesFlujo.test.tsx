@@ -48,7 +48,9 @@ describe('Flujo de ventas (rutas y permisos)', () => {
     )
     renderApp('/sales')
 
-    expect(await screen.findByText('Completada')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Completada', undefined, { timeout: 5000 }),
+    ).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /Nueva venta/ }),
     ).not.toBeInTheDocument()

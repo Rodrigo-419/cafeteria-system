@@ -30,6 +30,10 @@ import { diaDeNegocioLima, formatearDiaLocal, formatearFechaHora } from '@/lib/f
 import type { FiltrosComparativo } from '@/lib/api/reports'
 import { mensajeDeError } from './mensajes'
 import {
+  BotonImprimir,
+  CabeceraImpresion,
+} from '@/components/shared/Impresion'
+import {
   centimosDeImporte,
   restarDias,
   totalesDeRed,
@@ -196,9 +200,26 @@ export function ReporteComparativoPage() {
       <PageHeader
         title="Reporte comparativo de sucursales"
         description="Ventas, inventario y asistencia por sucursal en un rango de días."
+        actions={<BotonImprimir />}
       />
 
-      <Card>
+      <CabeceraImpresion
+        datos={{
+          titulo: 'Reporte comparativo de sucursales',
+          sucursal:
+            sucursalId === TODAS
+              ? 'Todas las sucursales'
+              : ((sucursales.data ?? []).find((s) => s.id === sucursalId)
+                  ?.nombre ?? '—'),
+          rango:
+            reporte.data !== undefined
+              ? `${formatearDiaLocal(reporte.data.desde)} – ${formatearDiaLocal(reporte.data.hasta)}`
+              : undefined,
+        }}
+        ahora={reporte.data ? new Date(reporte.data.generadoEn) : new Date()}
+      />
+
+      <Card className="no-print">
         <CardContent className="space-y-4 pt-6">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
@@ -322,7 +343,7 @@ export function ReporteComparativoPage() {
             />
           </div>
 
-          <section className="space-y-3">
+          <section className="print-avoid-break space-y-3">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold tracking-tight">
                 Comparativo del periodo
@@ -341,7 +362,7 @@ export function ReporteComparativoPage() {
             />
           </section>
 
-          <section className="space-y-3">
+          <section className="print-avoid-break space-y-3">
             <div className="space-y-1">
               <h2 className="text-lg font-semibold tracking-tight">
                 Estado actual

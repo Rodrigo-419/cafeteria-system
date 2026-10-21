@@ -29,7 +29,9 @@ export function DashboardPage() {
 
   const hayResumen =
     puedeVentas || puedeAlertas || puedeAsistencia || puedeEquipos || puedeReporte
-  const hayAccesos = filtrarMenu(permisos).some((item) => item.to !== '/')
+  const hayAccesos = filtrarMenu(permisos, usuario?.sucursalId).some(
+    (item) => item.to !== '/',
+  )
 
   return (
     <div className="space-y-6">

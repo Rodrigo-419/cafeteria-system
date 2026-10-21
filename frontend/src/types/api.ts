@@ -672,3 +672,39 @@ export interface PaginaAuditoriaApi<T> {
   page: number
   limit: number
 }
+
+// ----------------------------------------------------------- mi-horario
+
+/** Turno de un día en el horario propio (`GET /my/schedule`). */
+export interface TurnoMiHorarioApi {
+  tipo: TipoTurno
+  horaInicio: string | null
+  horaFin: string | null
+  diasSemana: string | null
+}
+
+/** Un día del horario propio: su fecha y el turno que toca (o `null`). */
+export interface DiaMiHorarioApi {
+  /** Día de negocio en America/Lima ("AAAA-MM-DD"). */
+  fecha: string
+  turno: TurnoMiHorarioApi | null
+}
+
+/** Datos del empleado autenticado para la cabecera del horario. */
+export interface EmpleadoMiHorarioApi {
+  nombre: string
+  cargo: string
+  sucursal: string
+}
+
+/** Respuesta de `GET /api/my/schedule`. */
+export interface MiHorarioApi {
+  empleado: EmpleadoMiHorarioApi
+  dias: DiaMiHorarioApi[]
+}
+
+/** Query de `GET /api/my/schedule`. `desde` y `hasta` son opcionales. */
+export interface FiltrosMiHorario {
+  desde?: string
+  hasta?: string
+}

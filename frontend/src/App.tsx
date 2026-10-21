@@ -30,6 +30,9 @@ import { EmpleadoDetallePage } from '@/features/employees/EmpleadoDetallePage'
 import { TurnosPage } from '@/features/shifts/TurnosPage'
 import { AsignacionesPage } from '@/features/shifts/AsignacionesPage'
 import { CalendarioTurnosPage } from '@/features/shifts/CalendarioTurnosPage'
+import { CalendarioHorasPage } from '@/features/shifts/CalendarioHorasPage'
+import { MiHorarioPage } from '@/features/my-schedule/MiHorarioPage'
+import { RequireSucursal } from '@/lib/permissions/RequireSucursal'
 import { UsuariosPage } from '@/features/users/UsuariosPage'
 import { AuditoriaPage } from '@/features/audit/AuditoriaPage'
 import { MarcacionPage } from '@/features/attendance/MarcacionPage'
@@ -71,6 +74,8 @@ export function App({
       item.to !== '/shifts' &&
       item.to !== '/shifts/asignaciones' &&
       item.to !== '/shifts/calendario' &&
+      item.to !== '/shifts/calendario-horas' &&
+      item.to !== '/my/schedule' &&
       item.to !== '/users' &&
       item.to !== '/auditoria' &&
       item.to !== '/attendance' &&
@@ -309,6 +314,22 @@ export function App({
                   <RequirePermission permiso="turnos.editar">
                     <CalendarioTurnosPage />
                   </RequirePermission>
+                }
+              />
+              <Route
+                path="shifts/calendario-horas"
+                element={
+                  <RequirePermission permiso="turnos.editar">
+                    <CalendarioHorasPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="my/schedule"
+                element={
+                  <RequireSucursal>
+                    <MiHorarioPage />
+                  </RequireSucursal>
                 }
               />
               <Route

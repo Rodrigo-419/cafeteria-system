@@ -360,3 +360,37 @@
   --info-text: var(--info-foreground);
   --info-border: var(--info);
 }
+
+/*
+ * Impresión: la UNICA regla global de impresión del proyecto.
+ *
+ * Oculta la navegación, los filtros y los controles (lo que lleva `no-print`)
+ * y muestra solo el área de impresión (`print-show`). Fuerza fondo claro y
+ * texto oscuro para que el tema oscuro no afecte al resultado. Los bloques con
+ * `print-avoid-break` no se cortan entre páginas.
+ */
+@media print {
+  .no-print,
+  nav,
+  aside,
+  header,
+  button,
+  select,
+  .toaster {
+    display: none !important;
+  }
+
+  .print-show {
+    display: block !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

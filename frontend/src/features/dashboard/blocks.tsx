@@ -518,8 +518,10 @@ export function SinModulos() {
  * panel nunca queda vacío para un usuario con pocos permisos.
  */
 export function AccesosDisponibles() {
-  const { permisos } = useAuth()
-  const secciones = filtrarMenu(permisos).filter((item) => item.to !== '/')
+  const { permisos, usuario } = useAuth()
+  const secciones = filtrarMenu(permisos, usuario?.sucursalId).filter(
+    (item) => item.to !== '/',
+  )
 
   if (secciones.length === 0) {
     return null

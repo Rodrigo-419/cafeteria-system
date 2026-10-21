@@ -1,8 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { App } from '@/App'
+import {
+  fijarConfiguracionArranqueEnFrio,
+  MENSAJE_ARRANQUE_EN_FRIO,
+  restaurarConfiguracionArranqueEnFrio,
+} from '@/lib/api/arranque-en-frio'
 import {
   BASE_API,
   CREDENCIALES_VALIDAS,
@@ -25,7 +30,22 @@ async function completarYEnviar(nombreUsuario: string, password: string) {
   await user.click(screen.getByRole('button', { name: /ingresar/i }))
 }
 
+// Acorta los tiempos del arranque en frio para no esperar minutos en las
+// pruebas que lo ejercitan. El resto usa la configuracion por defecto (4 s).
+function fijarTiemposCortos() {
+  fijarConfiguracionArranqueEnFrio({
+    esperaInicialMs: 5,
+    tiempoMaximoMs: 40,
+    retrasoBaseMs: 5,
+    retrasoMaximoMs: 5,
+  })
+}
+
 describe('LoginPage', () => {
+  afterEach(() => {
+    restaurarConfiguracionArranqueEnFrio()
+  })
+
   it('inicia sesión y navega al panel con credenciales válidas', async () => {
     abrirLogin()
 
@@ -112,6 +132,67 @@ describe('LoginPage', () => {
       screen.getByRole('button', { name: /ingresando/i }),
     ).toBeDisabled()
 
-    expect(await screen.findByText(/Hola, Ada Pruebas/)).toBeInTheDocument()
-  })
+    expect(await screen.findByText(/Hola, Ada Pruebas/)).toBeInTheDocument();
+  });
+
+  it('muestra el aviso de servidor despertando y reintenta ante un 503', async () => {
+    fijarTiemposCortos()
+    server.use(
+      http.post(`${BASE_API}/auth/login`, () =>
+        new HttpResponse(null, { status: 503 }),
+      ),
+    )
+    abrirLogin()
+
+    await completarYEnviar(
+      CREDENCIALES_VALIDAS.nombreUsuario,
+      CREDENCIALES_VALIDAS.password,
+    )
+
+    expect(
+      (await screen.findAllByText(MENSAJE_ARRANQUE_EN_FRIO, undefined, {
+        timeout: 5000,
+      })).length,
+    ).toBeGreaterThan(0)
+  });
+
+  it('muestra el aviso ante un fallo de red', async () => {
+    fijarTiemposCortos()
+    server.use(http.post(`${BASE_API}/auth/login`, () => HttpResponse.error()))
+    abrirLogin()
+
+    await completarYEnviar(
+      CREDENCIALES_VALIDAS.nombreUsuario,
+      CREDENCIALES_VALIDAS.password,
+    )
+
+    expect(
+      (await screen.findAllByText(MENSAJE_ARRANQUE_EN_FRIO, undefined, {
+        timeout: 5000,
+      })).length,
+    ).toBeGreaterThan(0)
+  });
+
+  it('reintenta y entra cuando el servidor responde despues del 503', async () => {
+    fijarTiemposCortos()
+    let intentos = 0
+    server.use(
+      http.post(`${BASE_API}/auth/login`, () => {
+        intentos += 1
+        if (intentos === 1) {
+          return new HttpResponse(null, { status: 503 })
+        }
+        return HttpResponse.json(RESPUESTA_LOGIN_PRUEBA)
+      }),
+    )
+    abrirLogin()
+
+    await completarYEnviar(
+      CREDENCIALES_VALIDAS.nombreUsuario,
+      CREDENCIALES_VALIDAS.password,
+    )
+
+    expect(intentos).toBeGreaterThan(1)
+    expect(await screen.findByText(/Hola, Ada Pruebas/)).toBeInTheDocument();
+  });
 })

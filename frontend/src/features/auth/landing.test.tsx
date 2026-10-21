@@ -98,6 +98,7 @@ describe('aterrizaje tras iniciar sesión', () => {
     const SIN_MODULOS = usuarioDePrueba([], {
       nombre: 'Sin Accesos',
       rol: 'Empleado',
+      sucursalId: null,
     })
     responderLogin(SIN_MODULOS)
     abrirLoginConDestino('/')

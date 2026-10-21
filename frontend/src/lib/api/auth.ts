@@ -6,11 +6,13 @@ import type { RespuestaLogin, UsuarioApi } from '@/types/api'
 export function iniciarSesion(
   nombreUsuario: string,
   password: string,
+  signal?: AbortSignal,
 ): Promise<RespuestaLogin> {
   return peticionApi<RespuestaLogin>('/auth/login', {
     method: 'POST',
     body: { nombreUsuario, password },
     auth: false,
+    signal,
   })
 }
 

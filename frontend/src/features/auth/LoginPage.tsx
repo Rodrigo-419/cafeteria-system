@@ -22,6 +22,10 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import {
+  ErrorServidorDespertando,
+  MENSAJE_ARRANQUE_EN_FRIO,
+} from '@/lib/api/arranque-en-frio'
 import { ApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/useAuth'
 import { rutaInicio } from '@/lib/navigation/menu'
@@ -61,14 +65,19 @@ function mensajeDeError(error: unknown): string {
         return error.mensajes.join(' ')
     }
   }
+  if (error instanceof ErrorServidorDespertando) {
+    return MENSAJE_ARRANQUE_EN_FRIO
+  }
   return 'No se pudo conectar con el servidor. Inténtalo de nuevo.'
 }
 
 export function LoginPage() {
   const {
     autenticado,
+    usuario,
     permisos,
     iniciarSesion,
+    despertando,
     motivoSalida,
     limpiarMotivoSalida,
   } = useAuth()
@@ -82,7 +91,7 @@ export function LoginPage() {
   })
 
   const enviando = form.formState.isSubmitting
-  const destino = rutaInicio(permisos, rutaSolicitada(location.state))
+  const destino = rutaInicio(permisos, rutaSolicitada(location.state), usuario?.sucursalId)
 
   if (autenticado) {
     return <Navigate to={destino} replace />
@@ -126,6 +135,13 @@ export function LoginPage() {
               <AlertDescription>
                 Tu sesión venció. Inicia sesión de nuevo.
               </AlertDescription>
+            </Alert>
+          )}
+
+          {despertando && (
+            <Alert>
+              <AlertTitle>Un momento</AlertTitle>
+              <AlertDescription>{MENSAJE_ARRANQUE_EN_FRIO}</AlertDescription>
             </Alert>
           )}
 

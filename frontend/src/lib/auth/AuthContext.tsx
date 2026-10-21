@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import {
   iniciarSesion as apiIniciarSesion,
   obtenerPerfil,
@@ -19,6 +20,10 @@ import {
   configurarManejadorNoAutorizado,
   configurarToken,
 } from '@/lib/api/client'
+import {
+  MENSAJE_ARRANQUE_EN_FRIO,
+  reintentarConArranqueEnFrio,
+} from '@/lib/api/arranque-en-frio'
 import type { UsuarioApi } from '@/types/api'
 import {
   cargarSesionInicial,
@@ -37,6 +42,11 @@ export interface ValorAutenticacion {
   autenticado: boolean
   /** `true` mientras se valida la sesion guardada al arrancar. */
   cargando: boolean
+  /**
+   * `true` mientras el login reintenta porque el servidor esta despertando.
+   * En ese caso la interfaz muestra un aviso generico.
+   */
+  despertando: boolean
   motivoSalida: MotivoSalida
   iniciarSesion: (nombreUsuario: string, password: string) => Promise<void>
   cerrarSesion: () => void
@@ -59,6 +69,7 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
     inicial.expirada ? 'expirada' : null,
   )
   const [cargando, setCargando] = useState(inicial.sesion !== null)
+  const [despertando, setDespertando] = useState(false)
 
   const tokenRef = useRef<string | null>(inicial.sesion?.accessToken ?? null)
 
@@ -118,7 +129,20 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
     // StrictMode (montaje doble) vuelva a relanzar la peticion al remontar.
     const controlador = new AbortController()
     let cancelado = false
-    obtenerPerfil(controlador.signal)
+    let avisado = false
+    reintentarConArranqueEnFrio(
+      (signal) => obtenerPerfil(signal),
+      {
+        senalExterna: controlador.signal,
+        alDetectar: () => {
+          // Aviso generico una sola vez mientras el servidor despierta.
+          if (!avisado) {
+            avisado = true
+            toast.info(MENSAJE_ARRANQUE_EN_FRIO)
+          }
+        },
+      },
+    )
       .then((usuario) => {
         if (cancelado) {
           return
@@ -134,7 +158,8 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
         })
       })
       .catch(() => {
-        // Nada que hacer: si fue un 401, el manejador ya limpio la sesion.
+        // Nada que hacer: si fue un 401, el manejador ya limpio la sesion; si
+        // el servidor seguia despertando, el aviso ya se mostro.
       })
       .finally(() => {
         if (!cancelado) {
@@ -150,25 +175,33 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
 
   const iniciarSesion = useCallback(
     async (nombreUsuario: string, password: string) => {
-      const respuesta = await apiIniciarSesion(nombreUsuario, password)
-      // Si el proveedor se desmonto durante la peticion, no se actualiza estado.
-      if (!montadoRef.current) {
-        return
+      try {
+        // Si el servidor esta despertando, se reintenta con un aviso generico.
+        const respuesta = await reintentarConArranqueEnFrio(
+          (signal) => apiIniciarSesion(nombreUsuario, password, signal),
+          { alDetectar: () => setDespertando(true) },
+        )
+        // Si el proveedor se desmonto durante la peticion, no se actualiza estado.
+        if (!montadoRef.current) {
+          return
+        }
+        const nueva = crearSesion(
+          respuesta.accessToken,
+          respuesta.user,
+          respuesta.expiresIn,
+        )
+        tokenRef.current = nueva.accessToken
+        guardarSesion(nueva)
+        // Defensa en profundidad: aunque el cierre de sesion ya limpio el cache,
+        // se vuelve a vaciar antes de navegar para no arrastrar datos de la
+        // cuenta anterior (por ejemplo, si la pestana se recargo sin login).
+        void queryClient.cancelQueries()
+        queryClient.clear()
+        setMotivoSalida(null)
+        setSesion(nueva)
+      } finally {
+        setDespertando(false)
       }
-      const nueva = crearSesion(
-        respuesta.accessToken,
-        respuesta.user,
-        respuesta.expiresIn,
-      )
-      tokenRef.current = nueva.accessToken
-      guardarSesion(nueva)
-      // Defensa en profundidad: aunque el cierre de sesion ya limpio el cache,
-      // se vuelve a vaciar antes de navegar para no arrastrar datos de la
-      // cuenta anterior (por ejemplo, si la pestana se recargo sin login).
-      void queryClient.cancelQueries()
-      queryClient.clear()
-      setMotivoSalida(null)
-      setSesion(nueva)
     },
     [queryClient],
   )
@@ -185,6 +218,7 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
       permisos: sesion?.user.permisos ?? [],
       autenticado: sesion !== null,
       cargando,
+      despertando,
       motivoSalida,
       iniciarSesion,
       cerrarSesion,
@@ -193,6 +227,7 @@ export function ProveedorAutenticacion({ children }: { children: ReactNode }) {
     [
       sesion,
       cargando,
+      despertando,
       motivoSalida,
       iniciarSesion,
       cerrarSesion,
