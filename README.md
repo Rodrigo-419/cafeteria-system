@@ -40,6 +40,17 @@ Todos los módulos del backend están implementados y registrados en `AppModule`
 | `reports`    | Reporte comparativo entre sucursales (ventas, inventario y asistencia). |
 | `auditoria`  | Rastro inmutable de cambios (personas, sucursales, equipos, turnos y catálogo) con listado e historial por usuario. |
 
+### Funciones de uso diario
+
+- **Mi horario** (`/my/schedule`): el empleado consulta sus propios turnos de la
+  semana (sin permiso de la matriz; solo la ve quien tiene sucursal).
+- **Calendario por horas** (`/shifts/calendario-horas`): rejilla semanal estilo
+  calendario de móvil (turnos fijos como bloques, variables como etiqueta) para
+  Admin y Gerente, con agenda de un día en móvil.
+- **Impresión**: el calendario (grupo o individual), el reporte comparativo y
+  "Mi horario" se imprimen con cabecera (sucursal, empleado, rango, fecha/hora)
+  y una única regla global de impresión.
+
 ## Roles y permisos
 
 Tres roles fijos —**Admin** (central, sin sucursal; 20 de los 24 permisos), **Gerente**
@@ -129,6 +140,27 @@ secretos viven únicamente en archivos `.env` no versionados; nunca se suben al
 repositorio. La guía completa (variables, resolución de problemas) está en
 [Guía de inicio](docs/guia-de-inicio.md).
 
+> Los seeds **escriben** datos: antes de hacerlo muestran el host y la base y, si el
+> destino no es local, exigen confirmación (`npm run db:seed -- --confirm` o
+> `SEED_CONFIRMAR_REMOTO=1`). `db:seed:demo` no se ejecuta con `NODE_ENV=production`.
+
+## Despliegue en producción
+
+El repositorio incluye la configuración para un despliegue gratuito:
+
+- **Backend** en [Render](https://render.com) (plan gratuito): [`render.yaml`](render.yaml)
+  con `rootDir: backend`, build (`prisma generate` + `migrate deploy` + build), arranque
+  y chequeo de salud en `/api/health`.
+- **Frontend** en [Netlify](https://netlify.com): [`netlify.toml`](netlify.toml) con build,
+  redirección SPA y cabeceras de seguridad.
+- **Base de datos** en [Neon](https://neon.com) (serverless).
+
+El backend escucha en `0.0.0.0:$PORT`, usa `TRUST_PROXY=1` (un salto, el proxy de Render),
+desactiva Swagger en producción y no tiene ningún secreto con valor por defecto. El
+frontend detecta el arranque en frío del plan gratuito y muestra "El servidor está
+despertando, puede tardar hasta un minuto" mientras reintenta (~90 s de tope). Paso a paso
+en [Despliegue](docs/despliegue.md).
+
 ## Pruebas y CI
 
 | Suite | Dónde | Comando |
@@ -160,6 +192,7 @@ build con comprobación de tipos y `npm test`). Cifras actuales y detalle de cad
 El índice completo está en [docs/README.md](docs/README.md). Documentos destacados:
 
 - [Guía de inicio](docs/guia-de-inicio.md)
+- [Despliegue](docs/despliegue.md)
 - [Visión general de la arquitectura](docs/architecture/vision-general.md)
 - [Seguridad y permisos](docs/seguridad-y-permisos.md)
 - [Modelo de datos](docs/modelo-de-datos.md)
@@ -193,3 +226,6 @@ El índice completo está en [docs/README.md](docs/README.md). Documentos destac
 
 Las reglas que todavía no tienen requisito escrito o prueba dedicada se marcan como
 **POR CONFIRMAR** en [Decisiones de diseño](docs/architecture/decisiones-de-diseno.md).
+
+Estas limitaciones y mejoras futuras, ordenadas por prioridad (alta, media y baja), se
+recogen en la [Hoja de ruta — Fase 2](docs/hoja-de-ruta-fase-2.md).

@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Referencia de las **78 rutas implementadas** por el backend. Todas se solicitan
+Referencia de las **79 rutas implementadas** por el backend. Todas se solicitan
 bajo el prefijo global `/api`.
 
 ## Convenciones
@@ -22,6 +22,16 @@ bajo el prefijo global `/api`.
 
 ## Módulos
 
+### Salud (`/api`)
+
+| Método | Ruta       | Permiso / nota | Códigos |
+| ------ | ---------- | -------------- | ------- |
+| GET    | `/api`     | Pública        | 200     |
+| GET    | `/api/health` | Pública, sin límite de peticiones | 200     |
+
+`/api/health` responde `{ "estado": "ok" }` y no toca la base de datos: es el
+chequeo de salud que usa Render (ver [Despliegue](despliegue.md)).
+
 ### Auth (`/api/auth`)
 
 | Método | Ruta                    | Permiso / nota           | Códigos |
@@ -35,6 +45,26 @@ usuario autenticado con sus permisos efectivos.
 El cuerpo de `login` es `{ nombreUsuario, password }`. El `user` devuelto incluye
 `nombreUsuario` y **no** un campo `email`. Los intentos con credenciales inválidas
 responden `401` con el **mismo mensaje**, exista o no el usuario.
+
+### Mi horario (`/api/my`)
+
+| Método | Ruta                    | Permiso / nota           | Códigos |
+| ------ | ----------------------- | ------------------------ | ------- |
+| GET    | `/api/my/schedule`      | Solo autenticado (sin permiso de la matriz) | 200, 400, 401, 404 |
+
+Devuelve el horario del **empleado vinculado al usuario autenticado** (una ruta
+personal, igual que `/auth/me`; no añade ningún permiso a la matriz de 24).
+
+- Query `desde` y `hasta` **opcionales** (`YYYY-MM-DD`, día local America/Lima).
+  Por defecto devuelve la **semana actual** (lunes a domingo). Un solo extremo se
+  interpreta como día único. `desde` posterior a `hasta` → `400`; un rango mayor
+  a **92 días** → `400`.
+- Sin registro de empleado → `404`. Un empleado **cesado** no obtiene horario
+  posterior a su cese.
+- Respuesta: `{ empleado: { nombre, cargo, sucursal }, dias: [{ fecha, turno }] }`
+  con **una entrada por día** del rango. `turno` es
+  `{ tipo, horaInicio, horaFin, diasSemana }` o `null` si ese día no hay turno
+  (un turno **variable** lleva horas `null`).
 
 El control de fuerza bruta del login **solo cuenta los fallos**: tras **5 fallos**
 del mismo par usuario + IP (o **20 fallos** de la misma IP) responde `429` con la

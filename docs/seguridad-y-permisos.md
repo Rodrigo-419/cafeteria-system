@@ -171,3 +171,26 @@ se registra en `historial_permisos` en la misma transacción.
   [Referencia de la API](referencia-api.md).
 - Las reglas asumidas y las que están **POR CONFIRMAR** están en
   [Decisiones de diseño](architecture/decisiones-de-diseno.md).
+
+## 8. Seguridad en despliegue
+
+- **`TRUST_PROXY`**: controla si Express usa `X-Forwarded-For` para calcular la IP
+  del cliente (y, por tanto, para el límite de intentos del login). En Render el
+  valor correcto es `1` (un salto); `true` confiaría en todos los saltos y `false`
+  haría que todos los clientes compartieran la IP del proxy. Se verifica en
+  `backend/test/trust-proxy.e2e-spec.ts`. Detalle en
+  [Despliegue](despliegue.md#24-trust_proxy-y-el-límite-de-intentos-de-login).
+- **CORS**: solo los orígenes de `CORS_ORIGIN` reciben cabeceras. Sin la variable no
+  se permite ningún origen (default seguro). Se verifica en
+  `backend/test/cors.e2e-spec.ts`.
+- **Swagger**: no se publica en producción (`NODE_ENV=production`). La decisión está
+  en `debeHabilitarDocumentacion` y se prueba en `swagger.config.spec.ts`.
+- **Secretos sin valor por defecto**: `DATABASE_URL` y `JWT_SECRET` son obligatorias;
+  si faltan, el arranque falla con un mensaje que nombra la variable sin mostrar el
+  valor. Se prueba en `env.config.spec.ts`.
+- **`/api/health`**: pública y excluida del límite global (`@SkipThrottle()`), para
+  que el chequeo de salud de Render no consuma cupo.
+- **Protección del seed**: `db:seed` y `db:seed:demo` muestran host y base y exigen
+  confirmación explícita (`--confirm` o `SEED_CONFIRMAR_REMOTO=1`) si el destino no
+  es local. `db:seed:demo` no se ejecuta con `NODE_ENV=production`. Ver
+  [Despliegue](despliegue.md#7-protección-del-seed-contra-bases-remotas).

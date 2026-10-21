@@ -9,12 +9,14 @@ de documentos.
 | Documento | Ruta | Descripción |
 | --------- | ---- | ----------- |
 | [Guía de inicio](guia-de-inicio.md) | `docs/guia-de-inicio.md` | Requisitos, base de datos, variables de entorno, migraciones, seed y servidor de desarrollo. |
+| [Despliegue](despliegue.md) | `docs/despliegue.md` | Render (backend) + Netlify (frontend) + Neon (PostgreSQL): variables, health, arranque en frío, TRUST_PROXY, migraciones y protección del seed. |
 | [Visión general de la arquitectura](architecture/vision-general.md) | `docs/architecture/vision-general.md` | Capas del backend, mapa de módulos y recorrido de una petición autenticada. |
 | [Seguridad y permisos](seguridad-y-permisos.md) | `docs/seguridad-y-permisos.md` | Autenticación, roles, tabla de permisos sembrados y reglas de alcance por módulo. |
 | [Modelo de datos](modelo-de-datos.md) | `docs/modelo-de-datos.md` | Entidades por dominio, enums, precisiones y reglas de integridad en la base. |
 | [Referencia de la API](referencia-api.md) | `docs/referencia-api.md` | Todas las rutas, su permiso, su alcance y los códigos de respuesta más comunes. |
 | [Decisiones de diseño](architecture/decisiones-de-diseno.md) | `docs/architecture/decisiones-de-diseno.md` | Documento vivo con las reglas de negocio por módulo (tablas), supuestos a confirmar y mejoras futuras. |
 | [Estrategia de pruebas](estrategia-de-pruebas.md) | `docs/estrategia-de-pruebas.md` | Estrategia de pruebas, cifras actuales, cómo ejecutarlas y qué cubre cada suite. |
+| [Hoja de ruta — Fase 2](hoja-de-ruta-fase-2.md) | `docs/hoja-de-ruta-fase-2.md` | Mejoras previstas para la Fase 2, ordenadas por prioridad (alta, media y baja), a partir de las limitaciones conocidas y mejoras futuras. |
 | [Modelo de datos (DBML)](database/modelo.dbml) | `docs/database/modelo.dbml` | Esquema fuente en lenguaje DBML, del que se genera `backend/prisma/schema.prisma`. |
 
 ## Cómo leer la documentación

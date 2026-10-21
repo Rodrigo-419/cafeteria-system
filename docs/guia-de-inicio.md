@@ -3,6 +3,9 @@
 Cómo levantar el backend en desarrollo: base de datos, variables de entorno,
 migraciones, seed y servidor.
 
+Para llevarlo a producción, ver [Despliegue](despliegue.md) (Render + Netlify +
+Neon).
+
 ## Requisitos
 
 - **Node.js 24** y npm (el backend declara `engines` en `backend/package.json`).
@@ -118,6 +121,12 @@ El administrador se crea con el nombre de usuario y la contraseña de `SEED_ADMI
 `SEED_ADMIN_PASSWORD`. El seed aborta si no están definidas **sin imprimir sus
 valores**.
 
+> **Protección contra bases remotas**: antes de escribir, el seed muestra el host y
+> el nombre de la base. Si el destino **no es local**, exige una confirmación
+> explícita: `npm run db:seed -- --confirm` (o `SEED_CONFIRMAR_REMOTO=1`). Sin ella
+> no escribe nada. Una `DATABASE_URL` del entorno tiene prioridad sobre la de
+> `backend/.env`. Ver [Despliegue](despliegue.md#7-protección-del-seed-contra-bases-remotas).
+
 ### Seed de demostración (solo desarrollo)
 
 Si quieres datos de ejemplo para desarrollar (catálogo con ofertas, inventario con
@@ -162,6 +171,9 @@ Por defecto escucha en `http://localhost:3000`.
 ## 6. Probar que todo funciona
 
 ```bash
+# Comprobación de salud (pública, no toca la base)
+curl http://localhost:3000/api/health
+
 # Inicia sesión con el administrador y copia el token
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \

@@ -103,7 +103,7 @@ Cada módulo tiene su suite en `backend/test/`:
 | `attendance`          | `attendance.e2e-spec.ts`   | Marcación con PIN, doble marcaje, correcciones, cierre administrativo, justificación de faltas, lecturas y terminal. |
 | `reports`             | `reports.e2e-spec.ts`      | Reporte comparativo entre sucursales: contrato, ventas, inventario, asistencia, estado actual, validaciones y autorización. |
 | `auditoria`           | `auditoria.e2e-spec.ts`    | Un evento por operación auditada (usuario, empleado, sucursal, equipo, turno, asignación, catálogo y oferta), atomicidad en operaciones rechazadas, inmutabilidad de la tabla, detalle sin secretos, alcance de lectura, filtros/paginado, bordes de fecha y coherencia de los enums código↔BD. |
-| `trust proxy`         | `trust-proxy.e2e-spec.ts`  | `TRUST_PROXY`: con el valor por defecto `X-Forwarded-For` no evade el límite de login; activado, cada IP declarada tiene su propio límite. Usa el límite de login real (`crearAppConLimiteLoginReal`, sin neutralizar el throttle). |
+| `trust proxy`         | `trust-proxy.e2e-spec.ts`  | `TRUST_PROXY`: con el valor por defecto `X-Forwarded-For` no evade el límite de login; con `true` y con `1` (un salto, el valor de Render), cada IP declarada tiene su propio límite. Usa el límite de login real (`crearAppConLimiteLoginReal`, sin neutralizar el throttle). |
 | `login throttle`      | `login-throttle.e2e-spec.ts` | Solo cuentan los **fallos**: tras 5 fallos del mismo par usuario+IP (o 20 de la misma IP) responde `429` con `Retry-After` y mensaje, aunque llegue la contraseña correcta; el usuario inexistente cuenta igual; el bloqueo de una cuenta no afecta a otra; la ventana se reinicia al avanzar el **reloj simulado**. |
 
 Helpers compartidos en `backend/test/utils/`:
@@ -123,14 +123,14 @@ generado a su `.ts` (Node no lo resuelve solo).
 ## 5. Cobertura
 
 Las cifras siguientes corresponden a la última ejecución limpia, verificada en
-**2026-10-14** con `npm run build`, `npm run lint`, `npm test` y
+**2026-10-18** con `npm run build`, `npm run lint`, `npm test` y
 `npm run test:e2e` (Docker con la base de pruebas disponible). Se refrescan
 ejecutando los comandos de la sección 2.
 
 | Nivel     | Suites | Casos |
 | --------- | ------ | ----- |
-| Unitarias | 60     | 836   |
-| E2E       | 16     | 474   |
+| Unitarias | 67     | 905   |
+| E2E       | 17     | 485   |
 
 La suite e2e completa tarda alrededor de **8 minutos** (entre 470 y 492 s en las
 tres últimas ejecuciones consecutivas), dentro del `testTimeout` de 120 s por
@@ -138,6 +138,25 @@ prueba/hook.
 
 > La tabla no incluye un % de cobertura de código: el repo no define el comando
 > `coverage` como parte del flujo estándar.
+
+### Pruebas de despliegue y arranque (backend)
+
+Además de las reglas de dominio, hay pruebas unitarias de los mecanismos que
+sostienen el despliegue:
+
+- `backend/src/config/env.config.spec.ts`: la validación de entorno aplica los
+  valores por defecto seguros, exige `DATABASE_URL` y `JWT_SECRET` (también en
+  producción) y no muestra los valores en el error.
+- `backend/src/config/swagger.config.spec.ts`: Swagger solo se publica fuera de
+  producción.
+- `backend/src/database/seed-ambiente.spec.ts`: el seed resuelve host y base,
+  exige confirmación (`--confirm`/`SEED_CONFIRMAR_REMOTO`) si el destino no es
+  local, y `dotenv` no pisa una `DATABASE_URL` ya presente en el entorno.
+- `backend/src/database/reconexion-prisma.spec.ts`: el reintento de la primera
+  consulta solo aplica a errores de conexión, es acotado y no reintenta otros
+  errores (una escritura no se repite).
+- `backend/src/modules/auth/infrastructure/auth.repository.spec.ts`: las dos
+  lecturas de arranque usan ese reintento.
 
 ## 6. Agregar pruebas a un módulo nuevo
 
@@ -271,8 +290,8 @@ completa ronda los 27 s).
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 53
-- **Total de tests**: **390 passed** (unitaria/componentes, Vitest + MSW)
+- **Archivos de prueba**: 59
+- **Total de tests**: **438 passed** (unitaria/componentes, Vitest + MSW)
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/auth/AuthContext.test.tsx`, `lib/format/money.spec.ts`,
@@ -306,6 +325,17 @@ las sucursales y el reporte comparativo
 (`features/branches/SucursalesPage.test.tsx`,
 `features/reports/ReporteComparativoPage.test.tsx`) y el landing autenticado
 (`features/auth/landing.test.tsx`).
+
+### Arranque en frío (frontend)
+
+- `src/lib/api/arranque-en-frio.test.ts`: detección de arranque en frio (red,
+  502/503/504), reintento acotado (solo errores de arranque), aviso por reintento,
+  umbral de espera de ~4 s y tope de ~90 s.
+- `src/features/auth/LoginPage.test.tsx` (con MSW): ante un 503 o un fallo de red
+  muestra "El servidor está despertando…"; reintenta y entra si el servidor
+  responde después.
+- `src/lib/auth/AuthContext.test.tsx`: el refresco de sesión reintenta y avisa una
+  sola vez si el servidor despierta.
 
 ### Pruebas de navegador con Playwright (capa adicional)
 
