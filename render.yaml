@@ -1,0 +1,38 @@
+# Blueprint de Render para el backend (NestJS + Prisma + PostgreSQL).
+#
+# Monorepo: el backend vive en `backend/`, de ahi el `rootDir`.
+#
+# Plan gratuito: el servicio se suspende por inactividad y tarda ~30-60 s en
+# despertar. El frontend lo detecta y reintenta (ver docs/despliegue.md).
+#
+# Las variables sensibles llevan `sync: false`: Render NO las gestiona ni las
+# sobrescribe; se definen a mano en el panel y pueden apuntar a Neon/RDS.
+services:
+  - type: web
+    name: cafeteria-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    # --include=dev porque con NODE_ENV=production `npm ci` omitiria las
+    # devDependencies (Prisma CLI es necesaria para generate y migrate deploy).
+    # migrate deploy aplica las migraciones del repo (no inventa un schema).
+    buildCommand: npm ci --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        # Render es un unico proxy inverso delante del servicio: un salto basta.
+        # Con `true` se confiaria en todos los saltos y el limite de intentos
+        # podria equivocarse de IP.
+        value: "1"
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      # Sensibles: se definen a mano en el panel; Render no las toca.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
