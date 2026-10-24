@@ -61,6 +61,7 @@ export const ENTIDADES_AUDITORIA = [
   'turno',
   'asignacion',
   'equipo',
+  'exportacion',
 ] as const
 
 export const ETIQUETA_ENTIDAD: Record<string, string> = {
@@ -76,6 +77,7 @@ export const ETIQUETA_ENTIDAD: Record<string, string> = {
   turno: 'Turno',
   asignacion: 'Asignación',
   equipo: 'Equipo',
+  exportacion: 'Exportación',
 }
 
 export const AREA_ENTIDAD: Record<string, AreaAuditoria> = {
@@ -91,6 +93,7 @@ export const AREA_ENTIDAD: Record<string, AreaAuditoria> = {
   turno: 'turnos',
   asignacion: 'turnos',
   equipo: 'equipos',
+  exportacion: 'personas',
 }
 
 // --------------------------------------------------------------- acciones
@@ -179,9 +182,16 @@ export const ACCIONES_POR_AREA: {
       'equipo_estado_cambiado',
     ],
   },
+  {
+    area: 'personas',
+    acciones: [
+      'exportacion_generada',
+      'exportacion_fallida',
+    ],
+  },
 ] as const
 
-/** Las 44 acciones del enum `auditoria_accion`, en el orden de su área. */
+/** Las 46 acciones del enum `auditoria_accion`, en el orden de su área. */
 export const ACCIONES_AUDITORIA: AccionAuditoria[] = ACCIONES_POR_AREA.flatMap(
   (grupo) => [...grupo.acciones],
 )
@@ -231,6 +241,8 @@ export const ETIQUETA_ACCION: Record<string, string> = {
   equipo_creado: 'Equipo creado',
   equipo_editado: 'Equipo editado',
   equipo_estado_cambiado: 'Estado de equipo cambiado',
+  exportacion_generada: 'Exportación generada',
+  exportacion_fallida: 'Exportación fallida',
 }
 
 // ------------------------------------------------------------ etiquetas
