@@ -57,7 +57,7 @@ describe('excel domain', () => {
     expect(buffer.length).toBeGreaterThan(0);
     
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(buffer);
+    await wb.xlsx.load(buffer as any);
     const sheet = wb.getWorksheet('Ventas');
     expect(sheet).toBeDefined();
     const row2 = sheet?.getRow(2);

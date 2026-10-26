@@ -34,7 +34,19 @@ describe('catalogo exports', () => {
   });
 
   it('cada conjunto tiene permiso de lectura válido', () => {
-    const permisosValidos = ['ventas.ver','carta.ver','stock.ver','movimientos.ver','empleados.ver','turnos.ver','asignaciones.ver','asistencia.ver','faltas.ver','equipos.ver','usuarios.ver','sucursales.ver','reportes.ver','auditoria.ver'];
+    // Codigos que existen en el seed (no se inventan permisos nuevos).
+    const permisosValidos = [
+      'ventas.ver',
+      'productos.ver',
+      'insumos.ver',
+      'empleados.crear_editar',
+      'turnos.editar',
+      'asistencia.ver',
+      'equipo.ver',
+      'usuarios.crear_editar',
+      'sucursales.ver',
+      'reportes.comparativos.ver',
+    ];
     for (const conjunto of CONJUNTOS) {
       const item = CATALOGO_EXPORTS[conjunto];
       expect(permisosValidos).toContain(item.permisoLectura);

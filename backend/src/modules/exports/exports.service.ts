@@ -1,191 +1,458 @@
-import { Injectable, ForbiddenException, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
+// Servicio de exportacion (CSV y XLSX).
+//
+// Flujo de una exportacion:
+//
+//   1. Limites de uso (por usuario y globales) fuera del bloque auditado: un
+//      429 no es un intento de exportacion y no ensucia la auditoria.
+//   2. Validacion de permiso, conjunto, formato y rango. Un 4xx de validacion
+//      tampoco genera evento: no se ha intentado leer datos.
+//   3. Generacion: se leen las filas ya normalizadas por el catalogo, se
+//      comprueban los topes y se escribe la auditoria de exito ANTES de enviar
+//      el archivo (asi su fecha siempre es anterior al fin de la respuesta).
+//      Cualquier fallo aqui deja `exportacion_fallida` y se propaga.
+//   4. Envio: CSV completo o libro XLSX en streaming (sin tocar disco).
+//
+// El detalle de auditoria lleva solo metadatos (conjuntos, formato, filtros y
+// filas por conjunto). Nunca las filas exportadas.
+import {
+  BadRequestException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import type { Response } from 'express';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditoriaRepository } from '../auditoria/infrastructure/auditoria.repository';
 import { CATALOGO_EXPORTS } from './application/catalogo';
-import { CONJUNTOS, MAX_FILAS_POR_CONJUNTO, MAX_FILAS_TOTALES, FILAS_POR_LOTE, exigeRango, validarRangoExport } from './domain/limites';
-import { serializeCsv } from './domain/csv';
-import { createWorkbookWriter } from './domain/excel';
-import { getEtiquetaConjunto } from './domain/etiquetas';
-import { PassThrough } from 'stream';
-import { Response } from 'express';
+import type { FilaExport, UsuarioExport } from './application/catalogo.impl';
+import {
+  CONJUNTOS,
+  MAX_FILAS_POR_CONJUNTO,
+  MAX_FILAS_TOTALES,
+  exigeRango,
+  validarRangoExport,
+  type ConjuntoExport,
+  type FormatoExport,
+} from './domain/limites';
+import { construirCsv } from './domain/csv';
+import { crearLibroStreaming, filaCelda, prepararHoja } from './domain/excel';
+import { fechaLocalDe } from '../sales/domain/rules/fechas';
 
 const USER_CONCURRENT = new Map<string, number>();
 let GLOBAL_COUNT = 0;
 const USER_MINUTE = new Map<string, { count: number; resetAt: number }>();
 
-function make429(msg: string) {
-  return new HttpException(msg, HttpStatus.TOO_MANY_REQUESTS);
+const FORMATOS_VALIDOS: readonly string[] = ['xlsx', 'csv'];
+
+function make429(mensaje: string): HttpException {
+  return new HttpException(mensaje, HttpStatus.TOO_MANY_REQUESTS);
 }
 
 function checkRateLimit(userId: string): void {
   const now = Date.now();
   const rec = USER_MINUTE.get(userId);
   if (!rec || now > rec.resetAt) {
-    USER_MINUTE.set(userId, { count: 1, resetAt: now + 60000 });
+    USER_MINUTE.set(userId, { count: 1, resetAt: now + 60_000 });
   } else {
     if (rec.count >= 10) {
       throw make429('Límite de 10 exportaciones por minuto');
     }
-    rec.count++;
+    rec.count += 1;
   }
 }
 
 function checkConcurrent(userId: string): { release: () => void } {
-  if ((USER_CONCURRENT.get(userId) || 0) >= 1) {
+  if ((USER_CONCURRENT.get(userId) ?? 0) >= 1) {
     throw make429('Ya hay una exportación en curso');
   }
   if (GLOBAL_COUNT >= 2) {
     throw make429('Límite global de exportaciones concurrentes');
   }
-  USER_CONCURRENT.set(userId, (USER_CONCURRENT.get(userId) || 0) + 1);
-  GLOBAL_COUNT++;
+  USER_CONCURRENT.set(userId, (USER_CONCURRENT.get(userId) ?? 0) + 1);
+  GLOBAL_COUNT += 1;
+
   return {
     release: () => {
-      USER_CONCURRENT.set(userId, Math.max(0, (USER_CONCURRENT.get(userId) || 0) - 1));
+      USER_CONCURRENT.set(
+        userId,
+        Math.max(0, (USER_CONCURRENT.get(userId) ?? 0) - 1),
+      );
       GLOBAL_COUNT = Math.max(0, GLOBAL_COUNT - 1);
     },
   };
 }
 
+type HojaExport = {
+  nombre: string;
+  columnas: readonly string[];
+  filas: FilaExport[];
+};
+
 @Injectable()
 export class ExportsService {
   constructor(
-    private prisma: PrismaService,
-    private auditoria: AuditoriaRepository,
+    private readonly prisma: PrismaService,
+    private readonly auditoria: AuditoriaRepository,
   ) {}
 
   async exportSingle(
     res: Response,
-    user: any,
-    body: { conjunto: string; formato: 'xlsx' | 'csv'; filtros?: any },
+    user: UsuarioExport,
+    body: {
+      conjunto?: string;
+      formato?: string;
+      filtros?: Record<string, unknown>;
+    },
   ): Promise<void> {
-    checkRateLimit(user.sub || user.id);
-    let rel: any = checkConcurrent(user.sub || user.id);
+    const usuarioId = idDe(user);
+    checkRateLimit(usuarioId);
+    const rel = checkConcurrent(usuarioId);
+
     try {
-      const conjunto = body.conjunto as any;
-      if (!CONJUNTOS.includes(conjunto)) throw new BadRequestException('Conjunto inválido');
+      // ------------------------------------------------------- validaciones
+      const permisos = permisosDe(user);
+      if (!permisos.includes('usuarios.crear_editar')) {
+        throw new ForbiddenException('Sin permiso');
+      }
+
+      const conjunto = body?.conjunto;
+      if (!esConjuntoValido(conjunto)) {
+        throw new BadRequestException('Conjunto inválido');
+      }
+
       const item = CATALOGO_EXPORTS[conjunto];
-      if (!user.permisos?.includes('usuarios.crear_editar')) throw new ForbiddenException('Sin permiso');
-      if (!user.permisos?.includes(item.permisoLectura)) throw new ForbiddenException('Sin permiso');
-      
+      if (!permisos.includes(item.permisoLectura)) {
+        throw new ForbiddenException('Sin permiso');
+      }
+
+      const formato = (body?.formato ?? 'xlsx') as FormatoExport;
+      if (!FORMATOS_VALIDOS.includes(formato)) {
+        throw new BadRequestException('Formato inválido');
+      }
+
+      const filtros = body?.filtros ?? {};
       if (exigeRango(conjunto)) {
-        validarRangoExport(conjunto, body.filtros || {});
-      }
-      
-      const { datos, total } = await item.obtenerDatos(this.prisma, user, body.filtros || {});
-      if (total > MAX_FILAS_POR_CONJUNTO) throw new BadRequestException(`Límite excedido: máximo ${MAX_FILAS_POR_CONJUNTO} filas por conjunto`);
-      
-      await this.auditoria.crear({
-        usuarioId: user.sub || user.id,
-        accion: 'exportacion_generada' as any,
-        entidad: 'exportacion' as any,
-        entidadId: null as any,
-        detalle: { conjuntos: [conjunto], formato: body.formato, filtros: body.filtros || {}, filasPorConjunto: { [conjunto]: total } },
-      });
-      
-      const fecha = new Date().toISOString().split('T')[0];
-      if (body.formato === 'csv') {
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="${conjunto}-${fecha}.csv"`);
-        const headers = item.columnas;
-        let csv = serializeCsv(headers, datos.map((d: any) => headers.map((h: string) => d[h] ?? '')));
-        res.write(csv);
-        res.end();
-      } else {
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="${conjunto}-${fecha}.xlsx"`);
-        const stream = new PassThrough();
-        stream.pipe(res);
-        const writer = createWorkbookWriter(stream);
-        const ws = writer.addWorksheet(getEtiquetaConjunto(conjunto));
-        ws.addRow(item.columnas);
-        for (const row of datos) {
-          ws.addRow(item.columnas.map((h: string) => row[h] ?? ''));
+        try {
+          validarRangoExport(conjunto, filtros);
+        } catch (error) {
+          throw new BadRequestException((error as Error).message);
         }
-        await writer.commit();
       }
-    } catch (e: any) {
+
+      // ------------------------------------------------------- generacion
       try {
-        await this.auditoria.crear({
-          usuarioId: user.sub || user.id,
-          accion: 'exportacion_fallida' as any,
-          entidad: 'exportacion' as any,
-          entidadId: null as any,
-          detalle: { conjuntos: [body.conjunto], formato: body.formato, filtros: body.filtros || {}, filasPorConjunto: {} },
+        const { datos, total } = await item.obtenerDatos(
+          this.prisma,
+          user,
+          filtros,
+        );
+
+        if (total > MAX_FILAS_POR_CONJUNTO) {
+          throw new BadRequestException(
+            `Límite excedido: máximo ${MAX_FILAS_POR_CONJUNTO} filas por conjunto`,
+          );
+        }
+
+        const filasPorConjunto = { [conjunto]: total };
+        await this.auditar(user, 'exportacion_generada', {
+          conjuntos: [conjunto],
+          formato,
+          filtros,
+          filasPorConjunto,
         });
-      } catch {}
-      throw e;
+
+        const nombre = `${conjunto}-${fechaLocalDe(new Date())}`;
+        if (formato === 'csv') {
+          escribirCsv(res, item.columnas, datos, nombre);
+        } else {
+          await escribirLibro(
+            res,
+            [
+              {
+                nombre: item.etiqueta,
+                columnas: item.columnas,
+                filas: datos,
+              },
+            ],
+            `${nombre}.xlsx`,
+          );
+        }
+      } catch (error) {
+        await this.auditarSeguro(user, 'exportacion_fallida', {
+          conjuntos: [conjunto],
+          formato,
+          filtros,
+          filasPorConjunto: {},
+        });
+        if (res.headersSent) {
+          res.destroy(error as Error);
+          return;
+        }
+        throw error;
+      }
     } finally {
-      if (rel && typeof rel.release === 'function') rel.release();
+      rel.release();
     }
   }
 
-  async exportFull(
-    res: Response,
-    user: any,
-  ): Promise<void> {
-    checkRateLimit(user.sub || user.id);
-    let rel: any = checkConcurrent(user.sub || user.id);
+  async exportFull(res: Response, user: UsuarioExport): Promise<void> {
+    const usuarioId = idDe(user);
+    checkRateLimit(usuarioId);
+    const rel = checkConcurrent(usuarioId);
+
     try {
-      if (!user.permisos?.includes('usuarios.crear_editar')) throw new ForbiddenException('Sin permiso');
-      
-      const conjuntos = CONJUNTOS.filter(c => {
-        const item = CATALOGO_EXPORTS[c];
-        return user.permisos?.includes(item.permisoLectura);
-      });
-      
-      let totalGlobal = 0;
-      const resultados: any[] = [];
-      for (const c of conjuntos) {
-        const item = CATALOGO_EXPORTS[c];
-        const { datos, total } = await item.obtenerDatos(this.prisma, user, {});
-        totalGlobal += total;
-        if (totalGlobal > MAX_FILAS_TOTALES) throw new BadRequestException(`Límite excedido: máximo ${MAX_FILAS_TOTALES} filas totales`);
-        resultados.push({ c, item, datos, total });
+      const permisos = permisosDe(user);
+      if (!permisos.includes('usuarios.crear_editar')) {
+        throw new ForbiddenException('Sin permiso');
       }
-      
-      await this.auditoria.crear({
-        usuarioId: user.sub || user.id,
-        accion: 'exportacion_generada' as any,
-        entidad: 'exportacion' as any,
-        entidadId: null as any,
-        detalle: { conjuntos: resultados.map(r => r.c), formato: 'xlsx', filtros: {}, filasPorConjunto: Object.fromEntries(resultados.map(r => [r.c, r.total])) },
-      });
-      
-      const fecha = new Date().toISOString().split('T')[0];
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="libro-completo-${fecha}.xlsx"`);
-      const stream = new PassThrough();
-      stream.pipe(res);
-      const writer = createWorkbookWriter(stream);
-      const wsMeta = writer.addWorksheet('Metadatos');
-      wsMeta.addRow(['Exportador', user.nombre || user.nombreUsuario || user.sub]);
-      wsMeta.addRow(['Fecha', new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' })]);
-      wsMeta.addRow(['Conjuntos incluidos', resultados.map(r => r.c).join(', ')]);
-      wsMeta.addRow(['Conjuntos omitidos', CONJUNTOS.filter(c => !conjuntos.includes(c)).join(', ')]);
-      wsMeta.addRow(['Filas totales', totalGlobal]);
-      
-      for (const r of resultados) {
-        const ws = writer.addWorksheet(getEtiquetaConjunto(r.c));
-        ws.addRow(r.item.columnas);
-        for (const row of r.datos) {
-          ws.addRow(r.item.columnas.map((h: string) => row[h] ?? ''));
-        }
-      }
-      await writer.commit();
-    } catch (e: any) {
+
+      const conjuntos = CONJUNTOS.filter((conjunto) =>
+        permisos.includes(CATALOGO_EXPORTS[conjunto].permisoLectura),
+      );
+      const omitidos = CONJUNTOS.filter(
+        (conjunto) => !conjuntos.includes(conjunto),
+      );
+
       try {
-        await this.auditoria.crear({
-          usuarioId: user.sub || user.id,
-          accion: 'exportacion_fallida' as any,
-          entidad: 'exportacion' as any,
-          entidadId: null as any,
-          detalle: { conjuntos: [], formato: 'xlsx', filtros: {}, filasPorConjunto: {} },
+        const resultados: Array<{
+          conjunto: ConjuntoExport;
+          item: any;
+          datos: FilaExport[];
+          total: number;
+        }> = [];
+        const filasPorConjunto: Record<string, number> = {};
+        let totalGlobal = 0;
+
+        for (const conjunto of conjuntos) {
+          const item = CATALOGO_EXPORTS[conjunto];
+          const { datos, total } = await item.obtenerDatos(
+            this.prisma,
+            user,
+            {},
+          );
+
+          if (total > MAX_FILAS_POR_CONJUNTO) {
+            throw new BadRequestException(
+              `Límite excedido: máximo ${MAX_FILAS_POR_CONJUNTO} filas por conjunto`,
+            );
+          }
+
+          totalGlobal += total;
+          filasPorConjunto[conjunto] = total;
+
+          if (totalGlobal > MAX_FILAS_TOTALES) {
+            throw new BadRequestException(
+              `Límite excedido: máximo ${MAX_FILAS_TOTALES} filas totales`,
+            );
+          }
+
+          resultados.push({ conjunto, item, datos, total });
+        }
+
+        const conjuntosIncluidos = resultados.map(
+          (resultado) => resultado.conjunto,
+        );
+
+        await this.auditar(user, 'exportacion_generada', {
+          conjuntos: conjuntosIncluidos,
+          formato: 'xlsx',
+          filtros: {},
+          filasPorConjunto,
         });
-      } catch {}
-      throw e;
+
+        const metadatos: FilaExport[] = [
+          {
+            Campo: 'Exportador',
+            Valor: user.nombre ?? user.nombreUsuario ?? usuarioId,
+          },
+          { Campo: 'Fecha', Valor: fechaHoraLima(new Date()) },
+          {
+            Campo: 'Conjuntos incluidos',
+            Valor: etiquetasDe(conjuntosIncluidos),
+          },
+          {
+            Campo: 'Conjuntos omitidos',
+            Valor: etiquetasDe(omitidos),
+          },
+          { Campo: 'Filas totales', Valor: totalGlobal },
+        ];
+
+        const hojas: HojaExport[] = [
+          {
+            nombre: 'Metadatos',
+            columnas: ['Campo', 'Valor'],
+            filas: metadatos,
+          },
+          ...resultados.map((resultado) => ({
+            nombre: resultado.item.etiqueta,
+            columnas: resultado.item.columnas,
+            filas: resultado.datos,
+          })),
+        ];
+
+        await escribirLibro(
+          res,
+          hojas,
+          `libro-completo-${fechaLocalDe(new Date())}.xlsx`,
+        );
+      } catch (error) {
+        await this.auditarSeguro(user, 'exportacion_fallida', {
+          conjuntos: [...conjuntos],
+          formato: 'xlsx',
+          filtros: {},
+          filasPorConjunto: {},
+        });
+        if (res.headersSent) {
+          res.destroy(error as Error);
+          return;
+        }
+        throw error;
+      }
     } finally {
-      if (rel && typeof rel.release === 'function') rel.release();
+      rel.release();
     }
   }
+
+  // --------------------------------------------------------------- auditoria
+
+  /** Escribe el evento de exito. Si falla, lo captura el bloque de generacion. */
+  private async auditar(
+    user: UsuarioExport,
+    accion: 'exportacion_generada' | 'exportacion_fallida',
+    detalle: Record<string, unknown>,
+  ): Promise<void> {
+    await this.auditoria.registrar({
+      entidad: 'exportacion',
+      // La columna es un UUID sin FK: identifica esta exportacion concreta.
+      entidadId: randomUUID(),
+      accion,
+      actorId: idDe(user),
+      detalle: detalle as any,
+    });
+  }
+
+  /**
+   * Intenta dejar `exportacion_fallida` sin tapar el error original. Si la
+   * propia auditoria falla (por ejemplo, la base se cayo), se ignora: lo que
+   * importa es propagar el fallo que vivio el usuario.
+   */
+  private async auditarSeguro(
+    user: UsuarioExport,
+    accion: 'exportacion_generada' | 'exportacion_fallida',
+    detalle: Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      await this.auditar(user, accion, detalle);
+    } catch {
+      // Intencionalmente silencioso.
+    }
+  }
+}
+
+// ---------------------------------------------------------------- utilidades
+
+function idDe(user: UsuarioExport): string {
+  return user.id;
+}
+
+function permisosDe(user: UsuarioExport): string[] {
+  return user.permisosEfectivos ?? user.permisos ?? [];
+}
+
+function esConjuntoValido(valor: unknown): valor is ConjuntoExport {
+  return (
+    typeof valor === 'string' &&
+    (CONJUNTOS as readonly string[]).includes(valor)
+  );
+}
+
+/** Etiquetas legibles de una lista de conjuntos, conservando el orden. */
+function etiquetasDe(conjuntos: readonly string[]): string {
+  return conjuntos
+    .map((conjunto) => CATALOGO_EXPORTS[conjunto]?.etiqueta ?? conjunto)
+    .join(', ');
+}
+
+/** "AAAA-MM-DD HH:mm" en America/Lima, sin depender del formato del sistema. */
+function fechaHoraLima(fecha: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Lima',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+    .format(fecha)
+    .replace(', ', ' ');
+}
+
+function escribirCsv(
+  res: Response,
+  columnas: readonly string[],
+  filas: FilaExport[],
+  nombre: string,
+): void {
+  const csv = construirCsv(
+    columnas,
+    filas.map((fila) => columnas.map((columna) => fila[columna] ?? null)),
+  );
+
+  // Nest responde 201 por defecto a un POST; una descarga es un 200.
+  res.status(200);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${nombre}.csv"`,
+  );
+  res.end(csv);
+}
+
+/**
+ * Escribe un libro XLSX en streaming directamente sobre la respuesta.
+ *
+ * No pasa por disco: el `PassThrough` del dominio se conecta a `res`. Las filas
+ * se confirman una a una para que el workbook no las retenga en memoria.
+ */
+async function escribirLibro(
+  res: Response,
+  hojas: readonly HojaExport[],
+  nombreArchivo: string,
+): Promise<void> {
+  // Nest responde 201 por defecto a un POST; una descarga es un 200.
+  res.status(200);
+  res.setHeader(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  );
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${nombreArchivo}"`,
+  );
+
+  const { workbook, stream } = crearLibroStreaming();
+  stream.pipe(res);
+
+  for (const hoja of hojas) {
+    const worksheet = workbook.addWorksheet(hoja.nombre);
+    prepararHoja(
+      worksheet,
+      hoja.columnas.map((columna) => ({ header: columna })),
+    );
+
+    for (const fila of hoja.filas) {
+      const filaExcel = worksheet.addRow(
+        filaCelda(hoja.columnas.map((columna) => fila[columna] ?? null)),
+      );
+      if (typeof (filaExcel as any).commit === 'function') {
+        (filaExcel as any).commit();
+      }
+    }
+  }
+
+  // Finaliza las hojas, cierra el stream y, con el, la respuesta HTTP.
+  await workbook.commit();
 }

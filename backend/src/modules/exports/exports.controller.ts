@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Res, Req } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { ExportsService } from './exports.service';
 
