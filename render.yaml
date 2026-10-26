@@ -29,6 +29,12 @@ services:
         value: "1"
       - key: JWT_EXPIRES_IN
         value: 8h
+      # Topes ajustados a los 512 MB del plan gratuito. Los defaults del codigo
+      # siguen siendo 10000/20000; Render usa estos valores mas bajos.
+      - key: EXPORT_MAX_FILAS_POR_CONJUNTO
+        value: "3000"
+      - key: EXPORT_MAX_FILAS_TOTALES
+        value: "6000"
       # Sensibles: se definen a mano en el panel; Render no las toca.
       - key: DATABASE_URL
         sync: false

@@ -391,7 +391,7 @@ describe('exports (e2e)', () => {
   });
 
   it('registra exportacion_fallida cuando la generación falla a mitad', async () => {
-    // 20 001 ventas: una mas que el tope por conjunto. El fallo ocurre tras
+    // 10 001 ventas: una mas que el tope por conjunto. El fallo ocurre tras
     // autenticar y validar, cuando la generacion ya empezo a leer datos.
     await clientePrueba().$executeRawUnsafe(
       `INSERT INTO venta (id, sucursal_id, usuario_id, metodo_pago, estado, created_at, updated_at)
@@ -402,7 +402,7 @@ describe('exports (e2e)', () => {
               'completada'::venta_estado,
               NOW(),
               NOW()
-       FROM generate_series(1, 20001)`,
+       FROM generate_series(1, 10001)`,
       sucursales.centro,
       adminId,
     );
@@ -417,8 +417,10 @@ describe('exports (e2e)', () => {
       })
       .expect(413);
 
-    expect(JSON.stringify(respuesta.body)).toContain('20000');
-    expect(JSON.stringify(respuesta.body)).toContain('20001');
+    expect(JSON.stringify(respuesta.body)).toContain('10000');
+    expect(JSON.stringify(respuesta.body)).toContain('10001');
+    expect(JSON.stringify(respuesta.body)).toContain('Acota el rango de fechas.');
+    expect(JSON.stringify(respuesta.body)).not.toContain('sucursal');
 
     const encontrados = await eventos(
       admin,
@@ -429,8 +431,8 @@ describe('exports (e2e)', () => {
       conjuntos: ['ventas'],
       formato: 'csv',
       filtros: { desde: hoyLocal(), hasta: hoyLocal() },
-      filasPorConjunto: { ventas: 20_001 },
-      motivo: expect.stringContaining('20000'),
+      filasPorConjunto: { ventas: 10_001 },
+      motivo: expect.stringContaining('10000'),
     });
   });
 

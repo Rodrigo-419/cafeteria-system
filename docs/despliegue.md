@@ -72,9 +72,51 @@ si la base se está despertando.
 | `DATABASE_URL` | URL pooled de Neon | **sí** | `sync: false`. |
 | `JWT_SECRET` | cadena de ≥32 caracteres | **sí** | `sync: false`. |
 | `CORS_ORIGIN` | URL de Netlify (y la de preview si procede) | no | `sync: false`. |
+| `EXPORT_MAX_FILAS_POR_CONJUNTO` | `3000` | no | Ajustado a los 512 MB de Render; el default del código sigue siendo `10000`. |
+| `EXPORT_MAX_FILAS_TOTALES` | `6000` | no | Ajustado a los 512 MB de Render; el default del código sigue siendo `20000`. |
 
 Las sensibles llevan `sync: false`: Render no las gestiona ni las sobrescribe,
 así que un valor del repositorio no puede pisar la URL o el secreto reales.
+
+### Memoria de las exportaciones
+
+El plan gratuito de Render da **512 MB para todo el proceso** (NestJS, Prisma,
+conexiones y la exportación en curso). Por eso `render.yaml` fija topes más
+bajos que los defaults del código:
+
+- **3000 filas por conjunto** y **6000 en el libro completo** en Render, con
+  `EXPORT_MAX_FILAS_POR_CONJUNTO` y `EXPORT_MAX_FILAS_TOTALES`. Los defaults de
+  `limites.ts` siguen siendo **10 000** y **20 000** para otros entornos; no se
+  cambiaron.
+- **Una exportación concurrente por usuario y una global**. El límite global
+  evita que dos archivos grandes coincidan en el mismo proceso.
+- Los **14 lectores actuales materializan el array completo** antes de
+  escribir. Los que usan `contarYLeer` evitan el `findMany` si el total supera
+  el tope, pero dentro del tope cargan todas las filas; **asistencia y faltas
+  cargan todos los registros antes de calcular y recortar**. Por eso los topes
+  no se pueden subir sin cambiar la lectura.
+- La **Fase 2** introducirá lectura por lotes con cursor (`FILAS_POR_LOTE`),
+  escribiendo cada lote al CSV/XLSX antes de pedir el siguiente; entonces se
+  podrán elevar los topes. La decisión y el alcance están en
+  [`docs/architecture/decisiones-de-diseno.md`](architecture/decisiones-de-diseno.md#15-módulo-exportaciones-exports).
+- Los rechazos `413`/`429` solo sugieren filtros que existen: los conjuntos de
+  actividad (`ventas`, `movimientos`, `asistencia`, `faltas`, `reporte`) piden
+  acotar el rango de fechas; los demás no admiten rango y piden reducir el
+  volumen; el libro completo pide exportar los conjuntos por separado. **No hay
+  filtro libre por sucursal**: el Gerente queda limitado a la suya y el Admin
+  exporta todas.
+
+**Mediciones locales (Jest, no Render).** La prueba actual solo aserta el
+**delta de heap** del propio escenario (techo: 256 MB). Se observaron deltas de **20-49 MB**
+con 10 000 ventas, **48-84 MB** con el libro completo (10 000 ventas y 9 000
+auditorías) y **0,8-87 MB** con 20 000 ventas; el recolector de basura puede
+dejar ese delta cerca de cero. Los picos absolutos dependen de la memoria
+acumulada por las suites anteriores en el mismo proceso de Jest; en una
+ejecución aislada, el caso de 20 000 ventas llegó a **345,8 MB de heap** y
+**1800,5 MB de RSS**. **Advertencia:** ese RSS incluye Jest, Nest, Prisma y
+Supertest; no es el proceso aislado de Render y **no se midió en Render**. **La
+verificación real es observar la memoria del servicio en el panel de Render
+durante una exportación.**
 
 ### `TRUST_PROXY` y el límite de intentos
 

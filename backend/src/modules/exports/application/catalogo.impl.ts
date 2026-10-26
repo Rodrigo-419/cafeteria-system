@@ -275,7 +275,7 @@ function totalVenta(
 /**
  * Cuenta primero y solo lee si cabe en el tope por conjunto.
  *
- * Asi una tabla con mas de 20 000 filas no se materializa en memoria: el
+ * Asi una tabla con mas de 10 000 filas no se materializa en memoria: el
  * servicio ve `total > MAX_FILAS_POR_CONJUNTO` y responde el 413.
  */
 async function contarYLeer<T>(

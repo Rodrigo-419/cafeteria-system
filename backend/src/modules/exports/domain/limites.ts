@@ -1,17 +1,32 @@
-// Límites de la exportación (constantes puras).
+// Límites de la exportación (constantes puras y lectura del entorno).
 //
-// El backend corre en un plan gratuito de ~512 MB: los topes evitan que una
-// exportación grande agote la memoria. Los valores se documentan en
-// docs/referencia-api.md.
+// El backend corre en el plan gratuito de Render, con 512 MB para todo el
+// proceso. Los topes evitan que una exportación grande agote esa memoria
+// mientras la lectura siga acumulando filas. Los valores se documentan en
+// docs/referencia-api.md y docs/despliegue.md.
 import { esFechaLocal } from '../../sales/domain/rules/fechas';
 
-/** Filas máximas por conjunto. */
-export const MAX_FILAS_POR_CONJUNTO = 20_000;
-/** Filas máximas en el libro completo. */
-export const MAX_FILAS_TOTALES = 50_000;
+/**
+ * Filas máximas por conjunto.
+ *
+ * Es el valor por defecto; se puede cambiar con
+ * `EXPORT_MAX_FILAS_POR_CONJUNTO`.
+ */
+export const MAX_FILAS_POR_CONJUNTO = 10_000;
+/**
+ * Filas máximas en el libro completo.
+ *
+ * Es el valor por defecto; se puede cambiar con `EXPORT_MAX_FILAS_TOTALES`.
+ */
+export const MAX_FILAS_TOTALES = 20_000;
 /** Días máximos de un rango de actividad (igual que la API). */
 export const MAX_DIAS_RANGO = 92;
-/** Filas por página al leer con cursor. */
+/**
+ * Filas por página previstas para la lectura por lotes de la Fase 2.
+ *
+ * Hoy ningún lector la usa: todos materializan el array completo antes de
+ * escribir. Se mantiene declarada para que la Fase 2 tenga un valor único.
+ */
 export const FILAS_POR_LOTE = 1_000;
 
 /** Límites que el servicio puede recibir inyectados (pruebas y despliegue). */
@@ -30,9 +45,52 @@ export const LIMITES_EXPORT_POR_DEFECTO: LimitesExport = {
   maxFilasTotales: MAX_FILAS_TOTALES,
   maxDiasRango: MAX_DIAS_RANGO,
   maxConcurrentesPorUsuario: 1,
-  maxConcurrentesGlobales: 2,
+  maxConcurrentesGlobales: 1,
   maxPorMinuto: 10,
 };
+
+/** Lee un entero positivo de una variable; si falta, usa el valor por defecto. */
+function enteroPositivoDeEntorno(
+  valor: string | undefined,
+  porDefecto: number,
+  variable: string,
+): number {
+  if (valor === undefined || valor.trim() === '') {
+    return porDefecto;
+  }
+
+  const numero = Number(valor);
+  if (!Number.isInteger(numero) || numero <= 0) {
+    throw new Error(`${variable} debe ser un entero positivo.`);
+  }
+
+  return numero;
+}
+
+/**
+ * Límites efectivos: los valores por defecto, sobrescritos por las variables
+ * de entorno de topes si están definidas.
+ *
+ * Se lee en el proveedor del módulo (no al importar el archivo) para que
+ * `ConfigModule` ya haya cargado `backend/.env`.
+ */
+export function limitesDesdeEntorno(
+  env: NodeJS.ProcessEnv = process.env,
+): LimitesExport {
+  return {
+    ...LIMITES_EXPORT_POR_DEFECTO,
+    maxFilasPorConjunto: enteroPositivoDeEntorno(
+      env.EXPORT_MAX_FILAS_POR_CONJUNTO,
+      MAX_FILAS_POR_CONJUNTO,
+      'EXPORT_MAX_FILAS_POR_CONJUNTO',
+    ),
+    maxFilasTotales: enteroPositivoDeEntorno(
+      env.EXPORT_MAX_FILAS_TOTALES,
+      MAX_FILAS_TOTALES,
+      'EXPORT_MAX_FILAS_TOTALES',
+    ),
+  };
+}
 
 /** Motivo por el que un rango de fechas no sirve. */
 export type MotivoRangoExport =
@@ -131,7 +189,8 @@ export function validarRangoExport(
   if (dias > maxDias) {
     throw new ErrorRangoExport(
       'excedido',
-      `El rango no puede superar ${maxDias} días (se pidieron ${dias}).`,
+      `El rango no puede superar ${maxDias} días (se pidieron ${dias}). ` +
+        'Acota el rango de fechas.',
     );
   }
   return { desde, hasta };

@@ -53,6 +53,26 @@ export type OpcionesExport = Partial<LimitesExport> & {
 
 const FORMATOS_VALIDOS: readonly string[] = ['xlsx', 'csv'];
 
+/** Los conjuntos de actividad sí aceptan rango; los demás, no. */
+const SUGERENCIA_RANGO = 'Acota el rango de fechas.';
+const SIN_FILTRO =
+  'Este conjunto no admite filtro por rango de fechas; reduce el volumen de datos.';
+
+function sugerenciaDeConjunto(conjunto: ConjuntoExport): string {
+  return exigeRango(conjunto) ? SUGERENCIA_RANGO : SIN_FILTRO;
+}
+
+/**
+ * En el libro completo no hay filtros por conjunto. Si el conjunto es de
+ * actividad, exportarlo por separado permite acotar fechas; si no, solo queda
+ * reducir el volumen de datos.
+ */
+function sugerenciaDeLibro(conjunto: ConjuntoExport): string {
+  return exigeRango(conjunto)
+    ? 'El libro completo no admite filtros; exporta este conjunto por separado y acota el rango de fechas.'
+    : 'El libro completo no admite filtros; este conjunto no admite filtro por rango de fechas; reduce el volumen de datos.';
+}
+
 function make429(mensaje: string): HttpException {
   return new HttpException(mensaje, HttpStatus.TOO_MANY_REQUESTS);
 }
@@ -111,7 +131,8 @@ export class ExportsService {
 
     if (registro.count >= this.limites.maxPorMinuto) {
       throw make429(
-        `Límite de ${this.limites.maxPorMinuto} exportaciones por minuto`,
+        `Límite de ${this.limites.maxPorMinuto} exportaciones por minuto. ` +
+          'Espera un minuto antes de reintentar.',
       );
     }
     registro.count += 1;
@@ -122,10 +143,15 @@ export class ExportsService {
       (this.concurrentesPorUsuario.get(usuarioId) ?? 0) >=
       this.limites.maxConcurrentesPorUsuario
     ) {
-      throw make429('Ya hay una exportación en curso');
+      throw make429(
+        'Ya hay una exportación en curso. Espera a que termine.',
+      );
     }
     if (this.concurrentesGlobales >= this.limites.maxConcurrentesGlobales) {
-      throw make429('Límite global de exportaciones concurrentes');
+      throw make429(
+        `Ya hay otra exportación en curso: el máximo global es ` +
+          `${this.limites.maxConcurrentesGlobales}. Espera a que termine.`,
+      );
     }
 
     this.concurrentesPorUsuario.set(
@@ -219,7 +245,9 @@ export class ExportsService {
         filasPorConjunto = { [conjunto]: total };
         if (total > this.limites.maxFilasPorConjunto) {
           throw make413(
-            `El conjunto "${conjunto}" supera el máximo de ${this.limites.maxFilasPorConjunto} filas (se pidieron ${total})`,
+            `El conjunto "${conjunto}" supera el máximo de ` +
+              `${this.limites.maxFilasPorConjunto} filas (se pidieron ${total}). ` +
+              sugerenciaDeConjunto(conjunto),
           );
         }
 
@@ -306,7 +334,9 @@ export class ExportsService {
 
           if (total > this.limites.maxFilasPorConjunto) {
             throw make413(
-              `El conjunto "${conjunto}" supera el máximo de ${this.limites.maxFilasPorConjunto} filas (se pidieron ${total})`,
+              `El conjunto "${conjunto}" supera el máximo de ` +
+                `${this.limites.maxFilasPorConjunto} filas (se pidieron ${total}). ` +
+                sugerenciaDeLibro(conjunto),
             );
           }
 
@@ -314,7 +344,9 @@ export class ExportsService {
 
           if (totalGlobal > this.limites.maxFilasTotales) {
             throw make413(
-              `El libro completo supera el máximo de ${this.limites.maxFilasTotales} filas (se pidieron ${totalGlobal})`,
+              `El libro completo supera el máximo de ` +
+                `${this.limites.maxFilasTotales} filas (se pidieron ${totalGlobal}). ` +
+                'El libro completo no admite filtros; exporta los conjuntos por separado.',
             );
           }
 

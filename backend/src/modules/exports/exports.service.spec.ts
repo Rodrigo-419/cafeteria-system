@@ -6,7 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { CATALOGO_EXPORTS } from './application/catalogo';
-import { CONJUNTOS } from './domain/limites';
+import { CONJUNTOS, exigeRango } from './domain/limites';
 import { ExportsService } from './exports.service';
 
 /** Respuesta HTTP falsa: un Writable con `setHeader` y `destroy`. */
@@ -206,18 +206,24 @@ describe('ExportsService', () => {
     expect(CATALOGO_EXPORTS.empleados.obtenerDatos).not.toHaveBeenCalled();
   });
 
-  it('aplica el tope de 20000 filas por conjunto con 413 y deja exportacion_fallida con motivo', async () => {
+  it('aplica el tope de 10000 filas por conjunto con 413, mensaje y exportacion_fallida', async () => {
     const user = usuarioCon('u-tope', [
       'usuarios.crear_editar',
       'ventas.ver',
     ]);
     CATALOGO_EXPORTS.ventas.obtenerDatos = jest
       .fn()
-      .mockResolvedValue({ datos: [], total: 20_001 });
+      .mockResolvedValue({ datos: [], total: 10_001 });
 
-    await expect(
-      service.exportSingle(res as any, user, bodyVentas),
-    ).rejects.toMatchObject({ status: HttpStatus.PAYLOAD_TOO_LARGE });
+    const fallo = await service
+      .exportSingle(res as any, user, bodyVentas)
+      .catch((error) => error);
+
+    expect(fallo).toMatchObject({ status: HttpStatus.PAYLOAD_TOO_LARGE });
+    expect((fallo as HttpException).getResponse()).toContain(
+      'Acota el rango de fechas.',
+    );
+    expect((fallo as HttpException).getResponse()).not.toContain('por sucursal');
 
     expect(auditoria.registrar).toHaveBeenCalledTimes(1);
     expect(auditoria.registrar.mock.calls[0][0]).toMatchObject({
@@ -226,11 +232,43 @@ describe('ExportsService', () => {
       detalle: {
         conjuntos: ['ventas'],
         formato: 'csv',
-        filasPorConjunto: { ventas: 20_001 },
-        motivo: expect.stringContaining('20000'),
+        filasPorConjunto: { ventas: 10_001 },
+        motivo: expect.stringContaining('10000'),
       },
     });
   });
+
+  it.each(CONJUNTOS)(
+    'el 413 de "%s" sugiere solo un filtro existente',
+    async (conjunto) => {
+      const user = usuarioCon(`u-msg-${conjunto}`, [
+        'usuarios.crear_editar',
+        CATALOGO_EXPORTS[conjunto].permisoLectura,
+      ]);
+      CATALOGO_EXPORTS[conjunto].obtenerDatos = jest
+        .fn()
+        .mockResolvedValue({ datos: [], total: 10_001 });
+
+      const fallo = await service
+        .exportSingle(new RespuestaFalsa() as any, user, {
+          conjunto,
+          formato: 'csv',
+          filtros: exigeRango(conjunto)
+            ? { desde: '2026-01-01', hasta: '2026-01-02' }
+            : {},
+        })
+        .catch((error) => error);
+
+      expect(fallo).toMatchObject({ status: HttpStatus.PAYLOAD_TOO_LARGE });
+      const mensaje = (fallo as HttpException).getResponse() as string;
+      expect(mensaje).not.toContain('por sucursal');
+      if (exigeRango(conjunto)) {
+        expect(mensaje).toContain('Acota el rango de fechas.');
+      } else {
+        expect(mensaje).toContain('no admite filtro por rango de fechas');
+      }
+    },
+  );
 
   it('aplica topes inyectados pequeños por conjunto y responde 413', async () => {
     const chico = crearServicio({ maxFilasPorConjunto: 5 });
@@ -249,7 +287,7 @@ describe('ExportsService', () => {
     expect(auditoria.registrar.mock.calls[0][0].detalle.motivo).toContain('5');
   });
 
-  it('aplica el tope global de 50000 filas totales con 413 y deja exportacion_fallida con motivo', async () => {
+  it('aplica el tope global de 20000 filas totales con 413 y deja exportacion_fallida con motivo', async () => {
     const user = usuarioCon('u-tope-global', [
       'usuarios.crear_editar',
       'ventas.ver',
@@ -257,25 +295,79 @@ describe('ExportsService', () => {
     for (const conjunto of ['ventas', 'usuarios', 'auditoria']) {
       CATALOGO_EXPORTS[conjunto].obtenerDatos = jest
         .fn()
-        .mockResolvedValue({ datos: [], total: 20_000 });
+        .mockResolvedValue({ datos: [], total: 10_000 });
     }
 
-    await expect(service.exportFull(res as any, user)).rejects.toMatchObject({
-      status: HttpStatus.PAYLOAD_TOO_LARGE,
-    });
+    const fallo = await service
+      .exportFull(res as any, user)
+      .catch((error) => error);
+
+    expect(fallo).toMatchObject({ status: HttpStatus.PAYLOAD_TOO_LARGE });
+    expect((fallo as HttpException).getResponse()).toContain(
+      'El libro completo no admite filtros; exporta los conjuntos por separado.',
+    );
+    expect((fallo as HttpException).getResponse()).not.toContain('por sucursal');
 
     expect(auditoria.registrar).toHaveBeenCalledTimes(1);
     expect(auditoria.registrar.mock.calls[0][0]).toMatchObject({
       accion: 'exportacion_fallida',
       detalle: {
         filasPorConjunto: {
-          ventas: 20_000,
-          usuarios: 20_000,
-          auditoria: 20_000,
+          ventas: 10_000,
+          usuarios: 10_000,
+          auditoria: 10_000,
         },
-        motivo: expect.stringContaining('50000'),
+        motivo: expect.stringContaining('20000'),
       },
     });
+  });
+
+  it('el 413 por conjunto dentro del libro pide exportarlo por separado', async () => {
+    const chico = crearServicio({
+      maxFilasPorConjunto: 5,
+      maxFilasTotales: 100,
+    });
+    const user = usuarioCon('u-full-conjunto', [
+      'usuarios.crear_editar',
+      'ventas.ver',
+    ]);
+    CATALOGO_EXPORTS.ventas.obtenerDatos = jest
+      .fn()
+      .mockResolvedValue({ datos: [], total: 6 });
+
+    const fallo = await chico
+      .exportFull(res as any, user)
+      .catch((error) => error);
+
+    expect(fallo).toMatchObject({ status: HttpStatus.PAYLOAD_TOO_LARGE });
+    const mensaje = (fallo as HttpException).getResponse() as string;
+    expect(mensaje).toContain('exporta este conjunto por separado');
+    expect(mensaje).toContain('acota el rango de fechas');
+    expect(mensaje).not.toContain('por sucursal');
+  });
+
+  it('el 413 de un conjunto sin rango dentro del libro no sugiere exportarlo por separado', async () => {
+    const chico = crearServicio({
+      maxFilasPorConjunto: 5,
+      maxFilasTotales: 100,
+    });
+    const user = usuarioCon('u-full-carta', [
+      'usuarios.crear_editar',
+      'productos.ver',
+    ]);
+    CATALOGO_EXPORTS.carta.obtenerDatos = jest
+      .fn()
+      .mockResolvedValue({ datos: [], total: 6 });
+
+    const fallo = await chico
+      .exportFull(res as any, user)
+      .catch((error) => error);
+
+    expect(fallo).toMatchObject({ status: HttpStatus.PAYLOAD_TOO_LARGE });
+    const mensaje = (fallo as HttpException).getResponse() as string;
+    expect(mensaje).toContain('no admite filtro por rango de fechas');
+    expect(mensaje).toContain('reduce el volumen de datos');
+    expect(mensaje).not.toContain('por sucursal');
   });
 
   it('aplica un tope total inyectado pequeño y responde 413', async () => {
@@ -320,6 +412,10 @@ describe('ExportsService', () => {
       expect((error as HttpException).getStatus()).toBe(
         HttpStatus.PAYLOAD_TOO_LARGE,
       );
+      expect((error as HttpException).getResponse()).toContain(
+        'Acota el rango de fechas.',
+      );
+      expect((error as HttpException).getResponse()).not.toContain('por sucursal');
       expect(auditoria.registrar).toHaveBeenCalledTimes(1);
       expect(auditoria.registrar.mock.calls[0][0]).toMatchObject({
         accion: 'exportacion_fallida',
@@ -377,6 +473,12 @@ describe('ExportsService', () => {
     expect((undecimo as HttpException).getStatus()).toBe(
       HttpStatus.TOO_MANY_REQUESTS,
     );
+    expect((undecimo as HttpException).getResponse()).toContain(
+      'Espera un minuto antes de reintentar.',
+    );
+    expect((undecimo as HttpException).getResponse()).not.toContain(
+      'por sucursal',
+    );
 
     ahora = 60_001;
     await expect(
@@ -388,7 +490,7 @@ describe('ExportsService', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('limita a una exportacion concurrente por usuario y dos globales', async () => {
+  it('limita a una exportacion concurrente por usuario y una global', async () => {
     const pendientes: Array<(valor: any) => void> = [];
     CATALOGO_EXPORTS.ventas.obtenerDatos = jest.fn(
       () =>
@@ -405,46 +507,51 @@ describe('ExportsService', () => {
       'usuarios.crear_editar',
       'ventas.ver',
     ]);
-    const user3 = usuarioCon('u-concurrente-3', [
-      'usuarios.crear_editar',
-      'ventas.ver',
-    ]);
 
     const p1 = service
       .exportSingle(new RespuestaFalsa() as any, user1, bodyVentas)
       .catch((error) => error);
-    const p2 = service
+
+    // Solo la primera llego al await de obtenerDatos: ocupa el unico slot.
+    expect(pendientes).toHaveLength(1);
+
+    const global = await service
       .exportSingle(new RespuestaFalsa() as any, user2, bodyVentas)
       .catch((error) => error);
-
-    // Ambas llegaron al await de obtenerDatos con su slot tomado.
-    expect(pendientes).toHaveLength(2);
-
-    const r3 = await service
-      .exportSingle(new RespuestaFalsa() as any, user3, bodyVentas)
-      .catch((error) => error);
-    expect(r3).toBeInstanceOf(HttpException);
-    expect((r3 as HttpException).getStatus()).toBe(
+    expect(global).toBeInstanceOf(HttpException);
+    expect((global as HttpException).getStatus()).toBe(
       HttpStatus.TOO_MANY_REQUESTS,
     );
+    expect((global as HttpException).getResponse()).toContain(
+      'el máximo global es 1',
+    );
+    expect((global as HttpException).getResponse()).toContain(
+      'Espera a que termine.',
+    );
+    expect((global as HttpException).getResponse()).not.toContain('por sucursal');
 
-    const r1b = await service
+    const mismoUsuario = await service
       .exportSingle(new RespuestaFalsa() as any, user1, bodyVentas)
       .catch((error) => error);
-    expect(r1b).toBeInstanceOf(HttpException);
-    expect((r1b as HttpException).getStatus()).toBe(
+    expect(mismoUsuario).toBeInstanceOf(HttpException);
+    expect((mismoUsuario as HttpException).getStatus()).toBe(
       HttpStatus.TOO_MANY_REQUESTS,
+    );
+    expect((mismoUsuario as HttpException).getResponse()).toContain(
+      'Ya hay una exportación en curso',
+    );
+    expect((mismoUsuario as HttpException).getResponse()).not.toContain(
+      'por sucursal',
     );
 
     pendientes[0]({ datos: [], total: 0 });
-    pendientes[1]({ datos: [], total: 0 });
-    await Promise.allSettled([p1, p2]);
+    await p1;
 
     const p1c = service
       .exportSingle(new RespuestaFalsa() as any, user1, bodyVentas)
       .catch((error) => error);
-    expect(pendientes).toHaveLength(3);
-    pendientes[2]({ datos: [], total: 0 });
+    expect(pendientes).toHaveLength(2);
+    pendientes[1]({ datos: [], total: 0 });
     await p1c;
   });
 });

@@ -251,7 +251,38 @@ operación mutante esté en el registro o en la lista de exclusiones.
 | `POST /sales` | Ventas: registro de venta, fuera del alcance. |
 | `POST /sales/:id/anular` | Ventas: anulación de venta, fuera del alcance. |
 
-## 15. Inventario de supuestos clave (resumen)
+## 15. Módulo Exportaciones (`exports`)
+
+La exportación entrega un CSV o un libro XLSX con los mismos datos que los listados. El backend corre en el **plan gratuito de Render**, que tiene **512 MB para todo el proceso**; por eso el diseño actual prioriza acotar el volumen antes de materializarlo. La lectura por lotes queda para la **Fase 2**.
+
+| Conjunto | Cómo lee hoy | Evidencia |
+| --- | --- | --- |
+| `ventas` | Acumula: `contarYLeer` espera el `findMany` completo, sin cursor ni `take` por lote. | `backend/src/modules/exports/application/catalogo.impl.ts:309-325`; `contarYLeer` en `:281-292`. |
+| `carta` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:350-370`. |
+| `stock` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:395-413`. |
+| `movimientos` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:446-466`. |
+| `empleados` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:489-503`. |
+| `turnos` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:527-542`. |
+| `asignaciones` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:566-588`. |
+| `asistencia` | Acumula: carga **todos** los empleados y registros, deriva y ordena el array completo y recién al final recorta. | `catalogo.impl.ts:625-700`. |
+| `faltas` | Acumula: carga empleados, registros, justificaciones y asignaciones; calcula todas las faltas y recién al final recorta. | `catalogo.impl.ts:720-792`. |
+| `equipos` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:814-829`. |
+| `usuarios` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:851-866`. |
+| `sucursales` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:890-899`. |
+| `reporte` | Acumula: el caso de uso carga la asistencia completa y devuelve el agregado (una fila por sucursal). | `catalogo.impl.ts:911-944`; `reports/application/use-cases/generar-reporte-comparativo.use-case.ts:102-111`. |
+| `auditoria` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:953-968`. |
+
+Ningún lector usa `FILAS_POR_LOTE`: la constante existe en `backend/src/modules/exports/domain/limites.ts:30` pero no se referencia en los lectores. El servicio espera el array completo antes de escribir; el CSV se construye entero (`exports.service.ts:497-500`) y el libro completo acumula todos los conjuntos antes de `escribirLibro` (`exports.service.ts:300-339` y `:392`). El XLSX confirma fila a fila para que el workbook no las retenga, pero las filas de origen ya están en memoria.
+
+| Regla de negocio | Origen | Dónde se implementa | Prueba que la cubre | Estado |
+| --- | --- | --- | --- | --- |
+| **Defaults del código: 10 000 filas por conjunto y 20 000 en el libro completo**, configurables por `EXPORT_MAX_FILAS_POR_CONJUNTO` y `EXPORT_MAX_FILAS_TOTALES`. **En Render `render.yaml` fija 3000/6000** para los 512 MB del plan gratuito; la verificación real es el panel de Render, no Jest. | Supuesto de implementación | `backend/src/modules/exports/domain/limites.ts` (`MAX_FILAS_POR_CONJUNTO`, `MAX_FILAS_TOTALES`, `limitesDesdeEntorno`); `exports.module.ts` (proveedor con `useFactory`); `render.yaml`; `backend/.env.example`; `docs/despliegue.md` | `backend/src/modules/exports/domain/limites.spec.ts`; `backend/src/config/env.config.spec.ts`; `backend/src/modules/exports/exports.service.spec.ts` | Confirmada (defaults) / **NO VERIFICADO en Render** (memoria real) |
+| **Una exportación concurrente por usuario y una global**; el exceso responde `429`. | Supuesto de implementación | `backend/src/modules/exports/domain/limites.ts` (`maxConcurrentesGlobales: 1`); `exports.service.ts` (`checkConcurrent`) | `backend/src/modules/exports/exports.service.spec.ts`: "limita a una exportacion concurrente por usuario y una global" | Confirmada |
+| Los `413` y `429` de exportación responden en español y **solo sugieren filtros que existen**. Los conjuntos de actividad (`ventas`, `movimientos`, `asistencia`, `faltas`, `reporte`) piden acotar el rango de fechas; los demás piden reducir el volumen; el libro completo pide exportar los conjuntos por separado. **No hay filtro libre por sucursal**: el alcance lo impone el rol. Los `429` solo piden esperar. El `413` por tope deja `exportacion_fallida` con el motivo. | Supuesto de implementación | `backend/src/modules/exports/exports.service.ts` (`sugerenciaDeConjunto`, `sugerenciaDeLibro`, `make413`, `make429`); `limites.ts` (mensaje del rango); `catalogo.impl.ts` (`sucursalDe` y lectores) | `backend/src/modules/exports/exports.service.spec.ts` (14 conjuntos); `backend/test/exports.e2e-spec.ts` | Confirmada |
+| **No se refactoriza a lotes en esta entrega**: los 14 lectores devuelven un array y los escritores CSV/XLSX consumen arrays. Convertirlos a un iterador asíncrono exige cambiar el contrato del catálogo, el servicio y ambos escritores, además de la paridad; no es un cambio pequeño. | Supuesto de implementación | `backend/src/modules/exports/application/catalogo.impl.ts` (`ObtenerDatos`, `contarYLeer`); `exports.service.ts` (`escribirCsv`, `escribirLibro`, `exportFull`); `domain/csv.ts` | Inventario de esta tabla; la paridad solo cubre el contenido, no el pico de memoria | Confirmada (decisión) / **Fase 2** (implementación) |
+| **Fase 2**: leer por lotes con cursor (`FILAS_POR_LOTE = 1000`), escribir cada lote al CSV/XLSX antes de pedir el siguiente y entonces subir los topes. Los 512 MB del plan gratuito son la razón de los topes actuales. | Supuesto de implementación | `backend/src/modules/exports/domain/limites.ts:30` (constante reservada); pendiente en `catalogo.impl.ts`, `exports.service.ts` y `domain/csv.ts` | `backend/test/exports-memoria.e2e-spec.ts` mide el **delta de heap** con 10 000/20 000 ventas y libro completo; el RSS se registra como información. Render usa 3000/6000. | **Fase 2** / **NO VERIFICADO en Render** |
+
+## 16. Inventario de supuestos clave (resumen)
 
 Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. Las reglas que quedan **POR CONFIRMAR** están en las tablas de sus módulos: que **cambiar la contraseña no invalida los tokens emitidos** (autenticación), que **un Gerente no corrija sus propios registros de asistencia** (asistencia) y, en reportes, que **`faltasJustificadas` cuente todas las justificaciones del período** y que **las alertas abiertas y las entradas sin cerrar sean el estado actual** en lugar de cifras del período.
 

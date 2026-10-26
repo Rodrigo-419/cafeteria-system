@@ -434,14 +434,28 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
   `reporte` exigen `filtros.desde` y `filtros.hasta` (`YYYY-MM-DD`, día local
   America/Lima). Si faltan, son inválidos o están invertidos responden `400`;
   un rango de más de **92 días** responde `413`.
-- **Topes de filas**: **20 000** por conjunto y **50 000** en el libro completo.
-  Superarlos responde `413` con un mensaje en español. El rechazo por tope o
-  por rango mayor de 92 días deja un evento `exportacion_fallida` con el
+- **Sin filtro libre por sucursal**: el alcance por sucursal lo impone el rol
+  (Gerente, la suya; Admin, todas). No hay un `filtros.sucursalId` operativo en
+  la exportación, así que los mensajes no lo sugieren.
+- **Topes de filas**: los defaults del código son **10 000** por conjunto y
+  **20 000** en el libro completo (`EXPORT_MAX_FILAS_POR_CONJUNTO` y
+  `EXPORT_MAX_FILAS_TOTALES`). En Render, `render.yaml` fija **3000** y
+  **6000** para los 512 MB del plan gratuito (ver `docs/despliegue.md`).
+  Superarlos responde `413` con un mensaje que solo sugiere lo que existe:
+  acotar fechas en los conjuntos de actividad, reducir el volumen en los demás
+  o exportar los conjuntos por separado en el libro completo. El rechazo por
+  tope o por rango mayor de 92 días deja un evento `exportacion_fallida` con el
   `motivo`; las validaciones previas de cuerpo, permiso o formato no generan
   evento. La generación exitosa registra `exportacion_generada` **antes** de
   escribir el archivo.
-- **Concurrencia y frecuencia**: una exportación concurrente por usuario, dos
-  globales y **10 por minuto**; el exceso responde `429`.
+- **Concurrencia y frecuencia**: una exportación concurrente por usuario,
+  **una global** y **10 por minuto**; el exceso responde `429` con un mensaje
+  que pide esperar; no sugiere filtros.
+- **Memoria**: los topes dependen de los **512 MB** del plan gratuito de Render.
+  Hoy los 14 lectores acumulan las filas en memoria antes de escribir; la
+  lectura por lotes (cursor de `FILAS_POR_LOTE`) queda para la **Fase 2**, cuando
+  se puedan subir los topes. Ver
+  [Decisiones de diseño](architecture/decisiones-de-diseno.md#15-módulo-exportaciones-exports).
 - **CSV**: UTF-8 con BOM, saltos CRLF, comillas escapadas y prefijo `'` en
   valores que empiezan por `=`, `+`, `-`, `@`, tabulador o retorno de carro
   (protección contra fórmulas).
@@ -463,8 +477,8 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
 | 403    | Usuario autenticado pero sin el permiso (o sin alcance sobre la entidad). |
 | 404    | Recurso inexistente o fuera del alcance del usuario.         |
 | 409    | Conflicto con el estado (registro duplicado, dependencias, acción no permitida). |
-| 413    | Exportación demasiado grande: más de 20 000 filas por conjunto, 50 000 en el libro completo o un rango de más de 92 días. |
-| 429    | Demasiados intentos (fuerza bruta del login, con `Retry-After`, o del PIN de asistencia) o demasiadas exportaciones simultáneas/por minuto. |
+| 413    | Exportación demasiado grande: más de 3000 filas por conjunto, 6000 en el libro completo en Render (defaults del código: 10 000/20 000) o un rango de más de 92 días. El mensaje solo sugiere filtros existentes: fechas en los conjuntos de actividad, reducir volumen en los demás o exportar por separado. |
+| 429    | Demasiados intentos (fuerza bruta del login, con `Retry-After`, o del PIN de asistencia) o demasiadas exportaciones simultáneas/por minuto. En exportaciones el mensaje pide esperar; no sugiere filtros. |
 
 ## Documentos relacionados
 
