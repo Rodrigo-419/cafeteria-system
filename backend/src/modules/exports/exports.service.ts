@@ -19,7 +19,9 @@ import {
   ForbiddenException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
+  Optional,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { Response } from 'express';
@@ -29,20 +31,25 @@ import { CATALOGO_EXPORTS } from './application/catalogo';
 import type { FilaExport, UsuarioExport } from './application/catalogo.impl';
 import {
   CONJUNTOS,
-  MAX_FILAS_POR_CONJUNTO,
-  MAX_FILAS_TOTALES,
+  ErrorRangoExport,
+  LIMITES_EXPORT_POR_DEFECTO,
   exigeRango,
   validarRangoExport,
   type ConjuntoExport,
   type FormatoExport,
+  type LimitesExport,
 } from './domain/limites';
 import { construirCsv } from './domain/csv';
 import { crearLibroStreaming, filaCelda, prepararHoja } from './domain/excel';
 import { fechaLocalDe } from '../sales/domain/rules/fechas';
 
-const USER_CONCURRENT = new Map<string, number>();
-let GLOBAL_COUNT = 0;
-const USER_MINUTE = new Map<string, { count: number; resetAt: number }>();
+/** Token para inyectar límites distintos en pruebas y despliegues. */
+export const LIMITES_EXPORT = Symbol('LIMITES_EXPORT');
+
+/** Opciones del servicio: topes y reloj (para las ventanas de 60 s). */
+export type OpcionesExport = Partial<LimitesExport> & {
+  ahora?: () => number;
+};
 
 const FORMATOS_VALIDOS: readonly string[] = ['xlsx', 'csv'];
 
@@ -50,38 +57,16 @@ function make429(mensaje: string): HttpException {
   return new HttpException(mensaje, HttpStatus.TOO_MANY_REQUESTS);
 }
 
-function checkRateLimit(userId: string): void {
-  const now = Date.now();
-  const rec = USER_MINUTE.get(userId);
-  if (!rec || now > rec.resetAt) {
-    USER_MINUTE.set(userId, { count: 1, resetAt: now + 60_000 });
-  } else {
-    if (rec.count >= 10) {
-      throw make429('Límite de 10 exportaciones por minuto');
-    }
-    rec.count += 1;
-  }
+function make413(mensaje: string): HttpException {
+  return new HttpException(mensaje, HttpStatus.PAYLOAD_TOO_LARGE);
 }
 
-function checkConcurrent(userId: string): { release: () => void } {
-  if ((USER_CONCURRENT.get(userId) ?? 0) >= 1) {
-    throw make429('Ya hay una exportación en curso');
+/** Motivo legible para el detalle de `exportacion_fallida`. */
+function motivoDe(error: unknown): string {
+  if (error instanceof Error && error.message !== '') {
+    return error.message;
   }
-  if (GLOBAL_COUNT >= 2) {
-    throw make429('Límite global de exportaciones concurrentes');
-  }
-  USER_CONCURRENT.set(userId, (USER_CONCURRENT.get(userId) ?? 0) + 1);
-  GLOBAL_COUNT += 1;
-
-  return {
-    release: () => {
-      USER_CONCURRENT.set(
-        userId,
-        Math.max(0, (USER_CONCURRENT.get(userId) ?? 0) - 1),
-      );
-      GLOBAL_COUNT = Math.max(0, GLOBAL_COUNT - 1);
-    },
-  };
+  return String(error);
 }
 
 type HojaExport = {
@@ -92,10 +77,73 @@ type HojaExport = {
 
 @Injectable()
 export class ExportsService {
+  private readonly limites: LimitesExport;
+  private readonly ahora: () => number;
+  private readonly concurrentesPorUsuario = new Map<string, number>();
+  private concurrentesGlobales = 0;
+  private readonly porMinuto = new Map<
+    string,
+    { count: number; resetAt: number }
+  >();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditoria: AuditoriaRepository,
-  ) {}
+    @Optional()
+    @Inject(LIMITES_EXPORT)
+    opciones: OpcionesExport = {},
+  ) {
+    const { ahora, ...limites } = opciones;
+    this.limites = { ...LIMITES_EXPORT_POR_DEFECTO, ...limites };
+    this.ahora = ahora ?? Date.now;
+  }
+
+  // -------------------------------------------------------------- limites
+
+  /** Ventana deslizante fija de 60 s, con reloj inyectable en pruebas. */
+  private checkRateLimit(usuarioId: string): void {
+    const ahora = this.ahora();
+    const registro = this.porMinuto.get(usuarioId);
+    if (registro === undefined || ahora >= registro.resetAt) {
+      this.porMinuto.set(usuarioId, { count: 1, resetAt: ahora + 60_000 });
+      return;
+    }
+
+    if (registro.count >= this.limites.maxPorMinuto) {
+      throw make429(
+        `Límite de ${this.limites.maxPorMinuto} exportaciones por minuto`,
+      );
+    }
+    registro.count += 1;
+  }
+
+  private checkConcurrent(usuarioId: string): { release: () => void } {
+    if (
+      (this.concurrentesPorUsuario.get(usuarioId) ?? 0) >=
+      this.limites.maxConcurrentesPorUsuario
+    ) {
+      throw make429('Ya hay una exportación en curso');
+    }
+    if (this.concurrentesGlobales >= this.limites.maxConcurrentesGlobales) {
+      throw make429('Límite global de exportaciones concurrentes');
+    }
+
+    this.concurrentesPorUsuario.set(
+      usuarioId,
+      (this.concurrentesPorUsuario.get(usuarioId) ?? 0) + 1,
+    );
+    this.concurrentesGlobales += 1;
+
+    return {
+      release: () => {
+        this.concurrentesPorUsuario.set(
+          usuarioId,
+          Math.max(0, (this.concurrentesPorUsuario.get(usuarioId) ?? 0) - 1),
+        );
+        this.concurrentesGlobales = Math.max(0, this.concurrentesGlobales - 1);
+      },
+    };
+  }
 
   async exportSingle(
     res: Response,
@@ -107,8 +155,8 @@ export class ExportsService {
     },
   ): Promise<void> {
     const usuarioId = idDe(user);
-    checkRateLimit(usuarioId);
-    const rel = checkConcurrent(usuarioId);
+    this.checkRateLimit(usuarioId);
+    const rel = this.checkConcurrent(usuarioId);
 
     try {
       // ------------------------------------------------------- validaciones
@@ -135,27 +183,46 @@ export class ExportsService {
       const filtros = body?.filtros ?? {};
       if (exigeRango(conjunto)) {
         try {
-          validarRangoExport(conjunto, filtros);
+          validarRangoExport(
+            conjunto,
+            filtros as { desde?: string; hasta?: string },
+            this.limites.maxDiasRango,
+          );
         } catch (error) {
-          throw new BadRequestException((error as Error).message);
+          if (error instanceof ErrorRangoExport && error.motivo === 'excedido') {
+            await this.auditarSeguro(user, 'exportacion_fallida', {
+              conjuntos: [conjunto],
+              formato,
+              filtros,
+              filasPorConjunto: {},
+              motivo: error.message,
+            });
+            throw make413(error.message);
+          }
+          if (error instanceof ErrorRangoExport) {
+            throw new BadRequestException(error.message);
+          }
+          throw error;
         }
       }
 
       // ------------------------------------------------------- generacion
+      let filasPorConjunto: Record<string, number> = {};
       try {
         const { datos, total } = await item.obtenerDatos(
           this.prisma,
           user,
           filtros,
+          { maxFilasPorConjunto: this.limites.maxFilasPorConjunto },
         );
 
-        if (total > MAX_FILAS_POR_CONJUNTO) {
-          throw new BadRequestException(
-            `Límite excedido: máximo ${MAX_FILAS_POR_CONJUNTO} filas por conjunto`,
+        filasPorConjunto = { [conjunto]: total };
+        if (total > this.limites.maxFilasPorConjunto) {
+          throw make413(
+            `El conjunto "${conjunto}" supera el máximo de ${this.limites.maxFilasPorConjunto} filas (se pidieron ${total})`,
           );
         }
 
-        const filasPorConjunto = { [conjunto]: total };
         await this.auditar(user, 'exportacion_generada', {
           conjuntos: [conjunto],
           formato,
@@ -184,7 +251,8 @@ export class ExportsService {
           conjuntos: [conjunto],
           formato,
           filtros,
-          filasPorConjunto: {},
+          filasPorConjunto,
+          motivo: motivoDe(error),
         });
         if (res.headersSent) {
           res.destroy(error as Error);
@@ -199,8 +267,8 @@ export class ExportsService {
 
   async exportFull(res: Response, user: UsuarioExport): Promise<void> {
     const usuarioId = idDe(user);
-    checkRateLimit(usuarioId);
-    const rel = checkConcurrent(usuarioId);
+    this.checkRateLimit(usuarioId);
+    const rel = this.checkConcurrent(usuarioId);
 
     try {
       const permisos = permisosDe(user);
@@ -215,36 +283,38 @@ export class ExportsService {
         (conjunto) => !conjuntos.includes(conjunto),
       );
 
-      try {
-        const resultados: Array<{
-          conjunto: ConjuntoExport;
-          item: any;
-          datos: FilaExport[];
-          total: number;
-        }> = [];
-        const filasPorConjunto: Record<string, number> = {};
-        let totalGlobal = 0;
+      const resultados: Array<{
+        conjunto: ConjuntoExport;
+        item: any;
+        datos: FilaExport[];
+        total: number;
+      }> = [];
+      const filasPorConjunto: Record<string, number> = {};
+      let totalGlobal = 0;
 
+      try {
         for (const conjunto of conjuntos) {
           const item = CATALOGO_EXPORTS[conjunto];
           const { datos, total } = await item.obtenerDatos(
             this.prisma,
             user,
             {},
+            { maxFilasPorConjunto: this.limites.maxFilasPorConjunto },
           );
 
-          if (total > MAX_FILAS_POR_CONJUNTO) {
-            throw new BadRequestException(
-              `Límite excedido: máximo ${MAX_FILAS_POR_CONJUNTO} filas por conjunto`,
+          filasPorConjunto[conjunto] = total;
+
+          if (total > this.limites.maxFilasPorConjunto) {
+            throw make413(
+              `El conjunto "${conjunto}" supera el máximo de ${this.limites.maxFilasPorConjunto} filas (se pidieron ${total})`,
             );
           }
 
           totalGlobal += total;
-          filasPorConjunto[conjunto] = total;
 
-          if (totalGlobal > MAX_FILAS_TOTALES) {
-            throw new BadRequestException(
-              `Límite excedido: máximo ${MAX_FILAS_TOTALES} filas totales`,
+          if (totalGlobal > this.limites.maxFilasTotales) {
+            throw make413(
+              `El libro completo supera el máximo de ${this.limites.maxFilasTotales} filas (se pidieron ${totalGlobal})`,
             );
           }
 
@@ -264,10 +334,15 @@ export class ExportsService {
 
         const metadatos: FilaExport[] = [
           {
+            Campo: 'Usuario',
+            Valor: user.nombreUsuario ?? user.nombre ?? usuarioId,
+          },
+          {
             Campo: 'Exportador',
             Valor: user.nombre ?? user.nombreUsuario ?? usuarioId,
           },
-          { Campo: 'Fecha', Valor: fechaHoraLima(new Date()) },
+          { Campo: 'Fecha y hora', Valor: fechaHoraLima(new Date()) },
+          { Campo: 'Filtros', Valor: 'ninguno (libro completo)' },
           {
             Campo: 'Conjuntos incluidos',
             Valor: etiquetasDe(conjuntosIncluidos),
@@ -276,6 +351,10 @@ export class ExportsService {
             Campo: 'Conjuntos omitidos',
             Valor: etiquetasDe(omitidos),
           },
+          ...resultados.map((resultado) => ({
+            Campo: `Filas: ${resultado.item.etiqueta}`,
+            Valor: resultado.total,
+          })),
           { Campo: 'Filas totales', Valor: totalGlobal },
         ];
 
@@ -302,7 +381,8 @@ export class ExportsService {
           conjuntos: [...conjuntos],
           formato: 'xlsx',
           filtros: {},
-          filasPorConjunto: {},
+          filasPorConjunto,
+          motivo: motivoDe(error),
         });
         if (res.headersSent) {
           res.destroy(error as Error);
@@ -445,7 +525,10 @@ async function escribirLibro(
 
     for (const fila of hoja.filas) {
       const filaExcel = worksheet.addRow(
-        filaCelda(hoja.columnas.map((columna) => fila[columna] ?? null)),
+        filaCelda(
+          hoja.columnas.map((columna) => fila[columna] ?? null),
+          hoja.columnas,
+        ),
       );
       if (typeof (filaExcel as any).commit === 'function') {
         (filaExcel as any).commit();

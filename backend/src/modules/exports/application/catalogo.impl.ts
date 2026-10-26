@@ -11,9 +11,9 @@
 //   * Solo se seleccionan columnas de negocio: ni `passwordHash`, ni `pinHash`,
 //     ni ningun otro secreto llega al archivo.
 //   * El total se cuenta antes de leer. Si supera el tope por conjunto se
-//     devuelve sin filas para que el servicio responda 400 sin cargar la
+//     devuelve sin filas para que el servicio responda 413 sin cargar la
 //     memoria con una tabla enorme.
-import { AuditoriaEntidad, Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma/client';
 import type { PrismaService } from '../../../database/prisma.service';
 import { CONJUNTOS, MAX_FILAS_POR_CONJUNTO } from '../domain/limites';
 import {
@@ -41,9 +41,18 @@ import { fechaAHora } from '../../shifts/domain/horas';
 import { fechaLocalDe, rangoDelDiaLocal } from '../../sales/domain/rules/fechas';
 import { diaUtc } from '../../employees/domain/fechas';
 import { calcularFaltas } from '../../attendance/domain/rules/calculo-faltas';
+import { derivarAsistencia } from '../../attendance/domain/rules/registros-efectivos';
 import { ReportsRepository } from '../../reports/infrastructure/reports.repository';
 import { GenerarReporteComparativoUseCase } from '../../reports/application/use-cases/generar-reporte-comparativo.use-case';
 import { esAdmin } from '../../users/domain/roles';
+import { filtroAlcanceListado } from '../../users/domain/rules/alcance';
+import { filtroAlcanceEmpleados } from '../../employees/domain/rules/alcance';
+import {
+  alcanceEmpleadosParaAsignaciones,
+  filtroAlcanceTurnos,
+} from '../../shifts/domain/rules/alcance';
+import { alcanceDeActor } from '../../auditoria/application/alcance-auditoria';
+import { whereDeAlcanceAuditoria } from '../../auditoria/infrastructure/auditoria.repository';
 
 /** Recorte del usuario autenticado que necesita el catalogo. */
 export type UsuarioExport = {
@@ -71,10 +80,15 @@ export type ResultadoDatos = {
   total: number;
 };
 
+export type LimitesLectura = {
+  maxFilasPorConjunto: number;
+};
+
 export type ObtenerDatos = (
   prisma: PrismaService,
   user: UsuarioExport,
   filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ) => Promise<ResultadoDatos>;
 
 /**
@@ -89,7 +103,7 @@ const PERMISOS_LECTURA: Record<string, string> = {
   ventas: 'ventas.ver',
   carta: 'productos.ver',
   stock: 'insumos.ver',
-  movimientos: 'insumos.ver',
+  movimientos: 'inventario.registrar',
   empleados: 'empleados.crear_editar',
   turnos: 'turnos.editar',
   asignaciones: 'turnos.editar',
@@ -262,14 +276,15 @@ function totalVenta(
  * Cuenta primero y solo lee si cabe en el tope por conjunto.
  *
  * Asi una tabla con mas de 20 000 filas no se materializa en memoria: el
- * servicio ve `total > MAX_FILAS_POR_CONJUNTO` y responde el 400.
+ * servicio ve `total > MAX_FILAS_POR_CONJUNTO` y responde el 413.
  */
 async function contarYLeer<T>(
   contar: () => Promise<number>,
   leer: () => Promise<T[]>,
+  maxFilas: number = MAX_FILAS_POR_CONJUNTO,
 ): Promise<{ filas: T[]; total: number }> {
   const total = await contar();
-  if (total > MAX_FILAS_POR_CONJUNTO) {
+  if (total > maxFilas) {
     return { filas: [], total };
   }
 
@@ -282,6 +297,7 @@ async function datosVentas(
   prisma: PrismaService,
   user: UsuarioExport,
   filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const sucursalId = sucursalDe(user);
   const { inicio, fin } = rangoUtc(filtros);
@@ -305,6 +321,7 @@ async function datosVentas(
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -324,6 +341,7 @@ async function datosCarta(
   prisma: PrismaService,
   user: UsuarioExport,
   _filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const sucursalId = sucursalDe(user);
   const where: Prisma.ProductoSucursalVarianteWhereInput =
@@ -343,8 +361,12 @@ async function datosCarta(
           },
           variante: { select: { nombre: true } },
         },
-        orderBy: [{ id: 'asc' }],
+        orderBy: [
+          { producto: { nombre: 'asc' } },
+          { variante: { nombre: 'asc' } },
+        ],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -364,6 +386,7 @@ async function datosStock(
   prisma: PrismaService,
   user: UsuarioExport,
   _filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const sucursalId = sucursalDe(user);
   const where: Prisma.InsumoSucursalWhereInput =
@@ -381,8 +404,12 @@ async function datosStock(
           insumo: { select: { nombre: true, presentacion: true } },
           sucursal: { select: { nombre: true } },
         },
-        orderBy: [{ id: 'asc' }],
+        orderBy: [
+          { sucursalId: 'asc' },
+          { insumo: { nombre: 'asc' } },
+        ],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -405,6 +432,7 @@ async function datosMovimientos(
   prisma: PrismaService,
   user: UsuarioExport,
   filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const sucursalId = sucursalDe(user);
   const { inicio, fin } = rangoUtc(filtros);
@@ -432,8 +460,9 @@ async function datosMovimientos(
             },
           },
         },
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: { createdAt: 'desc' },
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -453,10 +482,9 @@ async function datosEmpleados(
   prisma: PrismaService,
   user: UsuarioExport,
   _filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
-  const sucursalId = sucursalDe(user);
-  const where: Prisma.EmpleadoWhereInput =
-    sucursalId !== null ? { sucursalId } : {};
+  const where = whereEmpleadosDe(user);
 
   const { filas, total } = await contarYLeer(
     () => prisma.empleado.count({ where }),
@@ -469,8 +497,9 @@ async function datosEmpleados(
           usuario: { select: { nombre: true, nombreUsuario: true } },
           sucursal: { select: { nombre: true } },
         },
-        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -489,10 +518,11 @@ async function datosTurnos(
   prisma: PrismaService,
   user: UsuarioExport,
   _filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
-  const sucursalId = sucursalDe(user);
+  const alcance = filtroAlcanceTurnos(actorDe(user));
   const where: Prisma.TurnoWhereInput =
-    sucursalId !== null ? { sucursalId } : {};
+    alcance?.sucursalId !== undefined ? { sucursalId: alcance.sucursalId } : {};
 
   const { filas, total } = await contarYLeer(
     () => prisma.turno.count({ where }),
@@ -506,8 +536,9 @@ async function datosTurnos(
           diasSemana: true,
           sucursal: { select: { nombre: true } },
         },
-        orderBy: [{ id: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -528,10 +559,9 @@ async function datosAsignaciones(
   prisma: PrismaService,
   user: UsuarioExport,
   _filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
-  const sucursalId = sucursalDe(user);
-  const where: Prisma.AsignacionTurnoWhereInput =
-    sucursalId !== null ? { empleado: { sucursalId } } : {};
+  const where = whereAsignacionesDe(user);
 
   const { filas, total } = await contarYLeer(
     () => prisma.asignacionTurno.count({ where }),
@@ -552,8 +582,9 @@ async function datosAsignaciones(
             select: { horaInicio: true, horaFin: true },
           },
         },
-        orderBy: [{ fechaInicio: 'desc' }, { id: 'desc' }],
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   const hoy = fechaLocalDe(new Date());
@@ -586,45 +617,103 @@ async function datosAsistencia(
   prisma: PrismaService,
   user: UsuarioExport,
   filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const sucursalId = sucursalDe(user);
-  const { inicio, fin } = rangoUtc(filtros);
-  const where: Prisma.RegistroAsistenciaWhereInput = {
-    fechaHora: { gte: inicio, lt: fin },
-    ...(sucursalId !== null ? { sucursalId } : {}),
-  };
+  const { desde, hasta } = rangoTexto(filtros);
 
-  const { filas, total } = await contarYLeer(
-    () => prisma.registroAsistencia.count({ where }),
-    () =>
-      prisma.registroAsistencia.findMany({
-        where,
-        select: {
-          fechaHora: true,
-          tipo: true,
-          esCorreccion: true,
-          empleado: { select: { usuario: { select: { nombre: true } } } },
-        },
-        orderBy: [{ fechaHora: 'desc' }, { id: 'desc' }],
-      }),
+  const empleados = await prisma.empleado.findMany({
+    where: sucursalId !== null ? { sucursalId } : {},
+    select: {
+      id: true,
+      usuario: { select: { nombre: true } },
+    },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+  });
+
+  if (empleados.length === 0) {
+    return { datos: [], total: 0 };
+  }
+
+  const registros = await prisma.registroAsistencia.findMany({
+    where: { empleadoId: { in: empleados.map((empleado) => empleado.id) } },
+    select: {
+      id: true,
+      empleadoId: true,
+      sucursalId: true,
+      tipo: true,
+      fechaHora: true,
+      metodo: true,
+      esCorreccion: true,
+      registroOriginalId: true,
+      motivo: true,
+      usuarioCorrectorId: true,
+      createdAt: true,
+    },
+    orderBy: [{ fechaHora: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+  });
+
+  const historialPorEmpleado = new Map<string, typeof registros>();
+  for (const registro of registros) {
+    const historial = historialPorEmpleado.get(registro.empleadoId) ?? [];
+    historial.push(registro);
+    historialPorEmpleado.set(registro.empleadoId, historial);
+  }
+
+  const filas: Array<{
+    fechaHora: Date;
+    id: string;
+    nombre: string;
+    tipo: string;
+    abierta: boolean;
+    corregido: boolean;
+  }> = [];
+
+  for (const empleado of empleados) {
+    const historial = historialPorEmpleado.get(empleado.id) ?? [];
+    const derivacion = derivarAsistencia(historial);
+
+    for (const derivado of derivacion.registros) {
+      const dia = fechaLocalDe(derivado.fechaHora);
+      if (dia < desde || dia > hasta) {
+        continue;
+      }
+      filas.push({
+        fechaHora: derivado.fechaHora,
+        id: derivado.id,
+        nombre: empleado.usuario.nombre,
+        tipo: derivado.tipo,
+        abierta: derivado.abierta,
+        corregido: derivado.corregido,
+      });
+    }
+  }
+
+  filas.sort(
+    (a, b) =>
+      b.fechaHora.getTime() - a.fechaHora.getTime() ||
+      (a.id < b.id ? 1 : -1),
   );
 
-  return {
-    datos: filas.map((fila) => ({
+  const total = filas.length;
+  const datos = filas
+    .slice(0, (limites?.maxFilasPorConjunto ?? MAX_FILAS_POR_CONJUNTO) + 1)
+    .map((fila) => ({
       'Fecha y hora': textoFechaHoraLima(fila.fechaHora),
-      Empleado: fila.empleado.usuario.nombre,
+      Empleado: fila.nombre,
       Tipo: etiquetaDe(ETIQUETA_TIPO_MARCAJE, fila.tipo),
-      Estado: fila.esCorreccion ? 'Corregido' : 'Registrado',
-      Corrección: fila.esCorreccion ? 'Sí' : 'No',
-    })),
-    total,
-  };
+      Estado: fila.abierta ? 'Abierta' : 'Cerrada',
+      Corrección: fila.corregido ? 'Sí' : 'No',
+    }));
+
+  return { datos, total };
 }
 
 async function datosFaltas(
   prisma: PrismaService,
   user: UsuarioExport,
   filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const sucursalId = sucursalDe(user);
   const { desde, hasta } = rangoTexto(filtros);
@@ -696,13 +785,18 @@ async function datosFaltas(
   );
 
   return {
-    datos: faltas.slice(0, MAX_FILAS_POR_CONJUNTO + 1).map((falta) => ({
-      Fecha: falta.fecha,
-      Empleado: falta.empleadoNombre,
-      Sucursal:
-        sucursalNombre.get(falta.empleadoId) ?? falta.sucursalId,
-      'Días de turno': formatearDias(falta.turno.diasSemana),
-    })),
+    datos: faltas
+      .slice(
+        0,
+        (limites?.maxFilasPorConjunto ?? MAX_FILAS_POR_CONJUNTO) + 1,
+      )
+      .map((falta) => ({
+        Fecha: falta.fecha,
+        Empleado: falta.empleadoNombre,
+        Sucursal:
+          sucursalNombre.get(falta.empleadoId) ?? falta.sucursalId,
+        'Días de turno': formatearDias(falta.turno.diasSemana),
+      })),
     total: faltas.length,
   };
 }
@@ -711,6 +805,7 @@ async function datosEquipos(
   prisma: PrismaService,
   user: UsuarioExport,
   _filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const sucursalId = sucursalDe(user);
   const where: Prisma.EquipoWhereInput =
@@ -728,8 +823,9 @@ async function datosEquipos(
           observaciones: true,
           sucursal: { select: { nombre: true } },
         },
-        orderBy: [{ id: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -748,10 +844,9 @@ async function datosUsuarios(
   prisma: PrismaService,
   user: UsuarioExport,
   _filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
-  const sucursalId = sucursalDe(user);
-  const where: Prisma.UsuarioWhereInput =
-    sucursalId !== null ? { sucursalId } : {};
+  const where = whereUsuariosDe(user);
 
   const { filas, total } = await contarYLeer(
     () => prisma.usuario.count({ where }),
@@ -765,8 +860,9 @@ async function datosUsuarios(
           rol: { select: { nombre: true } },
           sucursal: { select: { nombre: true } },
         },
-        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        orderBy: [{ nombre: 'asc' }, { id: 'asc' }],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -785,6 +881,7 @@ async function datosSucursales(
   prisma: PrismaService,
   user: UsuarioExport,
   _filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const sucursalId = sucursalDe(user);
   const where: Prisma.SucursalWhereInput =
@@ -796,8 +893,9 @@ async function datosSucursales(
       prisma.sucursal.findMany({
         where,
         select: { nombre: true, direccion: true, telefono: true },
-        orderBy: [{ nombre: 'asc' }],
+        orderBy: [{ nombre: 'asc' }, { id: 'asc' }],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -814,6 +912,7 @@ async function datosReporte(
   prisma: PrismaService,
   user: UsuarioExport,
   filtros: FiltrosExport,
+  _limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const sucursalId = sucursalDe(user);
   const { desde, hasta } = rangoTexto(filtros);
@@ -847,6 +946,7 @@ async function datosAuditoria(
   prisma: PrismaService,
   user: UsuarioExport,
   _filtros: FiltrosExport,
+  limites?: LimitesLectura,
 ): Promise<ResultadoDatos> {
   const donde = whereAuditoriaDe(user);
 
@@ -864,6 +964,7 @@ async function datosAuditoria(
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
+    limites?.maxFilasPorConjunto,
   );
 
   return {
@@ -883,42 +984,69 @@ async function datosAuditoria(
  * ve en `GET /api/auditoria` (personas y operativos de su sucursal, mas sus
  * propias exportaciones). Nunca las exportaciones de otro usuario.
  */
-function whereAuditoriaDe(user: UsuarioExport): Prisma.AuditoriaWhereInput {
-  if (esAdmin(user.rol)) {
+function actorDe(user: UsuarioExport) {
+  return {
+    id: user.id,
+    rol: user.rol ?? null,
+    sucursalId: user.sucursalId ?? null,
+    permisosEfectivos: user.permisosEfectivos ?? user.permisos ?? [],
+  };
+}
+
+/** Alcance de usuarios: reutiliza la regla real del modulo de usuarios. */
+function whereUsuariosDe(user: UsuarioExport): Prisma.UsuarioWhereInput {
+  const alcance = filtroAlcanceListado(actorDe(user));
+  if (alcance === undefined) {
     return {};
   }
 
-  const sucursalId = user.sucursalId;
-  const condiciones: Prisma.AuditoriaWhereInput[] = [];
+  return {
+    sucursalId: alcance.sucursalId ?? SIN_ALCANCE,
+    rol: { nombre: alcance.rol ?? SIN_ALCANCE },
+  };
+}
 
-  if (sucursalId !== null && sucursalId !== undefined) {
-    condiciones.push({
-      entidad: {
-        in: [AuditoriaEntidad.usuario, AuditoriaEntidad.empleado],
-      },
-      usuarioAfectado: {
-        rol: { nombre: 'Empleado' },
-        sucursalId,
-      },
-    });
-    condiciones.push({
-      entidad: {
-        in: [
-          AuditoriaEntidad.oferta,
-          AuditoriaEntidad.insumo_sucursal,
-          AuditoriaEntidad.turno,
-          AuditoriaEntidad.asignacion,
-          AuditoriaEntidad.equipo,
-        ],
-      },
-      sucursalAfectadaId: sucursalId,
-    });
+/** Alcance de empleados: reutiliza la regla real del modulo de personal. */
+function whereEmpleadosDe(user: UsuarioExport): Prisma.EmpleadoWhereInput {
+  const alcance = filtroAlcanceEmpleados(actorDe(user));
+  if (alcance === undefined) {
+    return {};
   }
 
-  condiciones.push({
-    entidad: AuditoriaEntidad.exportacion,
-    actorId: user.id,
-  });
+  return {
+    sucursalId: alcance.sucursalId ?? SIN_ALCANCE,
+    usuario: { rol: { nombre: alcance.usuarioRol ?? SIN_ALCANCE } },
+  };
+}
 
-  return { OR: condiciones };
+/** Alcance de asignaciones: reutiliza la regla real del modulo de turnos. */
+function whereAsignacionesDe(
+  user: UsuarioExport,
+): Prisma.AsignacionTurnoWhereInput {
+  const alcance = alcanceEmpleadosParaAsignaciones(actorDe(user));
+  if (alcance === undefined) {
+    return {};
+  }
+
+  return {
+    empleado: {
+      ...(alcance.sucursalId !== undefined
+        ? { sucursalId: alcance.sucursalId }
+        : {}),
+      ...(alcance.usuarioRol !== undefined
+        ? { usuario: { rol: { nombre: alcance.usuarioRol } } }
+        : {}),
+    },
+  };
+}
+
+/**
+ * Alcance de la auditoria exportada: reutiliza `alcanceDeActor` y
+ * `whereDeAlcanceAuditoria`, las mismas reglas de `GET /api/auditoria`.
+ */
+function whereAuditoriaDe(user: UsuarioExport): Prisma.AuditoriaWhereInput {
+  const alcance = alcanceDeActor(actorDe(user));
+  return alcance === null
+    ? { id: SIN_ALCANCE }
+    : whereDeAlcanceAuditoria(alcance);
 }

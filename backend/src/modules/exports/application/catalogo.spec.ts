@@ -39,6 +39,7 @@ describe('catalogo exports', () => {
       'ventas.ver',
       'productos.ver',
       'insumos.ver',
+      'inventario.registrar',
       'empleados.crear_editar',
       'turnos.editar',
       'asistencia.ver',

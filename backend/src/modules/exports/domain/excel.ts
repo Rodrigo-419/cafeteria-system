@@ -34,6 +34,35 @@ export function aNumeroImporte(texto: string): number | null {
   return (negativo ? -centimos : centimos) / 100
 }
 
+/**
+ * Encabezados cuyos valores son importes o cantidades decimales.
+ *
+ * Se escriben como número (no como texto) para que Excel pueda sumarlos, y se
+ * les fija el formato `0.00`. La lista es explícita para no convertir un código
+ * o un teléfono que empiece por dígitos.
+ */
+const COLUMNAS_NUMERICAS = new Set([
+  'Total',
+  'Precio',
+  'Stock actual',
+  'Stock mínimo',
+  'Cantidad',
+  'Ventas',
+  'Tickets',
+  'Ticket promedio',
+  'Anuladas',
+  'Movimientos',
+  'Faltas',
+  'Faltas justificadas',
+  'Insumos con alerta',
+  'Entradas abiertas',
+]);
+
+/** true si la columna se exporta como número decimal. */
+export function esColumnaNumerica(header: string): boolean {
+  return COLUMNAS_NUMERICAS.has(header);
+}
+
 /** Hora de America/Lima como texto "AAAA-MM-DD HH:mm". */
 export function textoFechaHoraLima(iso: string | Date): string {
   const partes = new Intl.DateTimeFormat('en-CA', {
@@ -101,14 +130,31 @@ export function prepararHoja(
   columnas.forEach((columna, indice) => {
     const col = sheet.getColumn(indice + 1)
     col.width = columna.width ?? Math.max(12, columna.header.length + 2)
+    if (esColumnaNumerica(columna.header)) {
+      col.numFmt = '0.00'
+    }
   })
 }
 
-/** Convierte una fila de valores de negocio en valores de celda seguros. */
-export function filaCelda(fila: readonly unknown[]): FilaExcel {
-  return fila.map((valor) => {
+/**
+ * Convierte una fila de valores de negocio en valores de celda seguros.
+ *
+ * Si se pasan los encabezados, las columnas numéricas se convierten a número
+ * (con la cadena decimal exacta como origen); el resto se queda como texto.
+ */
+export function filaCelda(
+  fila: readonly unknown[],
+  columnas?: readonly string[],
+): FilaExcel {
+  return fila.map((valor, indice) => {
     if (valor === null || valor === undefined) return null
     if (typeof valor === 'number') return valor
-    return textoDeCelda(valor)
+
+    const texto = textoDeCelda(valor)
+    if (columnas !== undefined && esColumnaNumerica(columnas[indice] ?? '')) {
+      const numero = aNumeroImporte(texto)
+      if (numero !== null) return numero
+    }
+    return texto
   })
 }

@@ -1,6 +1,6 @@
 # Referencia de la API
 
-Referencia de las **79 rutas implementadas** por el backend. Todas se solicitan
+Referencia de las **81 rutas implementadas** por el backend. Todas se solicitan
 bajo el prefijo global `/api`.
 
 ## Convenciones
@@ -416,6 +416,44 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
   En el historial por usuario, un usuario fuera de su alcance (otra sucursal u otro
   rol) responde `404`. Un **Empleado** recibe `403`.
 
+### Exportaciones (`/api/exports`)
+
+| Método | Ruta                 | Permiso | Códigos |
+| ------ | -------------------- | ------- | ------- |
+| POST   | `/api/exports`       | `usuarios.crear_editar` y el permiso de lectura del conjunto | 200, 400, 401, 403, 413, 429 |
+| POST   | `/api/exports/full`  | `usuarios.crear_editar` | 200, 400, 401, 403, 413, 429 |
+
+- **Un conjunto**: cuerpo `{ conjunto, formato?, filtros? }`. `formato` es `csv`
+  o `xlsx` (por defecto `xlsx`). Los conjuntos son `ventas`, `carta`, `stock`,
+  `movimientos`, `empleados`, `turnos`, `asignaciones`, `asistencia`, `faltas`,
+  `equipos`, `usuarios`, `sucursales`, `reporte` y `auditoria`.
+- **Libro completo**: `POST /api/exports/full` genera un `.xlsx` con todos los
+  conjuntos que el usuario puede leer. Un Gerente solo ve su sucursal y el
+  Admin ve todas; los conjuntos sin permiso se omiten.
+- **Rango obligatorio**: `ventas`, `movimientos`, `asistencia`, `faltas` y
+  `reporte` exigen `filtros.desde` y `filtros.hasta` (`YYYY-MM-DD`, día local
+  America/Lima). Si faltan, son inválidos o están invertidos responden `400`;
+  un rango de más de **92 días** responde `413`.
+- **Topes de filas**: **20 000** por conjunto y **50 000** en el libro completo.
+  Superarlos responde `413` con un mensaje en español. El rechazo por tope o
+  por rango mayor de 92 días deja un evento `exportacion_fallida` con el
+  `motivo`; las validaciones previas de cuerpo, permiso o formato no generan
+  evento. La generación exitosa registra `exportacion_generada` **antes** de
+  escribir el archivo.
+- **Concurrencia y frecuencia**: una exportación concurrente por usuario, dos
+  globales y **10 por minuto**; el exceso responde `429`.
+- **CSV**: UTF-8 con BOM, saltos CRLF, comillas escapadas y prefijo `'` en
+  valores que empiezan por `=`, `+`, `-`, `@`, tabulador o retorno de carro
+  (protección contra fórmulas).
+- **XLSX**: los importes y cantidades se escriben como celdas numéricas con
+  formato `0.00`; las fechas y horas se escriben como texto
+  `AAAA-MM-DD HH:mm` en America/Lima; el resto de textos se escribe como cadena.
+  El libro completo incluye la hoja **Metadatos** con usuario, exportador,
+  fecha y hora, filtros, conjuntos incluidos/omitidos, filas por hoja y total.
+- **Descarga**: responde `Content-Type` y `Content-Disposition` de adjunto. Los
+  nombres son `<conjunto>-AAAA-MM-DD.csv`, `<conjunto>-AAAA-MM-DD.xlsx` y
+  `libro-completo-AAAA-MM-DD.xlsx`.
+
 ## Códigos de error más comunes
 
 | Código | Significado                                                  |
@@ -425,7 +463,8 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
 | 403    | Usuario autenticado pero sin el permiso (o sin alcance sobre la entidad). |
 | 404    | Recurso inexistente o fuera del alcance del usuario.         |
 | 409    | Conflicto con el estado (registro duplicado, dependencias, acción no permitida). |
-| 429    | Demasiados intentos (fuerza bruta del login, con `Retry-After`, o del PIN de asistencia). |
+| 413    | Exportación demasiado grande: más de 20 000 filas por conjunto, 50 000 en el libro completo o un rango de más de 92 días. |
+| 429    | Demasiados intentos (fuerza bruta del login, con `Retry-After`, o del PIN de asistencia) o demasiadas exportaciones simultáneas/por minuto. |
 
 ## Documentos relacionados
 

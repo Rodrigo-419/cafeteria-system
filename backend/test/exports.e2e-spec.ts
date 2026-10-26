@@ -24,6 +24,7 @@ import {
   ADMIN_USUARIO_PRUEBAS,
   PASSWORD_VALIDA_PRUEBAS,
 } from './utils/constantes-pruebas';
+import { textoFechaHoraLima } from '../src/modules/exports/domain/excel';
 
 type EventoAuditoria = {
   id: string;
@@ -253,6 +254,9 @@ describe('exports (e2e)', () => {
     expect(descarga.headers['content-type']).toContain(
       'spreadsheetml.sheet',
     );
+    expect(descarga.headers['content-disposition']).toMatch(
+      /^attachment; filename="libro-completo-\d{4}-\d{2}-\d{2}\.xlsx"$/,
+    );
 
     const libro = await leerLibro(descarga.buffer);
     const metadatos = libro.getWorksheet('Metadatos');
@@ -269,6 +273,13 @@ describe('exports (e2e)', () => {
     expect(porCampo.get('Conjuntos incluidos')).not.toContain(
       'Reporte comparativo',
     );
+    expect(porCampo.get('Usuario')).toBe(gerente.usuario.nombreUsuario);
+    expect(porCampo.get('Fecha y hora')).toMatch(
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/,
+    );
+    expect(porCampo.get('Filtros')).toContain('ninguno');
+    expect(porCampo.get('Filas: Usuarios')).toBe('0');
+    expect(porCampo.get('Filas totales')).toBe('1');
 
     // La hoja omitida no existe y Metadatos no explica el motivo.
     expect(libro.getWorksheet('Reporte comparativo')).toBeUndefined();
@@ -360,8 +371,8 @@ describe('exports (e2e)', () => {
     expect(evento.detalle.conjuntos).toEqual(['usuarios']);
     expect(evento.detalle.formato).toBe('csv');
     expect(evento.detalle.filtros).toEqual({});
-    // El Gerente de Centro mas su Empleado: dos usuarios visibles.
-    expect(evento.detalle.filasPorConjunto).toEqual({ usuarios: 2 });
+    // El Gerente solo ve Empleados de su sucursal: su propio usuario no cuenta.
+    expect(evento.detalle.filasPorConjunto).toEqual({ usuarios: 1 });
 
     const fechaEvento = new Date(evento.fecha).getTime();
     expect(fechaEvento).toBeGreaterThanOrEqual(antes.getTime() - 5);
@@ -404,9 +415,10 @@ describe('exports (e2e)', () => {
         formato: 'csv',
         filtros: { desde: hoyLocal(), hasta: hoyLocal() },
       })
-      .expect(400);
+      .expect(413);
 
-    expect(JSON.stringify(respuesta.body)).toContain('Límite excedido');
+    expect(JSON.stringify(respuesta.body)).toContain('20000');
+    expect(JSON.stringify(respuesta.body)).toContain('20001');
 
     const encontrados = await eventos(
       admin,
@@ -417,8 +429,163 @@ describe('exports (e2e)', () => {
       conjuntos: ['ventas'],
       formato: 'csv',
       filtros: { desde: hoyLocal(), hasta: hoyLocal() },
-      filasPorConjunto: {},
+      filasPorConjunto: { ventas: 20_001 },
+      motivo: expect.stringContaining('20000'),
     });
+  });
+
+  // --------------------------------------------------------------- formatos
+
+  it('el CSV usa BOM, CRLF, comillas escapadas y prefijo anti-fórmula', async () => {
+    const nombres = ['=SUMA(1,2)', '+1', '-1', '@riesgo', '\tTab', '\rCR'];
+    await clientePrueba().equipo.createMany({
+      data: [
+        ...nombres.map((nombre) => ({
+          sucursalId: sucursales.centro,
+          nombre,
+          tipo: 'Equipo de prueba',
+          estado: 'funcionando' as const,
+        })),
+        {
+          sucursalId: sucursales.centro,
+          nombre: 'Equipo "A", especial',
+          tipo: 'Equipo de prueba',
+          estado: 'funcionando' as const,
+        },
+      ],
+    });
+
+    const descarga = await descargar('/api/exports', admin, {
+      conjunto: 'equipos',
+      formato: 'csv',
+    });
+
+    expect(descarga.status).toBe(200);
+    expect(descarga.headers['content-type']).toBe('text/csv; charset=utf-8');
+    expect(descarga.headers['content-disposition']).toBe(
+      `attachment; filename="equipos-${hoyLocal()}.csv"`,
+    );
+    expect(descarga.buffer.subarray(0, 3)).toEqual(
+      Buffer.from([0xef, 0xbb, 0xbf]),
+    );
+
+    const texto = descarga.buffer.toString('utf8');
+    expect(texto.endsWith('\r\n')).toBe(true);
+    // No hay saltos de linea sueltos: todos los separadores de fila son CRLF.
+    expect(texto.replace(/\r\n/g, '')).not.toContain('\n');
+
+    for (const nombre of nombres) {
+      expect(texto).toContain(`'${nombre}`);
+    }
+    expect(texto).toContain('"Equipo ""A"", especial"');
+
+    const filas = texto
+      .replace(/^\uFEFF/, '')
+      .split('\r\n')
+      .filter((fila) => fila.length > 0);
+    expect(filas).toHaveLength(1 + nombres.length + 1);
+  });
+
+  it('XLSX escribe importes numéricos, fechas de Lima como texto y Metadatos con filas por hoja', async () => {
+    const prisma = clientePrueba();
+    const creadaEn = new Date();
+    const categoria = await prisma.categoriaProducto.create({
+      data: { nombre: 'Categoría Formato' },
+    });
+    const variante = await prisma.variante.findFirstOrThrow({
+      where: { nombre: 'Única' },
+    });
+    const producto = await prisma.producto.create({
+      data: { nombre: 'Producto Formato', categoriaId: categoria.id },
+    });
+    const oferta = await prisma.productoSucursalVariante.create({
+      data: {
+        productoId: producto.id,
+        sucursalId: sucursales.centro,
+        varianteId: variante.id,
+        precio: '12.50',
+        estado: 'activo',
+      },
+    });
+    await prisma.venta.create({
+      data: {
+        sucursalId: sucursales.centro,
+        usuarioId: adminId,
+        metodoPago: 'efectivo',
+        estado: 'completada',
+        createdAt: creadaEn,
+        updatedAt: creadaEn,
+        detalles: {
+          create: {
+            productoSucursalVarianteId: oferta.id,
+            cantidad: 2,
+            precioUnitarioSnapshot: '12.50',
+            subtotal: '25.00',
+          },
+        },
+      },
+    });
+
+    const descarga = await descargar('/api/exports/full', admin);
+    expect(descarga.status).toBe(200);
+    expect(descarga.headers['content-type']).toContain(
+      'spreadsheetml.sheet',
+    );
+    expect(descarga.headers['content-disposition']).toMatch(
+      /^attachment; filename="libro-completo-\d{4}-\d{2}-\d{2}\.xlsx"$/,
+    );
+
+    const libro = await leerLibro(descarga.buffer);
+    const ventas = libro.getWorksheet('Ventas');
+    expect(ventas).toBeDefined();
+
+    const cabecera = (ventas!.getRow(1).values as ExcelJS.CellValue[])
+      .slice(1)
+      .map((valor) => valorTexto(valor));
+    const columna = (nombre: string): number => {
+      const indice = cabecera.indexOf(nombre);
+      expect(indice).toBeGreaterThanOrEqual(0);
+      return indice + 1;
+    };
+
+    const fila = ventas!.getRow(2);
+    const celdaTotal = fila.getCell(columna('Total'));
+    expect(typeof celdaTotal.value).toBe('number');
+    expect(celdaTotal.value).toBe(25);
+    expect(celdaTotal.numFmt).toBe('0.00');
+
+    const celdaFecha = fila.getCell(columna('Fecha'));
+    expect(typeof celdaFecha.value).toBe('string');
+    expect(celdaFecha.value).toBe(textoFechaHoraLima(creadaEn));
+
+    expect(typeof fila.getCell(columna('Sucursal')).value).toBe('string');
+
+    const metadatos = libro.getWorksheet('Metadatos');
+    expect(metadatos).toBeDefined();
+    const filasMetadatos = filasDeHoja(metadatos!);
+    const porCampo = new Map(
+      filasMetadatos
+        .slice(1)
+        .map((filaMeta) => [filaMeta[0] ?? '', filaMeta[1] ?? '']),
+    );
+
+    expect(porCampo.get('Usuario')).toBe(ADMIN_USUARIO_PRUEBAS);
+    expect(porCampo.get('Fecha y hora')).toMatch(
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/,
+    );
+    expect(porCampo.get('Filtros')).toBe('ninguno (libro completo)');
+
+    const hojasDatos = libro.worksheets.filter(
+      (hoja) => hoja.name !== 'Metadatos',
+    );
+    let totalFilas = 0;
+    for (const hoja of hojasDatos) {
+      const filas = filasDeHoja(hoja);
+      const datos = Math.max(0, filas.length - 1);
+      totalFilas += datos;
+      expect(porCampo.get(`Filas: ${hoja.name}`)).toBe(String(datos));
+    }
+    expect(porCampo.get('Filas totales')).toBe(String(totalFilas));
   });
 
   // -------------------------------------------------------------- secretos
