@@ -23,6 +23,7 @@ import { SaleStatusBadge } from './SaleStatusBadge'
 import { AnnulSaleDialog } from './AnnulSaleDialog'
 import { mensajeDeError } from './mensajes'
 import { useSucursales, useVentas } from './queries'
+import { BotonExportar } from '@/features/exports/BotonExportar'
 import type { EstadoVenta, MetodoPagoVenta, VentaApi } from '@/types/api'
 
 const PAGE_SIZE = 20
@@ -118,14 +119,17 @@ export function SalesListPage() {
         title="Ventas"
         description="Historial de ventas y anulaciones"
         actions={
-          puedeRegistrar ? (
-            <Button asChild>
-              <Link to="/sales/nueva">
-                <PlusIcon className="size-4" />
-                Nueva venta
-              </Link>
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            <BotonExportar conjunto="ventas" desde={fecha} hasta={fecha} />
+            {puedeRegistrar && (
+              <Button asChild>
+                <Link to="/sales/nueva">
+                  <PlusIcon className="size-4" />
+                  Nueva venta
+                </Link>
+              </Button>
+            )}
+          </div>
         }
       />
 

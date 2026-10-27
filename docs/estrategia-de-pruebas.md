@@ -222,7 +222,9 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   faltas y justificación—), las sucursales (`SucursalesPage` —alta, edición,
   unicidad con 409 y alcance por rol—) y el reporte comparativo
   (`ReporteComparativoPage` —KPI, comparativo del período, estado actual, filtro
-  por sucursal, validación del rango, 403 y 404—).
+  por sucursal, validación del rango, 403 y 404—), y las exportaciones
+  (`ExportacionesPage`, `BotonExportar`, catálogo, validación del rango,
+  descarga y permisos).
 - **Integración ligera con MSW**: se mockean `POST /api/auth/login`,
   `GET /api/auth/me`, la carta (`GET /api/branches/:id/products`), las
   sucursales (`GET /api/branches`), las ventas (`GET/POST /api/sales`,
@@ -242,7 +244,8 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   equipos (`GET /api/equipment`,
   `GET/POST /api/equipment`, `GET/PATCH /api/equipment/:id` y
   `GET /api/equipment/:id/history`) y el
-  reporte comparativo (`GET /api/reports/comparativo`), incluidos los escenarios
+  reporte comparativo (`GET /api/reports/comparativo`), las exportaciones
+  (`POST /api/exports` y `POST /api/exports/full`), incluidos los escenarios
   de error 400/403/404/409, y la auditoría (`GET /api/auditoria` y
   `GET /api/auditoria/usuarios/:usuarioId`).
 
@@ -283,15 +286,15 @@ bloqueo.
 No se sube para "alentar" las pruebas: es el suelo que evita que la carga de la
 máquina decida del resultado. Una prueba que se cuelga de verdad sigue fallando
 porque supera los 15 s, y ningún caso actual se acerca a ese techo (la suite
-completa ronda los 27 s).
+completa ronda los 38 s).
 
 > Análogo en backend: el `testTimeout` de e2e es de 120 s (`test/jest-e2e.json`)
 > por la misma razón de varianza bajo carga, descrita en la sección 2.
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 59
-- **Total de tests**: **438 passed** (unitaria/componentes, Vitest + MSW)
+- **Archivos de prueba**: 63
+- **Total de tests**: **487 passed** (unitaria/componentes, Vitest + MSW)
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/auth/AuthContext.test.tsx`, `lib/format/money.spec.ts`,
@@ -323,7 +326,11 @@ productos y la carta (`features/products/CatalogoProductos.test.tsx`,
 (`features/users/UsuariosPage.test.tsx`, `features/users/PermisosUsuarioDialog.test.tsx`),
 las sucursales y el reporte comparativo
 (`features/branches/SucursalesPage.test.tsx`,
-`features/reports/ReporteComparativoPage.test.tsx`) y el landing autenticado
+`features/reports/ReporteComparativoPage.test.tsx`), las exportaciones
+(`features/exports/catalogo.test.ts`,
+`features/exports/ExportacionesPage.test.tsx`,
+`features/exports/ExportarListados.test.tsx` y
+`lib/api/exports.test.ts`) y el landing autenticado
 (`features/auth/landing.test.tsx`).
 
 ### Arranque en frío (frontend)
@@ -341,11 +348,12 @@ las sucursales y el reporte comparativo
 
 Además de Vitest/MSW (que mockean la red), hay una suite **Playwright** que
 maneja la aplicación **real** (frontend en Vite + backend + PostgreSQL reales)
-con un navegador Chromium. Vive en `frontend/e2e/` (13 specs, **34 pruebas**),
+con un navegador Chromium. Vive en `frontend/e2e/` (14 specs, **37 pruebas**),
 se lanza con `npm run test:e2e` y **no** se ejecuta en CI (no requiere levantar
 servidores: usa los ya arrancados). Cubre los flujos de extremo a extremo (login
 por rol, cambio de cuenta, menús/rutas, venta y anulación, inventario y alertas,
-usuarios/permisos/bloqueo, auditoría, marcación con PIN, reportes), una pasada de
+usuarios/permisos/bloqueo, auditoría, marcación con PIN, reportes,
+exportaciones en Excel/CSV y el 403 de un Empleado), una pasada de
 **pulido** que recorre cada pantalla por rol buscando códigos técnicos, UUID,
 JSON crudo, `undefined`/`null`/`NaN`, etiquetas en inglés y errores de consola,
 una auditoría de **accesibilidad** con `@axe-core/playwright` (WCAG 2.1 A/AA; la

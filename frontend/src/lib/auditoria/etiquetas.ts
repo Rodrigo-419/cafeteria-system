@@ -23,6 +23,7 @@ export type AreaAuditoria =
   | 'inventario'
   | 'turnos'
   | 'equipos'
+  | 'exportaciones'
 
 export const ETIQUETA_AREA: Record<AreaAuditoria, string> = {
   personas: 'Personas',
@@ -32,6 +33,7 @@ export const ETIQUETA_AREA: Record<AreaAuditoria, string> = {
   inventario: 'Inventario',
   turnos: 'Turnos',
   equipos: 'Equipos',
+  exportaciones: 'Exportaciones',
 }
 
 /** Orden en que se presentan las áreas en los controles de filtro. */
@@ -43,6 +45,7 @@ export const AREAS_AUDITORIA: AreaAuditoria[] = [
   'inventario',
   'turnos',
   'equipos',
+  'exportaciones',
 ]
 
 // ------------------------------------------------------------- entidades
@@ -93,14 +96,14 @@ export const AREA_ENTIDAD: Record<string, AreaAuditoria> = {
   turno: 'turnos',
   asignacion: 'turnos',
   equipo: 'equipos',
-  exportacion: 'personas',
+  exportacion: 'exportaciones',
 }
 
 // --------------------------------------------------------------- acciones
 
 /**
  * Orden de presentación de las acciones en el filtro. Agrupadas por área para
- * que el desplegable sea navegable con 44 entradas.
+ * que el desplegable sea navegable con 46 entradas.
  */
 export const ACCIONES_POR_AREA: {
   area: AreaAuditoria
@@ -183,7 +186,7 @@ export const ACCIONES_POR_AREA: {
     ],
   },
   {
-    area: 'personas',
+    area: 'exportaciones',
     acciones: [
       'exportacion_generada',
       'exportacion_fallida',

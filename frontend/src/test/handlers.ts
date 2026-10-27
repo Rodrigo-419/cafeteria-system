@@ -1898,6 +1898,24 @@ function nombreSucursalEnUso(nombre: string, exceptoId?: string): boolean {
   )
 }
 
+const CONTENIDO_EXPORTACION = 'contenido-exportado'
+const CONTENIDO_LIBRO_COMPLETO = 'contenido-libro-completo'
+const FECHA_EXPORTACION_PRUEBA = '2026-10-26'
+
+function respuestaArchivo(
+  contenido: string,
+  nombreArchivo: string,
+  tipoContenido: string,
+) {
+  return new HttpResponse(contenido, {
+    status: 200,
+    headers: {
+      'Content-Type': tipoContenido,
+      'Content-Disposition': `attachment; filename="${nombreArchivo}"`,
+    },
+  })
+}
+
 export const handlers = [
   http.post(`${BASE_API}/auth/login`, async ({ request }) => {
     const cuerpo = (await request.json()) as {
@@ -1923,6 +1941,30 @@ export const handlers = [
   }),
 
   http.get(`${BASE_API}/auth/me`, () => HttpResponse.json(USUARIO_PRUEBA)),
+
+  http.post(`${BASE_API}/exports`, async ({ request }) => {
+    const cuerpo = (await request.json()) as {
+      conjunto?: string
+      formato?: string
+    }
+    const formato = cuerpo.formato === 'csv' ? 'csv' : 'xlsx'
+    const conjunto = cuerpo.conjunto ?? 'conjunto'
+    return respuestaArchivo(
+      CONTENIDO_EXPORTACION,
+      `${conjunto}-${FECHA_EXPORTACION_PRUEBA}.${formato}`,
+      formato === 'csv'
+        ? 'text/csv; charset=utf-8'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+  }),
+
+  http.post(`${BASE_API}/exports/full`, () =>
+    respuestaArchivo(
+      CONTENIDO_LIBRO_COMPLETO,
+      `libro-completo-${FECHA_EXPORTACION_PRUEBA}.xlsx`,
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ),
+  ),
 
   http.get(`${BASE_API}/branches`, () => {
     const visibles = sucursalesEstado
