@@ -27,7 +27,10 @@ export class PrismaService
       this.logger.error(`pg.Pool error: ${err.message}`, err.stack);
     });
 
-    super({ adapter: new PrismaPg(pool) });
+    // El pool lo crea este servicio, asi que `$disconnect()` debe cerrarlo.
+    // Sin esta opcion el adaptador solo quita su listener y el proceso se queda
+    // vivo hasta que vencen las conexiones inactivas.
+    super({ adapter: new PrismaPg(pool, { disposeExternalPool: true }) });
   }
 
   async onModuleInit(): Promise<void> {

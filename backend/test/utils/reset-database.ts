@@ -32,7 +32,12 @@ export function crearClientePrueba(): ClientePrueba {
   const connectionString = urlBaseDePruebas();
   exigirBaseDePruebas(connectionString);
 
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  return new PrismaClient({
+    adapter: new PrismaPg(
+      { connectionString },
+      { disposeExternalPool: true },
+    ),
+  });
 }
 
 /** Nombres de las tablas de aplicacion, excluidas las de Prisma. */

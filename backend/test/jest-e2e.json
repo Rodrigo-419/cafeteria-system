@@ -18,6 +18,5 @@
   "setupFiles": ["<rootDir>/entorno-pruebas.ts"],
   "globalSetup": "<rootDir>/setup-e2e.ts",
   "maxWorkers": 1,
-  "testTimeout": 120000,
-  "forceExit": true
+  "testTimeout": 120000
 }

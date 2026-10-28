@@ -84,7 +84,8 @@ El plan gratuito de Render da **512 MB para todo el proceso** (NestJS, Prisma,
 conexiones y la exportación en curso). Por eso `render.yaml` fija topes más
 bajos que los defaults del código:
 
-- **3000 filas por conjunto** y **6000 en el libro completo** en Render, con
+- **3 000 filas por conjunto** y **6 000 en el libro completo** en producción
+  (Render), con
   `EXPORT_MAX_FILAS_POR_CONJUNTO` y `EXPORT_MAX_FILAS_TOTALES`. Los defaults de
   `limites.ts` siguen siendo **10 000** y **20 000** para otros entornos; no se
   cambiaron.
@@ -147,6 +148,38 @@ producción. Si falta alguna, el arranque falla en la validación de Zod con un
 mensaje que nombra la variable y el motivo **sin mostrar el valor recibido**
 (`validate` en `backend/src/config/env.config.ts`). Cubierto por
 `env.config.spec.ts`.
+
+## Auditoría de dependencias
+
+El **2026-10-27** se ejecutó, sin cambiar versiones ni ejecutar `audit fix`:
+
+```bash
+# desde la raíz del repositorio
+cd backend && npm audit --omit=dev --registry=https://registry.npmjs.org
+cd ../frontend && npm audit --omit=dev --registry=https://registry.npmjs.org
+```
+
+Resultado: **backend 12 vulnerabilidades (4 moderadas y 8 altas)** y **frontend
+1 alta**. Ambos comandos terminan con código 1 por los hallazgos.
+
+| Paquete | Severidad | Cadena / uso | Alcanzabilidad real |
+| --- | --- | --- | --- |
+| `body-parser` | alta | `express` -> `body-parser` (runtime) | **Alcanzable**: el parser de Express procesa cuerpos comprimidos antes de los guards; el límite global de 300 req/min reduce el volumen, pero no elimina el DoS. |
+| `multer` | alta | `@nestjs/platform-express` (runtime) | **No alcanzable hoy**: no hay ningún `FileInterceptor` ni ruta de subida; el paquete queda cargado como dependencia de la plataforma. |
+| `qs` | moderada | `express`/`supertest` | **No alcanzable en el servidor**: el aviso afecta a `qs.stringify` con `arrayFormat: 'comma'`; la API solo parsea query/urlencoded. `supertest` es de pruebas. |
+| `zod` (backend) | alta | `zod` (runtime) | **No alcanzable desde peticiones**: solo valida `process.env` al arrancar (`env.config.ts`); los DTO HTTP usan `class-validator`. |
+| `zod` (frontend) | alta | `zod` y `@hookform/resolvers` | **Solo cliente**: valida formularios en el navegador; una entrada manipulada podría consumir memoria de la pestaña, no del backend. |
+| `uuid` | moderada | `exceljs` -> `uuid` | **No alcanzable por la ruta vulnerable**: el aviso afecta a `v3`/`v5`/`v6` con buffer; ExcelJS usa `uuid.v4()` sin buffer. |
+| `deepmerge-ts`, `@prisma/config`, `mysql2` | alta | `prisma` (CLI, `devDependencies`) | **Solo build**: se usan en `prisma generate`/`migrate deploy`; no se cargan en `start:prod`. |
+| `fast-uri` | moderada | `@nestjs/cli` -> `@angular-devkit/core` -> `ajv` | **Solo build**: herramienta de CLI; no forma parte del runtime de Nest. |
+
+`npm audit --omit=dev` sigue mostrando cadenas de `prisma` y de `@nestjs/cli`
+porque npm las resuelve desde el lockfile; `render.yaml` instala también
+`devDependencies` para poder ejecutar Prisma durante el build. **No se
+modificaron versiones en esta entrega**: los avisos quedan documentados y la
+actualización compatible debe hacerse en una tarea aparte, verificando antes
+las suites. La comprobación en producción (Render/Neon) no se ha hecho en esta
+entrega.
 
 ## Frontend en Netlify
 

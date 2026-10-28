@@ -1,7 +1,14 @@
 # Referencia de la API
 
-Referencia de las **81 rutas implementadas** por el backend. Todas se solicitan
+Referencia de las **83 rutas implementadas** por el backend. Todas se solicitan
 bajo el prefijo global `/api`.
+
+**Alcance del recuento:** son los **83 decoradores HTTP** (`@Get`, `@Post`,
+`@Put`, `@Patch` y `@Delete`) de los **23 controladores** de
+`backend/src/**/*.controller.ts`. Incluye las dos rutas de salud (`GET /api` y
+`GET /api/health`) y las dos de exportaciones (`POST /api/exports` y
+`POST /api/exports/full`). No cuenta Swagger (solo se publica fuera de
+producción) ni rutas internas de Nest.
 
 ## Convenciones
 
@@ -411,10 +418,18 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
   sucursalAfectadaId, detalle, fecha }`. `detalle` es `{ antes, despues }` y **nunca**
   incluye contraseñas, hashes ni PIN.
 - **Alcance**: el **Admin** ve todo; el **Gerente** solo los eventos de personas
-  (usuario/empleado) cuyo usuario afectado es un **Empleado de su sucursal** y los
-  eventos operativos de esa sucursal (el catálogo global queda fuera de su lectura).
+  (usuario/empleado) cuyo usuario afectado es un **Empleado de su sucursal**, los
+  eventos operativos de esa sucursal y **sus propias exportaciones** (el catálogo
+  global y las exportaciones de otros usuarios quedan fuera de su lectura).
   En el historial por usuario, un usuario fuera de su alcance (otra sucursal u otro
   rol) responde `404`. Un **Empleado** recibe `403`.
+- **Exportaciones auditadas**: una exportación que supera la validación escribe
+  `exportacion_generada` o `exportacion_fallida` (tope, rango o error de
+  generación) con entidad `exportacion`; los rechazos previos (permiso, formato o
+  concurrencia) no generan evento. El detalle solo lleva metadatos (conjuntos,
+  formato, filtros, filas por conjunto y, en el fallo, el motivo); nunca las filas
+  exportadas. No tiene usuario ni sucursal afectada, no aparece en el historial por
+  usuario y el Gerente solo ve las suyas.
 
 ### Exportaciones (`/api/exports`)
 
@@ -439,8 +454,8 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
   la exportación, así que los mensajes no lo sugieren.
 - **Topes de filas**: los defaults del código son **10 000** por conjunto y
   **20 000** en el libro completo (`EXPORT_MAX_FILAS_POR_CONJUNTO` y
-  `EXPORT_MAX_FILAS_TOTALES`). En Render, `render.yaml` fija **3000** y
-  **6000** para los 512 MB del plan gratuito (ver `docs/despliegue.md`).
+  `EXPORT_MAX_FILAS_TOTALES`). En producción, `render.yaml` fija **3 000** y
+  **6 000** para los 512 MB del plan gratuito (ver `docs/despliegue.md`).
   Superarlos responde `413` con un mensaje que solo sugiere lo que existe:
   acotar fechas en los conjuntos de actividad, reducir el volumen en los demás
   o exportar los conjuntos por separado en el libro completo. El rechazo por

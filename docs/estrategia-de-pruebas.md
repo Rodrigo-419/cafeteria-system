@@ -123,18 +123,17 @@ generado a su `.ts` (Node no lo resuelve solo).
 ## 5. Cobertura
 
 Las cifras siguientes corresponden a la última ejecución limpia, verificada en
-**2026-10-18** con `npm run build`, `npm run lint`, `npm test` y
+**2026-10-27** con `npm run build`, `npm run lint`, `npm test` y
 `npm run test:e2e` (Docker con la base de pruebas disponible). Se refrescan
 ejecutando los comandos de la sección 2.
 
 | Nivel     | Suites | Casos |
 | --------- | ------ | ----- |
-| Unitarias | 67     | 905   |
-| E2E       | 17     | 485   |
+| Unitarias | 74     | 977   |
+| E2E       | 21     | 529   |
 
-La suite e2e completa tarda alrededor de **8 minutos** (entre 470 y 492 s en las
-tres últimas ejecuciones consecutivas), dentro del `testTimeout` de 120 s por
-prueba/hook.
+La suite e2e completa se ejecuta en serie (`--runInBand`), dentro del
+`testTimeout` de 120 s por prueba/hook.
 
 > La tabla no incluye un % de cobertura de código: el repo no define el comando
 > `coverage` como parte del flujo estándar.
