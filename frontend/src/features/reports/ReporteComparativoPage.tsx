@@ -40,6 +40,7 @@ import {
   validarRango,
 } from './presentacion'
 import { useReporteComparativo, useSucursalesParaReporte } from './queries'
+import { BotonExportar } from '@/features/exports/BotonExportar'
 import type { ReporteSucursalApi } from '@/types/api'
 
 const TODAS = 'todas'
@@ -200,7 +201,16 @@ export function ReporteComparativoPage() {
       <PageHeader
         title="Reporte comparativo de sucursales"
         description="Ventas, inventario y asistencia por sucursal en un rango de días."
-        actions={<BotonImprimir />}
+        actions={
+          <div className="no-print flex flex-wrap items-center gap-2">
+            <BotonExportar
+              conjunto="reporte"
+              desde={filtros?.desde}
+              hasta={filtros?.hasta}
+            />
+            <BotonImprimir />
+          </div>
+        }
       />
 
       <CabeceraImpresion

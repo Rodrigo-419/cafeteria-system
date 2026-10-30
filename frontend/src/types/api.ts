@@ -583,9 +583,10 @@ export type EntidadAuditoria =
   | 'turno'
   | 'asignacion'
   | 'equipo'
+  | 'exportacion'
 
 /**
- * Acción auditada (`auditoria_accion`, 44 valores). Igual que con las
+ * Acción auditada (`auditoria_accion`). Igual que con las
  * entidades: unión cerrada para los filtros, acceso libre en los mapas.
  */
 export type AccionAuditoria =
@@ -633,6 +634,8 @@ export type AccionAuditoria =
   | 'equipo_creado'
   | 'equipo_editado'
   | 'equipo_estado_cambiado'
+  | 'exportacion_generada'
+  | 'exportacion_fallida'
 
 /**
  * Detalle semántico de un evento. El backend lo sanitiza antes de persistirlo

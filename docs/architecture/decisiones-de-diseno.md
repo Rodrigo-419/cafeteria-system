@@ -199,8 +199,9 @@ El reporte comparativo cruza **ventas, inventario y asistencia** de un período 
 ## 14. Módulo Auditoría (`auditoria`)
 
 La auditoría registra un **evento inmutable** por cada operación que cambia estado en
-los módulos auditados (personas, sucursales, equipos, turnos y el catálogo de
-productos e insumos), **dentro de la misma transacción** que la operación, y expone
+los módulos auditados (personas, sucursales, equipos, turnos, el catálogo de
+productos e insumos y las exportaciones), **dentro de la misma transacción** que la
+operación, y expone
 dos lecturas: el listado general y el historial por usuario. Es de **solo inserción**
 (la tabla rechaza `UPDATE`/`DELETE` por trigger) y toda escritura pasa por un único
 punto (`AuditoriaRepository.registrar`).
@@ -211,8 +212,8 @@ punto (`AuditoriaRepository.registrar`).
 | El **detalle nunca lleva secretos**: el saneador comprueba por **clave exacta** (normalizada a minúsculas) contra una lista de claves prohibidas (`password`, `contrasena`, `hash`, `pin`, `secret`, `token`, etc.); si encuentra una, **lanza** y la operación entera se revierte. No usa regex amplias (`/pin/i`) para no marcar claves legítimas como `mapping` o `shipping`. | Supuesto de implementación | `domain/sanitizar-detalle.ts`; `auditoria.repository.ts` (`registrar` saneando antes de insertar) | `backend/test/auditoria.e2e-spec.ts`: "ninguna respuesta de auditoria expone contrasenas, hashes ni PIN"; `backend/src/modules/auditoria/domain/sanitizar-detalle.spec.ts` | Confirmada |
 | La tabla **`auditoria` es inmutable**: el trigger `trg_auditoria_inmutable` (`BEFORE UPDATE OR DELETE`) ejecuta `fn_auditoria_es_inmutable` y rechaza ambas operaciones con excepción `P0001`. El `TRUNCATE` no se bloquea (para el harness de pruebas). | Supuesto de implementación | Migración `20261013120000_auditoria`; `schema.prisma` (`model Auditoria`) | `backend/test/auditoria.e2e-spec.ts`: "rechaza UPDATE y DELETE directos sobre auditoria" | Confirmada |
 | **Modelo del evento**: `entidad` + `entidadId` (referencia **polimórfica sin FK**) + `accion` + `actorId`; `usuarioAfectadoId` solo en eventos de personas (usuario, permiso y empleado —apunta al usuario vinculado) y `sucursalAfectadaId` en los operativos (oferta, `insumo_sucursal`, turno, asignación, equipo), quedando `null` en los eventos **globales** del catálogo (productos, categorías, variantes, insumos, sucursales). | Supuesto de implementación | `domain/evento-auditoria.ts`; `infrastructure/auditoria.repository.ts` | `backend/test/auditoria.e2e-spec.ts` (describes de usuario, empleado, sucursal, equipo, turno, asignación, catálogo global y oferta) | Confirmada |
-| Los enums **`auditoria_entidad` (12 valores)** y **`auditoria_accion` (44 valores)** se crearon **completos** en una sola migración, para no ampliarlos al instrumentar cada módulo. Una prueba compara el enum de la base con el del código en **ambos sentidos** y comprueba que se usa `insumo_sucursal_descontinuado` (no `desactivado`). | Supuesto de implementación | Migración `20261013120000_auditoria`; `schema.prisma` (`enum AuditoriaEntidad`, `enum AuditoriaAccion`) | `backend/test/auditoria.e2e-spec.ts`: "cada accion definida en el codigo existe en el enum de la BD", "cada entidad definida en el codigo existe en el enum de la BD", "el enum de la BD usa insumo_sucursal_descontinuado (no desactivado)" | Confirmada |
-| **Lectura con el permiso `usuarios.crear_editar`** (Admin y Gerente; no se creó un permiso nuevo). El **Admin ve todo**; el **Gerente** solo los eventos de personas (usuario/empleado) cuyo usuario afectado es un **Empleado de su sucursal** y los eventos operativos de esa sucursal (no ve el catálogo global); cualquier otro rol recibe **403**. | Requisito original + supuesto de implementación | `presentation/auditoria.controller.ts` (`@RequirePermission('usuarios.crear_editar')`); `application/alcance-auditoria.ts` (`alcanceDeActor`); `infrastructure/auditoria.repository.ts` (`construirWhere`) | `backend/test/auditoria.e2e-spec.ts`: "un Gerente solo ve eventos de sus Empleados, no los de otras sucursales ni de otros roles" | Confirmada |
+| Los enums **`auditoria_entidad` (13 valores)** y **`auditoria_accion` (46 valores)** se crearon **completos** en una sola migración, para no ampliarlos al instrumentar cada módulo; la entidad `exportacion` y las acciones `exportacion_generada`/`exportacion_fallida` forman parte de ese catálogo. Una prueba compara el enum de la base con el del código en **ambos sentidos** y comprueba que se usa `insumo_sucursal_descontinuado` (no `desactivado`). | Supuesto de implementación | Migración `20261013120000_auditoria`; `schema.prisma` (`enum AuditoriaEntidad`, `enum AuditoriaAccion`) | `backend/test/auditoria.e2e-spec.ts`: "cada accion definida en el codigo existe en el enum de la BD", "cada entidad definida en el codigo existe en el enum de la BD", "el enum de la BD usa insumo_sucursal_descontinuado (no desactivado)" | Confirmada |
+| **Lectura con el permiso `usuarios.crear_editar`** (Admin y Gerente; no se creó un permiso nuevo). El **Admin ve todo**; el **Gerente** solo los eventos de personas (usuario/empleado) cuyo usuario afectado es un **Empleado de su sucursal**, los eventos operativos de esa sucursal y **sus propias exportaciones** (no ve el catálogo global ni las exportaciones de otros usuarios); cualquier otro rol recibe **403**. | Requisito original + supuesto de implementación | `presentation/auditoria.controller.ts` (`@RequirePermission('usuarios.crear_editar')`); `application/alcance-auditoria.ts` (`alcanceDeActor`); `infrastructure/auditoria.repository.ts` (`construirWhere`) | `backend/test/auditoria.e2e-spec.ts`: "un Gerente solo ve eventos de sus Empleados, no los de otras sucursales ni de otros roles"; `backend/test/auditoria-exportaciones.e2e-spec.ts` | Confirmada |
 | El alcance del Gerente sigue el **rol y la sucursal ACTUALES** del usuario afectado: si un Empleado cambia de sucursal, su historial anterior pasa a verlo el Gerente de la sucursal nueva. Un usuario fuera de alcance (otra sucursal u otro rol) responde **404**. | Supuesto de implementación | `application/historial-usuario.use-case.ts`; `auditoria.repository.ts` (`buscarAlcanceUsuario`) | `backend/test/auditoria.e2e-spec.ts`: "el historial por usuario respeta el alcance: Gerente 404 para Empleados ajenos y otros roles" | Confirmada |
 | **Listado** con paginado (`page`, `limit` ≤ 100) y filtros `actorId`, `entidad`, `entidadId`, `accion`, `sucursalId`, `desde` y `hasta`; orden por **fecha descendente**. El rango de fechas es de días locales (America/Lima): invertido o de más de **92 días** responde **400**. | Supuesto de implementación | `presentation/dto/auditoria.dto.ts`; `domain/fechas.ts` (`construirRango`, reutilizando el calendario de ventas); `listar-auditoria.use-case.ts` | `backend/test/auditoria.e2e-spec.ts`: "filtra por actor, accion y entidad del recurso", "pagina los resultados", "rechaza un rango invertido con 400", "rechaza un rango de mas de 92 dias con 400", "rechaza una fecha que no existe con 400" | Confirmada |
 | Un **PATCH sin cambios reales** no genera evento (se emite un evento por cada campo que realmente cambió). | Supuesto de implementación | Casos de uso de edición (comparan antes/después antes de registrar) | `backend/test/auditoria.e2e-spec.ts`: "un PATCH sin cambios reales no genera eventos" | Confirmada |
@@ -237,6 +238,7 @@ operación mutante esté en el registro o en la lista de exclusiones.
 | Turnos y asignaciones | `POST /shifts`; `PATCH /shifts/:id`; `POST /assignments`; `PATCH /assignments/:id` |
 | Catálogo de productos | `POST`/`PATCH`/`DELETE /products`; `POST`/`PATCH`/`DELETE /product-categories`; `POST`/`PATCH`/`DELETE /variants`; `PUT /branches/:sucursalId/products/:productoId/variants/:varianteId` |
 | Catálogo de insumos | `POST /insumos`; `PATCH /insumos/:id`; `DELETE /insumos/:id`; `PUT /inventario/sucursales/:sucursalId/insumos/:insumoId` |
+| Exportaciones | `POST /exports`; `POST /exports/full` (auditoría escrita por el caso de uso, no por un interceptor) |
 
 **Rutas mutantes excluidas** (con su motivo):
 
@@ -251,7 +253,77 @@ operación mutante esté en el registro o en la lista de exclusiones.
 | `POST /sales` | Ventas: registro de venta, fuera del alcance. |
 | `POST /sales/:id/anular` | Ventas: anulación de venta, fuera del alcance. |
 
-## 15. Inventario de supuestos clave (resumen)
+## 15. Módulo Exportaciones (`exports`)
+
+La exportación entrega un CSV o un libro XLSX con los mismos datos que los listados. **No añade permisos a la matriz de 24**: las rutas exigen `usuarios.crear_editar` y, por conjunto, el permiso de lectura que ya usa el listado; el libro completo incluye solo los conjuntos que el usuario puede leer. El alcance también es el del listado: Admin todas las sucursales y Gerente la suya.
+
+Cada exportación que supera la validación deja un evento de auditoría con entidad `exportacion`: `exportacion_generada` o `exportacion_fallida` (tope, rango o error de generación). Los rechazos previos (permiso, formato o concurrencia) no generan evento. El detalle solo contiene metadatos (conjuntos, formato, filtros, filas por conjunto y motivo), nunca las filas exportadas. No tiene `usuarioAfectadoId` ni `sucursalAfectadaId`; por eso **no aparece en el historial por usuario**. En el listado general, el **Admin ve todas** y el **Gerente solo las suyas** (`actorId`), nunca las de otro usuario.
+
+El backend corre en el **plan gratuito de Render**, que tiene **512 MB para todo el proceso**; por eso el diseño actual prioriza acotar el volumen antes de materializarlo. La lectura por lotes queda para la **Fase 2**.
+
+| Conjunto | Cómo lee hoy | Evidencia |
+| --- | --- | --- |
+| `ventas` | Acumula: `contarYLeer` espera el `findMany` completo, sin cursor ni `take` por lote. | `backend/src/modules/exports/application/catalogo.impl.ts:309-325`; `contarYLeer` en `:281-292`. |
+| `carta` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:350-370`. |
+| `stock` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:395-413`. |
+| `movimientos` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:446-466`. |
+| `empleados` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:489-503`. |
+| `turnos` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:527-542`. |
+| `asignaciones` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:566-588`. |
+| `asistencia` | Acumula: carga **todos** los empleados y registros, deriva y ordena el array completo y recién al final recorta. | `catalogo.impl.ts:625-700`. |
+| `faltas` | Acumula: carga empleados, registros, justificaciones y asignaciones; calcula todas las faltas y recién al final recorta. | `catalogo.impl.ts:720-792`. |
+| `equipos` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:814-829`. |
+| `usuarios` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:851-866`. |
+| `sucursales` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:890-899`. |
+| `reporte` | Acumula: el caso de uso carga la asistencia completa y devuelve el agregado (una fila por sucursal). | `catalogo.impl.ts:911-944`; `reports/application/use-cases/generar-reporte-comparativo.use-case.ts:102-111`. |
+| `auditoria` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:953-968`. |
+
+Ningún lector usa `FILAS_POR_LOTE`: la constante existe en `backend/src/modules/exports/domain/limites.ts:30` pero no se referencia en los lectores. El servicio espera el array completo antes de escribir; el CSV se construye entero (`escribirCsv` con `construirCsv`) y el libro completo acumula todos los conjuntos antes de `escribirLibro` (`procesarLibro`). El XLSX confirma fila a fila para que el workbook no las retenga, pero las filas de origen ya están en memoria.
+
+**Deuda técnica asumida:** **12 de los 14 lectores duplican la consulta y el mapeo** que ya hace el listado correspondiente; los otros 2 reutilizan lógica existente. La **prueba de paridad** (`backend/test/exports-paridad.e2e-spec.ts`) compara el contenido exportado con el del listado y es la **red de seguridad** frente a divergencias mientras no se unifique esa lógica. Además, **los 14 lectores acumulan en memoria** hasta completar el array, también el libro completo: la lectura por lotes con cursor queda para la **Fase 2**, y hasta entonces no se pueden subir los topes sin arriesgar los 512 MB del proceso.
+
+| Regla de negocio | Origen | Dónde se implementa | Prueba que la cubre | Estado |
+| --- | --- | --- | --- | --- |
+| **Defaults del código: 10 000 filas por conjunto y 20 000 en el libro completo**, configurables por `EXPORT_MAX_FILAS_POR_CONJUNTO` y `EXPORT_MAX_FILAS_TOTALES`. **En producción, `render.yaml` fija 3 000/6 000** para los 512 MB del plan gratuito: el límite por conjunto acota una lectura y el total acota la suma del libro completo, que mantiene todos los conjuntos a la vez en memoria. La verificación real es el panel de Render, no Jest. | Supuesto de implementación | `backend/src/modules/exports/domain/limites.ts` (`MAX_FILAS_POR_CONJUNTO`, `MAX_FILAS_TOTALES`, `limitesDesdeEntorno`); `exports.module.ts` (proveedor con `useFactory`); `render.yaml`; `backend/.env.example`; `docs/despliegue.md` | `backend/src/modules/exports/domain/limites.spec.ts`; `backend/src/config/env.config.spec.ts`; `backend/src/modules/exports/exports.service.spec.ts` | Confirmada (defaults) / **NO VERIFICADO en Render** (memoria real) |
+| **Una exportación concurrente por usuario y una global**; el exceso responde `429`. | Supuesto de implementación | `backend/src/modules/exports/domain/limites.ts` (`maxConcurrentesGlobales: 1`); `exports.service.ts` (`checkConcurrent`) | `backend/src/modules/exports/exports.service.spec.ts`: "limita a una exportacion concurrente por usuario y una global" | Confirmada |
+| Los `413` y `429` de exportación responden en español y **solo sugieren filtros que existen**. Los conjuntos de actividad (`ventas`, `movimientos`, `asistencia`, `faltas`, `reporte`) piden acotar el rango de fechas; los demás piden reducir el volumen; el libro completo pide exportar los conjuntos por separado. **No hay filtro libre por sucursal**: el alcance lo impone el rol. Los `429` solo piden esperar. El `413` por tope deja `exportacion_fallida` con el motivo. | Supuesto de implementación | `backend/src/modules/exports/exports.service.ts` (`sugerenciaDeConjunto`, `sugerenciaDeLibro`, `make413`, `make429`); `limites.ts` (mensaje del rango); `catalogo.impl.ts` (`sucursalDe` y lectores) | `backend/src/modules/exports/exports.service.spec.ts` (14 conjuntos); `backend/test/exports.e2e-spec.ts` | Confirmada |
+| **No se refactoriza a lotes en esta entrega**: los 14 lectores devuelven un array y los escritores CSV/XLSX consumen arrays. Convertirlos a un iterador asíncrono exige cambiar el contrato del catálogo, el servicio y ambos escritores, además de la paridad; no es un cambio pequeño. | Supuesto de implementación | `backend/src/modules/exports/application/catalogo.impl.ts` (`ObtenerDatos`, `contarYLeer`); `exports.service.ts` (`escribirCsv`, `escribirLibro`, `exportFull`); `domain/csv.ts` | Inventario de esta tabla; la paridad solo cubre el contenido, no el pico de memoria | Confirmada (decisión) / **Fase 2** (implementación) |
+| **Fase 2**: leer por lotes con cursor (`FILAS_POR_LOTE = 1000`), escribir cada lote al CSV/XLSX antes de pedir el siguiente y entonces subir los topes. Los 512 MB del plan gratuito son la razón de los topes actuales. | Supuesto de implementación | `backend/src/modules/exports/domain/limites.ts:30` (constante reservada); pendiente en `catalogo.impl.ts`, `exports.service.ts` y `domain/csv.ts` | `backend/test/exports-memoria.e2e-spec.ts` mide el **delta de heap** con 10 000/20 000 ventas y libro completo; el RSS se registra como información. Render usa 3 000/6 000. | **Fase 2** / **NO VERIFICADO en Render** |
+
+### Corte de una exportación en curso
+
+Una exportación podía quedar **colgada para siempre**: si el navegador cortaba la
+descarga a mitad del XLSX, `workbook.commit()` esperaba a un `PassThrough` que ya
+nadie leía. El `finally` que libera la ranura de concurrencia nunca se ejecutaba,
+así que el usuario recibía `429` en todos los intentos siguientes. El arreglo:
+
+- **Envío con `pipeline`** (`escribirLibro`): si el cliente se va, la respuesta y
+  el `PassThrough` se destruyen, `commit()` deja de esperar y el `pipeline`
+  termina. Un `Promise.race` entre `commit()` y el `pipeline` evita cualquier
+  espera sin salida.
+- **Vigilancia con `AbortController`** (`vigilar`): escucha `close` de la
+  respuesta (el cliente se fue) y un plazo máximo. El trabajo comprueba la señal
+  en cada frontera y deja de escribir sobre una respuesta muerta.
+- **Plazo configurable:** `EXPORT_TIMEOUT_MS` (60 000 ms por defecto y en
+  `render.yaml`). Al vencer, si la cabecera no se había enviado, responde **503**
+  con un mensaje en español; si no, solo corta.
+- **La ranura se libera siempre**, en el `finally` y antes de auditar: éxito,
+  error, corte del cliente y plazo. La auditoría del corte deja
+  `exportacion_fallida` con el motivo.
+- **Frontend:** Cancelar restablece la pantalla al instante, sin esperar al
+  servidor, y la espera máxima es de 90 s con mensaje claro y sin reintento. La
+  causa del cuelgue visual era otro: `StrictMode` (que en `main.tsx` envuelve
+  todo el árbol) ejecuta setup → limpieza → setup; el hook marcaba «desmontado»
+  en la limpieza y no lo deshacía, así que la primera exportación no se
+  descargaba ni apagaba el indicador.
+
+| Regla de negocio | Origen | Dónde se implementa | Prueba que la cubre | Estado |
+| --- | --- | --- | --- | --- |
+| La ranura de concurrencia se libera **siempre**: éxito, error, cliente que corta y plazo vencido. | Requisito de la corrección del cuelgue | `exports.service.ts` (`ejecutar`, `conCorte`, `escribirLibro`); `domain/excel.ts` (`crearLibroStreaming`) | `backend/test/exports-http-real.e2e-spec.ts`: "libera la ranura cuando el cliente corta la descarga a mitad del XLSX"; `backend/test/exports.e2e-spec.ts` | Confirmada |
+| Plazo máximo de **60 s**, configurable con `EXPORT_TIMEOUT_MS`; al vencer responde **503** en español (si no envió cabecera) y deja `exportacion_fallida`. | Requisito de la corrección del cuelgue | `domain/limites.ts` (`TIEMPO_MAXIMO_MS`, `tiempoMaximoMs`); `exports.service.ts` (`vigilar`, `mensajeDeTiempo`) | `backend/test/exports-http-real.e2e-spec.ts`: "una exportacion que supera el tiempo maximo responde 503 y deja el evento" (con `tiempoMaximoMs` inyectado) | Confirmada |
+| El frontend **cancela al instante** sin depender del servidor, espera como máximo **90 s** con mensaje claro y **no reintenta**. | Requisito de la corrección del cuelgue | `frontend/src/features/exports/useExportacion.ts` (`TIEMPO_MAXIMO_EXPORTACION_MS`, `cancelar`) | `frontend/src/features/exports/ExportacionesPage.cancelacion.test.tsx` (4 pruebas con `StrictMode` por fuera de los proveedores) | Confirmada |
+
+## 16. Inventario de supuestos clave (resumen)
 
 Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. Las reglas que quedan **POR CONFIRMAR** están en las tablas de sus módulos: que **cambiar la contraseña no invalida los tokens emitidos** (autenticación), que **un Gerente no corrija sus propios registros de asistencia** (asistencia) y, en reportes, que **`faltasJustificadas` cuente todas las justificaciones del período** y que **las alertas abiertas y las entradas sin cerrar sean el estado actual** en lugar de cifras del período.
 
@@ -272,7 +344,7 @@ Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. L
 
 ## 16. Pendiente de implementar
 
-**No quedan módulos esqueleto.** Los doce módulos del backend (`auth`, `users`, `branches`, `products`, `inventory`, `sales`, `equipment`, `employees`, `shifts`, `attendance`, `reports` y `auditoria`) están **implementados y registrados en `app.module.ts`**, y todas las rutas y permisos sembrados ya se consumen desde la API. El último módulo de negocio en cerrarse fue **Reportes** (sección 13); sus esqueletos (`reports.controller.ts`, `reports.service.ts` y `dto/`) se eliminaron y `ReportsModule` quedó registrado. Después se añadió **Auditoría** (sección 14), que es transversal: instrumenta dentro de cada módulo y solo añade dos rutas de lectura.
+**No quedan módulos esqueleto.** Los **catorce módulos del backend** (`auth`, `users`, `branches`, `products`, `inventory`, `sales`, `equipment`, `employees`, `shifts`, `attendance`, `reports`, `auditoria`, `exports` y `my-schedule`) están **implementados y registrados en `app.module.ts`**, y todas las rutas y permisos sembrados ya se consumen desde la API. **Reportes** (sección 13) fue el último módulo de negocio en cerrarse; después se añadieron **Auditoría** (sección 14), transversal y con dos rutas de lectura, **Exportaciones** (sección 15), que no añade permisos, y **Mi horario**, una ruta personal que tampoco añade permisos.
 
 ## 17. Limitaciones y observaciones
 
@@ -289,5 +361,5 @@ Reglas acordadas durante el diseño, todas confirmadas por código y/o prueba. L
 - **Persistencia de decimales**: todo importe y cantidad se serializa a texto antes de tocar la base para que Prisma no arrastre errores de representación binaria (ver `precioATextoDecimal`, `cantidadATexto`, `centimosATexto`).
 - **Filtro global de excepciones con formato de error uniforme**, a evaluar cuando el frontend lo requiera.
 - **Orden de guards** (registrados como `APP_GUARD` en este orden en `backend/src/app.module.ts`): autenticación (`JwtAuthGuard`) → permisos (`PermissionsGuard`) → throttling (`ThrottlerGuard`). El login queda excluido del throttling global (`@SkipThrottle()`) y usa su propio interceptor (`LoginThrottleInterceptor`).
-- **Auditoría (alcance y saneador)**: la instrumentación cubre personas, sucursales, equipos, turnos y el catálogo de productos e insumos; quedan **fuera** ventas, asistencia y entradas/recuentos de inventario (tabla de exclusiones en la sección 14). El saneador del detalle prohíbe **claves exactas** conocidas (`password`, `hash`, `pin`, `token`, ...); una clave secreta con otro nombre no se detecta. La tabla es de solo inserción: no se puede vaciar por `DELETE` (solo `TRUNCATE`, reservado al harness de pruebas).
+- **Auditoría (alcance y saneador)**: la instrumentación cubre personas, sucursales, equipos, turnos, el catálogo de productos e insumos y las exportaciones; quedan **fuera** ventas, asistencia y entradas/recuentos de inventario (tabla de exclusiones en la sección 14). El saneador del detalle prohíbe **claves exactas** conocidas (`password`, `hash`, `pin`, `token`, ...); una clave secreta con otro nombre no se detecta. La tabla es de solo inserción: no se puede vaciar por `DELETE` (solo `TRUNCATE`, reservado al harness de pruebas).
 - **`GET /api/my/schedule` es una ruta personal, no derivada de un permiso**: devuelve el horario del empleado vinculado al usuario autenticado. Exige solo autenticación (el mismo mecanismo que `/auth/me`); **no añade ningún permiso** a la matriz de 24. El menú la muestra solo a usuarios con sucursal (`requiereSucursal: true`); el Admin no la ve. `rutaInicio` no cambia: el aterrizaje sigue siendo el dashboard. Sin registro de empleado → 404; un cesado no obtiene horario posterior al cese. Rango por defecto: semana actual (lunes a domingo, America/Lima); máximo 92 días. | Supuesto de implementación | `backend/src/modules/my-schedule/` (controller, use case, reglas puras); `backend/src/modules/employees/infrastructure/employees.repository.ts` (`buscarRespuestaPorUsuarioId`); `frontend/src/lib/navigation/menu.ts` (`requiereSucursal`); `frontend/src/lib/permissions/RequireSucursal.tsx` | `backend/test/my-schedule.e2e-spec.ts`; `backend/src/modules/my-schedule/domain/reglas-mi-horario.spec.ts`; `backend/src/modules/my-schedule/application/use-cases/mi-horario.use-case.spec.ts`; `frontend/src/lib/navigation/menu.spec.ts`; `frontend/src/lib/permissions/RequireSucursal.test.tsx`; `frontend/src/features/my-schedule/MiHorarioPage.test.tsx` | Confirmada |

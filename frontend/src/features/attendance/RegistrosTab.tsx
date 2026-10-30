@@ -28,6 +28,7 @@ import {
   tonoTipo,
 } from '@/features/attendance/presentacion'
 import { useRegistrosAsistencia } from '@/features/attendance/queries'
+import { BotonExportar } from '@/features/exports/BotonExportar'
 import { CorregirRegistroDialog } from './CorregirRegistroDialog'
 import { RegistroDetalleDialog } from './RegistroDetalleDialog'
 import type { RegistroAsistenciaApi } from '@/types/api'
@@ -171,6 +172,14 @@ export function RegistrosTab() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex justify-end">
+        <BotonExportar
+          conjunto="asistencia"
+          desde={desde}
+          hasta={hasta}
+        />
+      </div>
 
       <DataTable
         columns={columnas}

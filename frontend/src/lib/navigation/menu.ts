@@ -39,6 +39,11 @@ export const MENU_ITEMS: readonly MenuItemConfig[] = [
     permisos: ['usuarios.crear_editar'],
   },
   {
+    label: 'Exportaciones',
+    to: '/exports',
+    permisos: ['usuarios.crear_editar'],
+  },
+  {
     label: 'Productos',
     to: '/products',
     modo: 'any',

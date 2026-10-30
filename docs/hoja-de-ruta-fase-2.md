@@ -106,14 +106,16 @@ requieren una decisión antes de implementarse (no son solo trabajo técnico).
   de acceso**, así que requiere decisión.
 - **Alcance:** ambos (permisos/rutas en backend; menú y guards en frontend).
 
-### 4. Exportación de reportes a CSV y PDF, comparativo contra el periodo anterior y nombres de insumos en alertas
+### 4. Exportación del reporte a PDF, comparativo contra el periodo anterior y nombres de insumos en alertas
 
-- **Qué es:** exportar el reporte comparativo (CSV/PDF), compararlo con el periodo
-  anterior y mostrar nombres de insumos en las alertas.
-- **Por qué importa:** el reporte hoy **no exporta**, no trae deltas contra el periodo
-  anterior ni producto más vendido, y las alertas/reportes muestran **solo conteos**, no
-  nombres de insumos (documentado en [Frontend](frontend.md)).
-- **Alcance:** ambos (datos/exportación en backend; botones y columnas en frontend).
+- **Qué es:** añadir la exportación a PDF del reporte comparativo (CSV/XLSX ya
+  están disponibles desde Exportaciones), compararlo con el periodo anterior y
+  mostrar nombres de insumos en las alertas.
+- **Por qué importa:** el reporte **ya se exporta a CSV/XLSX**, pero no a PDF; tampoco
+  trae deltas contra el periodo anterior ni producto más vendido, y las
+  alertas/reportes muestran **solo conteos**, no nombres de insumos (documentado en
+  [Frontend](frontend.md)).
+- **Alcance:** ambos (PDF y datos en backend; botones y columnas en frontend).
 
 ### 5. Cobertura mínima por turno y cargo y tolerancia de tardanza
 

@@ -29,6 +29,17 @@ services:
         value: "1"
       - key: JWT_EXPIRES_IN
         value: 8h
+      # Topes ajustados a los 512 MB del plan gratuito. Los defaults del codigo
+      # siguen siendo 10000/20000; Render usa estos valores mas bajos.
+      - key: EXPORT_MAX_FILAS_POR_CONJUNTO
+        value: "3000"
+      - key: EXPORT_MAX_FILAS_TOTALES
+        value: "6000"
+      # Plazo de una exportacion. Al vencer se libera la ranura (el plan free
+      # solo admite una exportacion concurrente) y se registra el fallo. El
+      # frontend se rinde a los 90 s, asi que 60 s deja margen para la red.
+      - key: EXPORT_TIMEOUT_MS
+        value: "60000"
       # Sensibles: se definen a mano en el panel; Render no las toca.
       - key: DATABASE_URL
         sync: false

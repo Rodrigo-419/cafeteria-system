@@ -2,8 +2,9 @@
 //
 //   * Admin  -> ve todo.
 //   * Gerente -> solo eventos de personas (usuario/empleado) cuyo usuario
-//     afectado sea un Empleado de SU sucursal, y eventos operativos de SU
-//     sucursal. Los eventos globales (catalogo) no los ve.
+//     afectado sea un Empleado de SU sucursal, eventos operativos de SU
+//     sucursal y SUS PROPIAS exportaciones. Los eventos globales (catalogo) y
+//     las exportaciones de otros usuarios no los ve.
 //   * Cualquier otro rol -> sin acceso.
 import { esAdmin, esGerente } from '../../users/domain/roles';
 import type { AlcanceAuditoria } from '../infrastructure/auditoria.repository';
@@ -24,7 +25,11 @@ export function alcanceDeActor(
   }
 
   if (esGerente(actor.rol) && actor.sucursalId !== null) {
-    return { tipo: 'sucursal', sucursalId: actor.sucursalId };
+    return {
+      tipo: 'sucursal',
+      sucursalId: actor.sucursalId,
+      actorId: actor.id,
+    };
   }
 
   return null;

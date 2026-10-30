@@ -1,7 +1,14 @@
 # Referencia de la API
 
-Referencia de las **79 rutas implementadas** por el backend. Todas se solicitan
+Referencia de las **83 rutas implementadas** por el backend. Todas se solicitan
 bajo el prefijo global `/api`.
+
+**Alcance del recuento:** son los **83 decoradores HTTP** (`@Get`, `@Post`,
+`@Put`, `@Patch` y `@Delete`) de los **23 controladores** de
+`backend/src/**/*.controller.ts`. Incluye las dos rutas de salud (`GET /api` y
+`GET /api/health`) y las dos de exportaciones (`POST /api/exports` y
+`POST /api/exports/full`). No cuenta Swagger (solo se publica fuera de
+producción) ni rutas internas de Nest.
 
 ## Convenciones
 
@@ -411,10 +418,70 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
   sucursalAfectadaId, detalle, fecha }`. `detalle` es `{ antes, despues }` y **nunca**
   incluye contraseñas, hashes ni PIN.
 - **Alcance**: el **Admin** ve todo; el **Gerente** solo los eventos de personas
-  (usuario/empleado) cuyo usuario afectado es un **Empleado de su sucursal** y los
-  eventos operativos de esa sucursal (el catálogo global queda fuera de su lectura).
+  (usuario/empleado) cuyo usuario afectado es un **Empleado de su sucursal**, los
+  eventos operativos de esa sucursal y **sus propias exportaciones** (el catálogo
+  global y las exportaciones de otros usuarios quedan fuera de su lectura).
   En el historial por usuario, un usuario fuera de su alcance (otra sucursal u otro
   rol) responde `404`. Un **Empleado** recibe `403`.
+- **Exportaciones auditadas**: una exportación que supera la validación escribe
+  `exportacion_generada` o `exportacion_fallida` (tope, rango o error de
+  generación) con entidad `exportacion`; los rechazos previos (permiso, formato o
+  concurrencia) no generan evento. El detalle solo lleva metadatos (conjuntos,
+  formato, filtros, filas por conjunto y, en el fallo, el motivo); nunca las filas
+  exportadas. No tiene usuario ni sucursal afectada, no aparece en el historial por
+  usuario y el Gerente solo ve las suyas.
+
+### Exportaciones (`/api/exports`)
+
+| Método | Ruta                 | Permiso | Códigos |
+| ------ | -------------------- | ------- | ------- |
+| POST   | `/api/exports`       | `usuarios.crear_editar` y el permiso de lectura del conjunto | 200, 400, 401, 403, 413, 429 |
+| POST   | `/api/exports/full`  | `usuarios.crear_editar` | 200, 400, 401, 403, 413, 429 |
+
+- **Un conjunto**: cuerpo `{ conjunto, formato?, filtros? }`. `formato` es `csv`
+  o `xlsx` (por defecto `xlsx`). Los conjuntos son `ventas`, `carta`, `stock`,
+  `movimientos`, `empleados`, `turnos`, `asignaciones`, `asistencia`, `faltas`,
+  `equipos`, `usuarios`, `sucursales`, `reporte` y `auditoria`.
+- **Libro completo**: `POST /api/exports/full` genera un `.xlsx` con todos los
+  conjuntos que el usuario puede leer. Un Gerente solo ve su sucursal y el
+  Admin ve todas; los conjuntos sin permiso se omiten.
+- **Rango obligatorio**: `ventas`, `movimientos`, `asistencia`, `faltas` y
+  `reporte` exigen `filtros.desde` y `filtros.hasta` (`YYYY-MM-DD`, día local
+  America/Lima). Si faltan, son inválidos o están invertidos responden `400`;
+  un rango de más de **92 días** responde `413`.
+- **Sin filtro libre por sucursal**: el alcance por sucursal lo impone el rol
+  (Gerente, la suya; Admin, todas). No hay un `filtros.sucursalId` operativo en
+  la exportación, así que los mensajes no lo sugieren.
+- **Topes de filas**: los defaults del código son **10 000** por conjunto y
+  **20 000** en el libro completo (`EXPORT_MAX_FILAS_POR_CONJUNTO` y
+  `EXPORT_MAX_FILAS_TOTALES`). En producción, `render.yaml` fija **3 000** y
+  **6 000** para los 512 MB del plan gratuito (ver `docs/despliegue.md`).
+  Superarlos responde `413` con un mensaje que solo sugiere lo que existe:
+  acotar fechas en los conjuntos de actividad, reducir el volumen en los demás
+  o exportar los conjuntos por separado en el libro completo. El rechazo por
+  tope o por rango mayor de 92 días deja un evento `exportacion_fallida` con el
+  `motivo`; las validaciones previas de cuerpo, permiso o formato no generan
+  evento. La generación exitosa registra `exportacion_generada` **antes** de
+  escribir el archivo.
+- **Concurrencia y frecuencia**: una exportación concurrente por usuario,
+  **una global** y **10 por minuto**; el exceso responde `429` con un mensaje
+  que pide esperar; no sugiere filtros.
+- **Memoria**: los topes dependen de los **512 MB** del plan gratuito de Render.
+  Hoy los 14 lectores acumulan las filas en memoria antes de escribir; la
+  lectura por lotes (cursor de `FILAS_POR_LOTE`) queda para la **Fase 2**, cuando
+  se puedan subir los topes. Ver
+  [Decisiones de diseño](architecture/decisiones-de-diseno.md#15-módulo-exportaciones-exports).
+- **CSV**: UTF-8 con BOM, saltos CRLF, comillas escapadas y prefijo `'` en
+  valores que empiezan por `=`, `+`, `-`, `@`, tabulador o retorno de carro
+  (protección contra fórmulas).
+- **XLSX**: los importes y cantidades se escriben como celdas numéricas con
+  formato `0.00`; las fechas y horas se escriben como texto
+  `AAAA-MM-DD HH:mm` en America/Lima; el resto de textos se escribe como cadena.
+  El libro completo incluye la hoja **Metadatos** con usuario, exportador,
+  fecha y hora, filtros, conjuntos incluidos/omitidos, filas por hoja y total.
+- **Descarga**: responde `Content-Type` y `Content-Disposition` de adjunto. Los
+  nombres son `<conjunto>-AAAA-MM-DD.csv`, `<conjunto>-AAAA-MM-DD.xlsx` y
+  `libro-completo-AAAA-MM-DD.xlsx`.
 
 ## Códigos de error más comunes
 
@@ -425,7 +492,8 @@ con `equipo.ver` concedido individualmente. No existen borrados de equipos.
 | 403    | Usuario autenticado pero sin el permiso (o sin alcance sobre la entidad). |
 | 404    | Recurso inexistente o fuera del alcance del usuario.         |
 | 409    | Conflicto con el estado (registro duplicado, dependencias, acción no permitida). |
-| 429    | Demasiados intentos (fuerza bruta del login, con `Retry-After`, o del PIN de asistencia). |
+| 413    | Exportación demasiado grande: más de 3000 filas por conjunto, 6000 en el libro completo en Render (defaults del código: 10 000/20 000) o un rango de más de 92 días. El mensaje solo sugiere filtros existentes: fechas en los conjuntos de actividad, reducir volumen en los demás o exportar por separado. |
+| 429    | Demasiados intentos (fuerza bruta del login, con `Retry-After`, o del PIN de asistencia) o demasiadas exportaciones simultáneas/por minuto. En exportaciones el mensaje pide esperar; no sugiere filtros. |
 
 ## Documentos relacionados
 
