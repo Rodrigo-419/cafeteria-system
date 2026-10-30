@@ -278,7 +278,7 @@ El backend corre en el **plan gratuito de Render**, que tiene **512 MB para todo
 | `reporte` | Acumula: el caso de uso carga la asistencia completa y devuelve el agregado (una fila por sucursal). | `catalogo.impl.ts:911-944`; `reports/application/use-cases/generar-reporte-comparativo.use-case.ts:102-111`. |
 | `auditoria` | Acumula: `contarYLeer` + `findMany` completo. | `catalogo.impl.ts:953-968`. |
 
-Ningún lector usa `FILAS_POR_LOTE`: la constante existe en `backend/src/modules/exports/domain/limites.ts:30` pero no se referencia en los lectores. El servicio espera el array completo antes de escribir; el CSV se construye entero (`exports.service.ts:497-500`) y el libro completo acumula todos los conjuntos antes de `escribirLibro` (`exports.service.ts:300-339` y `:392`). El XLSX confirma fila a fila para que el workbook no las retenga, pero las filas de origen ya están en memoria.
+Ningún lector usa `FILAS_POR_LOTE`: la constante existe en `backend/src/modules/exports/domain/limites.ts:30` pero no se referencia en los lectores. El servicio espera el array completo antes de escribir; el CSV se construye entero (`escribirCsv` con `construirCsv`) y el libro completo acumula todos los conjuntos antes de `escribirLibro` (`procesarLibro`). El XLSX confirma fila a fila para que el workbook no las retenga, pero las filas de origen ya están en memoria.
 
 **Deuda técnica asumida:** **12 de los 14 lectores duplican la consulta y el mapeo** que ya hace el listado correspondiente; los otros 2 reutilizan lógica existente. La **prueba de paridad** (`backend/test/exports-paridad.e2e-spec.ts`) compara el contenido exportado con el del listado y es la **red de seguridad** frente a divergencias mientras no se unifique esa lógica. Además, **los 14 lectores acumulan en memoria** hasta completar el array, también el libro completo: la lectura por lotes con cursor queda para la **Fase 2**, y hasta entonces no se pueden subir los topes sin arriesgar los 512 MB del proceso.
 
@@ -289,6 +289,39 @@ Ningún lector usa `FILAS_POR_LOTE`: la constante existe en `backend/src/modules
 | Los `413` y `429` de exportación responden en español y **solo sugieren filtros que existen**. Los conjuntos de actividad (`ventas`, `movimientos`, `asistencia`, `faltas`, `reporte`) piden acotar el rango de fechas; los demás piden reducir el volumen; el libro completo pide exportar los conjuntos por separado. **No hay filtro libre por sucursal**: el alcance lo impone el rol. Los `429` solo piden esperar. El `413` por tope deja `exportacion_fallida` con el motivo. | Supuesto de implementación | `backend/src/modules/exports/exports.service.ts` (`sugerenciaDeConjunto`, `sugerenciaDeLibro`, `make413`, `make429`); `limites.ts` (mensaje del rango); `catalogo.impl.ts` (`sucursalDe` y lectores) | `backend/src/modules/exports/exports.service.spec.ts` (14 conjuntos); `backend/test/exports.e2e-spec.ts` | Confirmada |
 | **No se refactoriza a lotes en esta entrega**: los 14 lectores devuelven un array y los escritores CSV/XLSX consumen arrays. Convertirlos a un iterador asíncrono exige cambiar el contrato del catálogo, el servicio y ambos escritores, además de la paridad; no es un cambio pequeño. | Supuesto de implementación | `backend/src/modules/exports/application/catalogo.impl.ts` (`ObtenerDatos`, `contarYLeer`); `exports.service.ts` (`escribirCsv`, `escribirLibro`, `exportFull`); `domain/csv.ts` | Inventario de esta tabla; la paridad solo cubre el contenido, no el pico de memoria | Confirmada (decisión) / **Fase 2** (implementación) |
 | **Fase 2**: leer por lotes con cursor (`FILAS_POR_LOTE = 1000`), escribir cada lote al CSV/XLSX antes de pedir el siguiente y entonces subir los topes. Los 512 MB del plan gratuito son la razón de los topes actuales. | Supuesto de implementación | `backend/src/modules/exports/domain/limites.ts:30` (constante reservada); pendiente en `catalogo.impl.ts`, `exports.service.ts` y `domain/csv.ts` | `backend/test/exports-memoria.e2e-spec.ts` mide el **delta de heap** con 10 000/20 000 ventas y libro completo; el RSS se registra como información. Render usa 3 000/6 000. | **Fase 2** / **NO VERIFICADO en Render** |
+
+### Corte de una exportación en curso
+
+Una exportación podía quedar **colgada para siempre**: si el navegador cortaba la
+descarga a mitad del XLSX, `workbook.commit()` esperaba a un `PassThrough` que ya
+nadie leía. El `finally` que libera la ranura de concurrencia nunca se ejecutaba,
+así que el usuario recibía `429` en todos los intentos siguientes. El arreglo:
+
+- **Envío con `pipeline`** (`escribirLibro`): si el cliente se va, la respuesta y
+  el `PassThrough` se destruyen, `commit()` deja de esperar y el `pipeline`
+  termina. Un `Promise.race` entre `commit()` y el `pipeline` evita cualquier
+  espera sin salida.
+- **Vigilancia con `AbortController`** (`vigilar`): escucha `close` de la
+  respuesta (el cliente se fue) y un plazo máximo. El trabajo comprueba la señal
+  en cada frontera y deja de escribir sobre una respuesta muerta.
+- **Plazo configurable:** `EXPORT_TIMEOUT_MS` (60 000 ms por defecto y en
+  `render.yaml`). Al vencer, si la cabecera no se había enviado, responde **503**
+  con un mensaje en español; si no, solo corta.
+- **La ranura se libera siempre**, en el `finally` y antes de auditar: éxito,
+  error, corte del cliente y plazo. La auditoría del corte deja
+  `exportacion_fallida` con el motivo.
+- **Frontend:** Cancelar restablece la pantalla al instante, sin esperar al
+  servidor, y la espera máxima es de 90 s con mensaje claro y sin reintento. La
+  causa del cuelgue visual era otro: `StrictMode` (que en `main.tsx` envuelve
+  todo el árbol) ejecuta setup → limpieza → setup; el hook marcaba «desmontado»
+  en la limpieza y no lo deshacía, así que la primera exportación no se
+  descargaba ni apagaba el indicador.
+
+| Regla de negocio | Origen | Dónde se implementa | Prueba que la cubre | Estado |
+| --- | --- | --- | --- | --- |
+| La ranura de concurrencia se libera **siempre**: éxito, error, cliente que corta y plazo vencido. | Requisito de la corrección del cuelgue | `exports.service.ts` (`ejecutar`, `conCorte`, `escribirLibro`); `domain/excel.ts` (`crearLibroStreaming`) | `backend/test/exports-http-real.e2e-spec.ts`: "libera la ranura cuando el cliente corta la descarga a mitad del XLSX"; `backend/test/exports.e2e-spec.ts` | Confirmada |
+| Plazo máximo de **60 s**, configurable con `EXPORT_TIMEOUT_MS`; al vencer responde **503** en español (si no envió cabecera) y deja `exportacion_fallida`. | Requisito de la corrección del cuelgue | `domain/limites.ts` (`TIEMPO_MAXIMO_MS`, `tiempoMaximoMs`); `exports.service.ts` (`vigilar`, `mensajeDeTiempo`) | `backend/test/exports-http-real.e2e-spec.ts`: "una exportacion que supera el tiempo maximo responde 503 y deja el evento" (con `tiempoMaximoMs` inyectado) | Confirmada |
+| El frontend **cancela al instante** sin depender del servidor, espera como máximo **90 s** con mensaje claro y **no reintenta**. | Requisito de la corrección del cuelgue | `frontend/src/features/exports/useExportacion.ts` (`TIEMPO_MAXIMO_EXPORTACION_MS`, `cancelar`) | `frontend/src/features/exports/ExportacionesPage.cancelacion.test.tsx` (4 pruebas con `StrictMode` por fuera de los proveedores) | Confirmada |
 
 ## 16. Inventario de supuestos clave (resumen)
 

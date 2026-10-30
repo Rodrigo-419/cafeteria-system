@@ -74,6 +74,7 @@ si la base se está despertando.
 | `CORS_ORIGIN` | URL de Netlify (y la de preview si procede) | no | `sync: false`. |
 | `EXPORT_MAX_FILAS_POR_CONJUNTO` | `3000` | no | Ajustado a los 512 MB de Render; el default del código sigue siendo `10000`. |
 | `EXPORT_MAX_FILAS_TOTALES` | `6000` | no | Ajustado a los 512 MB de Render; el default del código sigue siendo `20000`. |
+| `EXPORT_TIMEOUT_MS` | `60000` | no | Plazo de una exportación en milisegundos. Debe quedar por debajo de los 90 s que espera el frontend. |
 
 Las sensibles llevan `sync: false`: Render no las gestiona ni las sobrescribe,
 así que un valor del repositorio no puede pisar la URL o el secreto reales.
@@ -91,6 +92,11 @@ bajos que los defaults del código:
   cambiaron.
 - **Una exportación concurrente por usuario y una global**. El límite global
   evita que dos archivos grandes coincidan en el mismo proceso.
+- **Una exportación nunca deja su ranura tomada.** La ranura se libera en el
+  `finally` de cada exportación: al terminar bien, al fallar, cuando el cliente
+  corta la descarga y cuando vence `EXPORT_TIMEOUT_MS`. Antes, un cliente que
+  cerraba el navegador a mitad del XLSX dejaba la ranura tomada para siempre y
+  el usuario recibía `429` en todos los intentos siguientes.
 - Los **14 lectores actuales materializan el array completo** antes de
   escribir. Los que usan `contarYLeer` evitan el `findMany` si el total supera
   el tope, pero dentro del tope cargan todas las filas; **asistencia y faltas
@@ -106,6 +112,25 @@ bajos que los defaults del código:
   volumen; el libro completo pide exportar los conjuntos por separado. **No hay
   filtro libre por sucursal**: el Gerente queda limitado a la suya y el Admin
   exporta todas.
+
+### Cancelación y plazo de una exportación
+
+- **Plazo:** `EXPORT_TIMEOUT_MS` (60 000 ms por defecto y en Render). Al vencer,
+  el backend abandona la generación, libera la ranura y deja
+  `exportacion_fallida` con el motivo. Si todavía no había enviado la cabecera,
+  responde **503** con un mensaje en español; si el archivo ya se estaba
+  enviando, solo corta la respuesta.
+- **Cliente que corta:** el `close` de la respuesta corta la generación igual
+  que el plazo, deja `exportacion_fallida` («El cliente cortó la descarga antes
+  de terminar») y libera la ranura. El XLSX se envía con `pipeline`, así que el
+  `PassThrough` se destruye y `workbook.commit()` deja de esperar.
+- **Frontend:** Cancelar restablece la pantalla al instante, sin esperar a que
+  el servidor reaccione. La espera máxima es de **90 s** (más que el plazo del
+  backend) con un mensaje claro, y **no hay reintento automático**.
+- Si se sube `EXPORT_TIMEOUT_MS`, hay que revisar el plazo del frontend
+  (`TIEMPO_MAXIMO_EXPORTACION_MS` en
+  `frontend/src/features/exports/useExportacion.ts`), que debe seguir siendo
+  mayor.
 
 **Mediciones locales (Jest, no Render).** La prueba actual solo aserta el
 **delta de heap** del propio escenario (techo: 256 MB). Se observaron deltas de **20-49 MB**

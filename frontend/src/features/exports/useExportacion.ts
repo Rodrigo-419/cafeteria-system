@@ -14,6 +14,19 @@ import {
 import { descargarArchivo } from './descarga'
 import { esCancelacion, mensajeExportacion } from './presentacion'
 
+/**
+ * Espera máxima de una exportación.
+ *
+ * Coincide con el plazo del backend (60 s) más margen para la red y la
+ * descarga. Si se agota, la pantalla vuelve a su estado normal con un mensaje
+ * claro: nunca se reintenta sola.
+ */
+export const TIEMPO_MAXIMO_EXPORTACION_MS = 90_000
+
+/** Mensaje visible cuando se agota la espera máxima. */
+export const MENSAJE_TIEMPO_EXPORTACION =
+  'La exportación tardó más de 90 segundos y se canceló. Inténtalo de nuevo.'
+
 export interface SolicitudExportacionConEtiqueta extends SolicitudExportacion {
   /** Nombre visible del conjunto para los avisos. */
   etiqueta: string
@@ -25,15 +38,29 @@ export function useExportacion() {
   const [anuncio, setAnuncio] = useState('')
   const [error, setError] = useState<string | null>(null)
   const controlador = useRef<AbortController | null>(null)
+  const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
   const montado = useRef(true)
 
+  const limpiarTemporizador = useCallback(() => {
+    if (temporizador.current !== null) {
+      clearTimeout(temporizador.current)
+      temporizador.current = null
+    }
+  }, [])
+
   useEffect(() => {
+    // React en desarrollo (StrictMode) ejecuta setup → limpieza → setup. Sin
+    // volver a marcar `montado` en el setup, el ref se quedaba en `false` para
+    // siempre: ni se descargaba el archivo ni la pantalla dejaba de "generar".
+    montado.current = true
+
     return () => {
       montado.current = false
+      limpiarTemporizador()
       controlador.current?.abort()
       controlador.current = null
     }
-  }, [])
+  }, [limpiarTemporizador])
 
   const ejecutar = useCallback(
     async (
@@ -49,9 +76,27 @@ export function useExportacion() {
       setError(null)
       setAnuncio(`Generando ${etiqueta}…`)
 
+      // El plazo se cumple aunque el servidor no conteste: no se espera a que
+      // el `fetch` reaccione al `abort`.
+      temporizador.current = setTimeout(() => {
+        if (controlador.current !== control) return
+
+        controlador.current = null
+        limpiarTemporizador()
+        control.abort()
+
+        if (!montado.current) return
+        setGenerando(false)
+        setNombreActual(null)
+        setError(MENSAJE_TIEMPO_EXPORTACION)
+        setAnuncio('')
+        toast.error(MENSAJE_TIEMPO_EXPORTACION)
+      }, TIEMPO_MAXIMO_EXPORTACION_MS)
+
       try {
         const archivo = await solicitar(control.signal)
-        if (control.signal.aborted || !montado.current) return false
+        // La exportación pudo cortarse (cancelar o plazo) mientras se esperaba.
+        if (controlador.current !== control || !montado.current) return false
 
         descargarArchivo(archivo.blob, archivo.nombreArchivo)
         setAnuncio(`Archivo ${archivo.nombreArchivo} descargado.`)
@@ -60,13 +105,8 @@ export function useExportacion() {
         })
         return true
       } catch (fallo) {
-        if (
-          control.signal.aborted ||
-          esCancelacion(fallo) ||
-          !montado.current
-        ) {
-          return false
-        }
+        if (controlador.current !== control || !montado.current) return false
+        if (control.signal.aborted || esCancelacion(fallo)) return false
 
         const mensaje = mensajeExportacion(fallo)
         if (mensaje === null) {
@@ -81,15 +121,16 @@ export function useExportacion() {
         return false
       } finally {
         if (controlador.current === control) {
+          limpiarTemporizador()
           controlador.current = null
-        }
-        if (montado.current && !control.signal.aborted) {
-          setGenerando(false)
-          setNombreActual(null)
+          if (montado.current) {
+            setGenerando(false)
+            setNombreActual(null)
+          }
         }
       }
     },
-    [],
+    [limpiarTemporizador],
   )
 
   const exportar = useCallback(
@@ -104,17 +145,25 @@ export function useExportacion() {
     return ejecutar('el libro completo', (signal) => solicitarLibro(signal))
   }, [ejecutar])
 
+  /**
+   * Cancela la exportación en curso.
+   *
+   * La pantalla se restablece al instante y sin depender del servidor: el
+   * `abort` solo intenta cortar la petición, y si el `fetch` no reacciona el
+   * estado ya está limpio.
+   */
   const cancelar = useCallback(() => {
     const control = controlador.current
-    if (!control) return
-
     controlador.current = null
-    control.abort()
+    limpiarTemporizador()
+    control?.abort()
+
+    if (!montado.current) return
     setGenerando(false)
     setNombreActual(null)
     setError(null)
     setAnuncio('Exportación cancelada.')
-  }, [])
+  }, [limpiarTemporizador])
 
   return {
     generando,

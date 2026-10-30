@@ -248,6 +248,31 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   de error 400/403/404/409, y la auditoría (`GET /api/auditoria` y
   `GET /api/auditoria/usuarios/:usuarioId`).
 
+### Regresiones del cuelgue de exportaciones
+
+El cuelgue real tenía dos causas independientes y cada una tiene su prueba de
+regresión; ambas **fallan antes del arreglo y pasan después**.
+
+- **Backend, HTTP real:** `backend/test/exports-http-real.e2e-spec.ts` levanta la
+  app con `app.listen(0)` y habla HTTP de verdad (sin Supertest). Cubre CSV,
+  XLSX, libro completo, un libro de 9 900 filas, **el cliente que corta a mitad
+  del XLSX** (la siguiente exportación debe entrar sin `429`) y **el plazo
+  vencido** (`tiempoMaximoMs` inyectado, `503` en español). Es la prueba que
+  reproduce la ranura de concurrencia que nunca se liberaba.
+- **Frontend, `StrictMode` real:** `ExportacionesPage.cancelacion.test.tsx`
+  monta el árbol con `StrictMode` **por fuera de los proveedores**, como
+  `main.tsx`, porque React solo duplica los efectos en ese orden (pasar
+  `<StrictMode>` dentro de `ui` no lo reproduce). Cubre la descarga, la
+  cancelación en menos de 1 s con una respuesta que no llega, la exportación
+  siguiente tras cancelar y el plazo de 90 s sin reintento.
+
+**Nota sobre MSW:** en MSW 3.0.3, una petición interceptada que se aborta a
+media respuesta deja el socket simulado en mal estado y la petición siguiente
+del mismo archivo acaba en una conexión real a `localhost:80`
+(`fetch failed`, `ECONNREFUSED`). Por eso los escenarios de «el servidor no
+contesta» sustituyen solo `POST /api/exports` en `fetch`; el resto de la red
+sigue pasando por MSW.
+
 ### Herramientas
 
 - Vitest 5.0.3 (jsdom)
@@ -328,6 +353,7 @@ las sucursales y el reporte comparativo
 `features/reports/ReporteComparativoPage.test.tsx`), las exportaciones
 (`features/exports/catalogo.test.ts`,
 `features/exports/ExportacionesPage.test.tsx`,
+`features/exports/ExportacionesPage.cancelacion.test.tsx`,
 `features/exports/ExportarListados.test.tsx` y
 `lib/api/exports.test.ts`) y el landing autenticado
 (`features/auth/landing.test.tsx`).

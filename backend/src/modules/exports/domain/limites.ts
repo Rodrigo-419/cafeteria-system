@@ -22,6 +22,14 @@ export const MAX_FILAS_TOTALES = 20_000;
 /** Días máximos de un rango de actividad (igual que la API). */
 export const MAX_DIAS_RANGO = 92;
 /**
+ * Tiempo máximo para generar y enviar una exportación, en milisegundos.
+ *
+ * Es el valor por defecto; se puede cambiar con `EXPORT_TIMEOUT_MS`. Pasado ese
+ * plazo la exportación se abandona, deja `exportacion_fallida` y libera su
+ * ranura, aunque la lectura siga esperando.
+ */
+export const TIEMPO_MAXIMO_MS = 60_000;
+/**
  * Filas por página previstas para la lectura por lotes de la Fase 2.
  *
  * Hoy ningún lector la usa: todos materializan el array completo antes de
@@ -37,6 +45,8 @@ export type LimitesExport = {
   maxConcurrentesPorUsuario: number;
   maxConcurrentesGlobales: number;
   maxPorMinuto: number;
+  /** Milisegundos que puede durar una exportación antes de abandonarse. */
+  tiempoMaximoMs: number;
 };
 
 /** Valores de producción. Las pruebas inyectan topes pequeños. */
@@ -47,6 +57,7 @@ export const LIMITES_EXPORT_POR_DEFECTO: LimitesExport = {
   maxConcurrentesPorUsuario: 1,
   maxConcurrentesGlobales: 1,
   maxPorMinuto: 10,
+  tiempoMaximoMs: TIEMPO_MAXIMO_MS,
 };
 
 /** Lee un entero positivo de una variable; si falta, usa el valor por defecto. */
@@ -88,6 +99,11 @@ export function limitesDesdeEntorno(
       env.EXPORT_MAX_FILAS_TOTALES,
       MAX_FILAS_TOTALES,
       'EXPORT_MAX_FILAS_TOTALES',
+    ),
+    tiempoMaximoMs: enteroPositivoDeEntorno(
+      env.EXPORT_TIMEOUT_MS,
+      TIEMPO_MAXIMO_MS,
+      'EXPORT_TIMEOUT_MS',
     ),
   };
 }
