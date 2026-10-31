@@ -37,6 +37,7 @@ test.describe('móvil a 390 px', () => {
     await iniciarSesion(page, cuentaAdmin())
     await page.goto('/sales')
     await sinDesplazamientoHorizontal(page)
+    await page.getByRole('button', { name: /Filtros/ }).click()
     await expect(page.locator('#filtro-sucursal')).toBeVisible()
   })
 

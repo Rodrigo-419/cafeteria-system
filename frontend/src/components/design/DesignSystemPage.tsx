@@ -5,6 +5,8 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { MoneyText } from '@/components/shared/MoneyText'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { DataTable, type Column } from '@/components/shared/DataTable'
+import { AccionesFila } from '@/components/shared/AccionesFila'
+import { BarraListado } from '@/components/shared/BarraListado'
 import { StatCard } from '@/components/shared/StatCard'
 import { StatusPill } from '@/components/shared/StatusPill'
 import { EstadoOfertaBadge } from '@/features/products/EstadoOfertaBadge'
@@ -419,6 +421,7 @@ export function DesignSystemPage() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmConMotivo, setConfirmConMotivo] = useState(false)
   const [motivo, setMotivo] = useState('')
+  const [busquedaDemo, setBusquedaDemo] = useState('')
   const columns: Column<Item>[] = [
     { key: 'name', header: 'Nombre', cell: (i) => i.name },
     {
@@ -699,6 +702,76 @@ export function DesignSystemPage() {
                   ))}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>BarraListado y AccionesFila</CardTitle>
+              <CardDescription>
+                Búsqueda, filtros plegables con contador y acciones de fila con
+                las destructivas siempre dentro del menú «⋯».
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <BarraListado
+                busqueda={{
+                  value: busquedaDemo,
+                  onChange: setBusquedaDemo,
+                  placeholder: 'Buscar producto…',
+                }}
+                filtrosActivos={2}
+                filtros={
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="demo-filtro-estado">Estado</Label>
+                      <Select defaultValue="activo">
+                        <SelectTrigger id="demo-filtro-estado">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="activo">Activo</SelectItem>
+                          <SelectItem value="inactivo">Inactivo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="demo-filtro-categoria">Categoría</Label>
+                      <Select defaultValue="bebidas">
+                        <SelectTrigger id="demo-filtro-categoria">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="bebidas">Bebidas</SelectItem>
+                          <SelectItem value="postres">Postres</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                }
+                accionPrimaria={<Button>Acción primaria</Button>}
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+                <span className="text-sm">Fila de ejemplo</span>
+                <AccionesFila
+                  principal={
+                    <Button variant="ghost" size="sm">
+                      Editar
+                    </Button>
+                  }
+                  acciones={[
+                    {
+                      etiqueta: 'Eliminar',
+                      destructiva: true,
+                      onSelect: () => toast('Acción destructiva confirmada'),
+                      confirmacion: {
+                        titulo: 'Eliminar registro',
+                        descripcion: 'Esta acción no se puede deshacer.',
+                        textoConfirmar: 'Sí, eliminar',
+                      },
+                    },
+                  ]}
+                />
+              </div>
             </CardContent>
           </Card>
           <Card>

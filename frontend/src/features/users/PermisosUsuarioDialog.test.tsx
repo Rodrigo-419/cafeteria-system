@@ -30,7 +30,8 @@ async function abrirPermisos(
 ): Promise<HTMLElement> {
   await screen.findByText(nombre)
   const fila = screen.getByText(nombre).closest('tr') as HTMLElement
-  await user.click(within(fila).getByRole('button', { name: 'Permisos' }))
+  await user.click(within(fila).getByRole('button', { name: 'Más acciones' }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Permisos' }))
   const dialogo = await screen.findByRole('dialog')
   expect(within(dialogo).getByText(`Permisos de ${nombre}`)).toBeInTheDocument()
   return dialogo

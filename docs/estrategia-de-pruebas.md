@@ -206,8 +206,10 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
 
 - **Unitarias y componentes**: utilidades (`money`, `dates`, `permissions`,
   `session`), componente `<Can>`, `LoginPage`, `ProtectedRoute`,
-  `RequirePermission` (guard por permiso), el menú por rol, `DataTable`,
-  `ConfirmDialog`, las reglas del sistema de diseño, el módulo de ventas
+  `RequirePermission` (guard por permiso), el menú agrupado por rol y sus
+  subpáginas, `AppLayout` (cabecera, grupos y subnavegación), `DataTable`,
+  `ConfirmDialog`, `BarraListado`, `AccionesFila`, las reglas del sistema de
+  diseño, el módulo de ventas
   (`NewSalePage`, `SalesListPage`, `AnnulSaleDialog` y un flujo de rutas y
   permisos sobre `App`), el panel de control (`DashboardPage`) y el catálogo de
   productos y precios (`ProductsPage` y la carta por sucursal), y el inventario
@@ -290,17 +292,20 @@ completa ronda los 27 s).
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 59
-- **Total de tests**: **438 passed** (unitaria/componentes, Vitest + MSW)
+- **Archivos de prueba**: 62
+- **Total de tests**: **460 passed** (unitaria/componentes, Vitest + MSW)
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/auth/AuthContext.test.tsx`, `lib/format/money.spec.ts`,
 `lib/format/dates.spec.ts`,
 `lib/permissions/permissions.spec.ts`, `lib/permissions/Can.test.tsx`,
 `lib/permissions/RequirePermission.test.tsx`, `lib/navigation/menu.spec.ts`,
+`components/layout/AppLayout.test.tsx`,
 `features/auth/LoginPage.test.tsx`, `features/auth/cambio-de-cuenta.test.tsx`,
 `routes/ProtectedRoute.test.tsx`,
 `components/shared/DataTable.test.tsx`, `components/shared/ConfirmDialog.test.tsx`,
+`components/shared/BarraListado.test.tsx`,
+`components/shared/AccionesFila.test.tsx`,
 `design-rules.test.ts`, `theme-contrast.test.ts`, el módulo de ventas
 (`features/sales/NewSalePage.test.tsx`, `features/sales/SalesListPage.test.tsx`,
 `features/sales/AnnulSaleDialog.test.tsx` y `features/sales/SalesFlujo.test.tsx`), el
@@ -546,7 +551,22 @@ eventos del usuario y, ante un 404, muestra el aviso neutro sin revelar nada.
   **desconocida** (`'accion_futura' as AccionAuditoria`) con un `detalle`
   anidado, para probar que la interfaz degrada a etiquetas genéricas sin romper.
 - El **menú por rol** se prueba con los permisos reales de Admin/Gerente/Empleado
-  (tomados del seed del backend) y con un caso de permiso revocado.
+  (tomados del seed del backend) y con un caso de permiso revocado. Además se
+  cubren los **grupos vacíos** (no se pinta el título), la **primera subpágina
+  accesible** como destino, las subpáginas permitidas de Inventario/Productos/
+  Turnos, «Mi horario» solo con sucursal y el **recorrido de todas las rutas del
+  inventario** de `App.tsx` (incluidas `/my/schedule`, `/shifts/calendario` y
+  `/shifts/calendario-horas`).
+- `AppLayout.test.tsx` comprueba la cabecera sin la repetición «Nombre — Rol»,
+  el cierre de sesión en el menú de cuenta, los grupos visibles, el `Sheet` móvil
+  con cierre interno y la **subnavegación** (`aria-current="page"` en la pestaña
+  correcta, incluidas las rutas que comparten prefijo).
+- `BarraListado.test.tsx` cubre el plegado del panel, el contador de **filtros
+  activos** y la propagación de la búsqueda. `AccionesFila.test.tsx` verifica que
+  la acción destructiva **solo** existe dentro del menú «⋯» y que la confirmación
+  integrada no ejecuta la acción hasta confirmar. Los pilotos de `UsuariosPage` y
+  `SalesListPage` abren «Filtros» y «Más acciones» en sus pruebas sin relajar las
+  aserciones de comportamiento.
 - El **panel de control** se prueba sobre `DashboardPage` con los permisos
   reales de cada rol; el bloque del reporte comparativo no debe montar su
   consulta cuando falta el permiso (se afirma que la ruta no se llamó), y el

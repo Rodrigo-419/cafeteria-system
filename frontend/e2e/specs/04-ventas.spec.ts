@@ -52,6 +52,7 @@ test.describe('ventas', () => {
     await expect(page.getByRole('button', { name: 'Anular' })).toHaveCount(0)
 
     // Filtro de sucursal (solo Admin) y presencia de vendedores de ambas sedes.
+    await page.getByRole('button', { name: /Filtros/ }).click()
     await expect(page.locator('#filtro-sucursal')).toBeVisible()
     await expect(
       page.getByRole('cell', { name: 'Gerente Centro', exact: true }).first(),

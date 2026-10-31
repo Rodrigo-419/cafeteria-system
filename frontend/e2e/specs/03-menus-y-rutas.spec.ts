@@ -9,7 +9,7 @@ import {
 import { iniciarSesion } from '../helpers/sesion'
 
 function nav(page: import('@playwright/test').Page) {
-  return page.getByRole('navigation')
+  return page.getByRole('navigation', { name: 'Navegación principal' })
 }
 
 test.describe('menús y rutas por rol', () => {
@@ -21,11 +21,36 @@ test.describe('menús y rutas por rol', () => {
       'Usuarios',
       'Ventas',
       'Inventario',
-      'Alertas',
+      'Productos',
       'Equipos',
+      'Empleados',
+      'Turnos',
+      'Asistencia',
+      'Sucursales',
     ]) {
       await expect(
         nav(page).getByRole('link', { name: etiqueta }),
+      ).toBeVisible()
+    }
+    await expect(nav(page).getByRole('link', { name: 'Mi horario' })).toHaveCount(
+      0,
+    )
+
+    // Las subpáginas ya no son entradas de primer nivel: viven en la
+    // subnavegación del grupo.
+    await page.goto('/inventory')
+    const subnav = page.getByRole('navigation', {
+      name: 'Subnavegación de Inventario',
+    })
+    for (const etiqueta of [
+      'Stock',
+      'Insumos',
+      'Recuentos',
+      'Movimientos',
+      'Alertas',
+    ]) {
+      await expect(
+        subnav.getByRole('link', { name: etiqueta }),
       ).toBeVisible()
     }
   })
@@ -37,9 +62,15 @@ test.describe('menús y rutas por rol', () => {
     await expect(nav(page).getByRole('link', { name: 'Reportes' })).toHaveCount(0)
   })
 
-  test('el Empleado solo ve sus cuatro módulos', async ({ page }) => {
+  test('el Empleado solo ve sus cinco módulos', async ({ page }) => {
     await iniciarSesion(page, cuentaEmpleadoCentro())
-    for (const etiqueta of ['Inicio', 'Sucursales', 'Productos', 'Asistencia']) {
+    for (const etiqueta of [
+      'Inicio',
+      'Sucursales',
+      'Productos',
+      'Asistencia',
+      'Mi horario',
+    ]) {
       await expect(
         nav(page).getByRole('link', { name: etiqueta }),
       ).toBeVisible()

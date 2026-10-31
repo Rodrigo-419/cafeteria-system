@@ -10,6 +10,8 @@ import {
   usuarioDePrueba,
 } from '@/test/handlers'
 import { server } from '@/test/server'
+import { diaDeNegocioLima, formatearDiaLocal } from '@/lib/format/dates'
+import { lunesDeSemana, sumarDias } from '@/features/shifts/semana'
 
 const EMPLEADO = usuarioDePrueba(['asistencia.marcar', 'asistencia.ver'], {
   nombre: 'Ada Pruebas',
@@ -86,14 +88,29 @@ describe('MiHorarioPage', () => {
     await screen.findByRole('heading', { name: 'Mi horario' })
 
     const user = userEvent.setup()
+    // La pantalla abre en la semana actual; se calculan las etiquetas esperadas
+    // con las mismas funciones que usa la página para no depender del día real.
+    const lunesActual = lunesDeSemana(diaDeNegocioLima(new Date()))
+    const lunesAnterior = sumarDias(lunesActual, -7)
+    const domingoAnterior = sumarDias(lunesAnterior, 6)
+    const domingoActual = sumarDias(lunesActual, 6)
+
     await user.click(screen.getByRole('button', { name: /semana anterior/i }))
     await waitFor(() => {
-      expect(screen.getByText(/semana del 12 oct/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `Semana del ${formatearDiaLocal(lunesAnterior)} al ${formatearDiaLocal(domingoAnterior)}`,
+        ),
+      ).toBeInTheDocument()
     })
 
     await user.click(screen.getByRole('button', { name: /semana siguiente/i }))
     await waitFor(() => {
-      expect(screen.getByText(/semana del 19 oct/i)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `Semana del ${formatearDiaLocal(lunesActual)} al ${formatearDiaLocal(domingoActual)}`,
+        ),
+      ).toBeInTheDocument()
     })
   })
 

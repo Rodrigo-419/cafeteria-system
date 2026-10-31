@@ -17,8 +17,23 @@ const MAX_MOTIVO = 200
  * El backend decide si la anulación procede; la interfaz solo exige un motivo
  * de 1 a 200 caracteres (recortado) y muestra el 403/409 con su mensaje.
  */
-export function AnnulSaleDialog({ venta }: { venta: VentaApi }) {
-  const [open, setOpen] = useState(false)
+interface AnnulSaleDialogProps {
+  venta: VentaApi
+  /** Control externo del diálogo (p. ej. desde el menú de acciones de la fila). */
+  abierto?: boolean
+  onAbiertoChange?: (abierto: boolean) => void
+  /** Oculta el botón "Anular" cuando la acción vive en un menú "⋯". */
+  ocultarBoton?: boolean
+}
+
+export function AnnulSaleDialog({
+  venta,
+  abierto,
+  onAbiertoChange,
+  ocultarBoton = false,
+}: AnnulSaleDialogProps) {
+  const [openInterno, setOpenInterno] = useState(false)
+  const open = abierto ?? openInterno
   const [motivo, setMotivo] = useState('')
   const [error, setError] = useState<string | null>(null)
   const anular = useAnularVenta()
@@ -26,9 +41,14 @@ export function AnnulSaleDialog({ venta }: { venta: VentaApi }) {
   const limpio = motivo.trim()
   const valido = limpio.length >= 1 && limpio.length <= MAX_MOTIVO
 
-  function cerrar(abierto: boolean) {
-    setOpen(abierto)
-    if (!abierto) {
+  function setOpen(abiertoDialogo: boolean) {
+    if (onAbiertoChange) onAbiertoChange(abiertoDialogo)
+    else setOpenInterno(abiertoDialogo)
+  }
+
+  function cerrar(abiertoDialogo: boolean) {
+    setOpen(abiertoDialogo)
+    if (!abiertoDialogo) {
       setMotivo('')
       setError(null)
     }
@@ -50,10 +70,12 @@ export function AnnulSaleDialog({ venta }: { venta: VentaApi }) {
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <BanIcon className="size-4" />
-        Anular
-      </Button>
+      {!ocultarBoton && (
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <BanIcon className="size-4" />
+          Anular
+        </Button>
+      )}
       <ConfirmDialog
         open={open}
         onOpenChange={cerrar}

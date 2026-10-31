@@ -1,7 +1,14 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Badge } from '@/components/ui/badge'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,16 +20,81 @@ import {
 import { useAuth } from '@/lib/auth/useAuth'
 import { MenuIcon, LogOutIcon } from 'lucide-react'
 import { cn } from 'cn'
-import { MENU_ITEMS, puedeVerItem } from '@/lib/navigation/menu'
+import {
+  filtrarMenuAgrupado,
+  itemEstaActivo,
+  type MenuGrupoVisible,
+} from '@/lib/navigation/menu'
+import { SubnavegacionGrupo } from './SubnavegacionGrupo'
+
+function NavegacionPrincipal({
+  grupos,
+  pathname,
+  onNavegar,
+}: {
+  grupos: MenuGrupoVisible[]
+  pathname: string
+  onNavegar?: () => void
+}) {
+  return (
+    <nav
+      aria-label="Navegación principal"
+      className="flex-1 space-y-4 overflow-y-auto p-2"
+    >
+      {grupos.map((grupo, indice) => (
+        <div key={grupo.titulo ?? `grupo-${indice}`} className="space-y-1">
+          {grupo.titulo && (
+            <p className="px-3 pt-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              {grupo.titulo}
+            </p>
+          )}
+          {grupo.items.map((item) => {
+            const activo = itemEstaActivo(item, pathname)
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                aria-current={activo ? 'page' : undefined}
+                onClick={onNavegar}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
+                  activo && 'bg-primary/10 font-medium text-primary',
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    'size-2 shrink-0 rounded-full transition-colors',
+                    activo ? 'bg-primary' : 'bg-muted-foreground/40',
+                  )}
+                />
+                {item.label}
+              </Link>
+            )
+          })}
+        </div>
+      ))}
+    </nav>
+  )
+}
+
+function MarcaPanel() {
+  return (
+    <div className="flex h-14 items-center border-b px-4">
+      <Link to="/" className="text-sm font-semibold">
+        Sistema de Cafetería
+      </Link>
+    </div>
+  )
+}
 
 export function AppLayout() {
   const { usuario, permisos, cerrarSesion } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
 
-  const items = MENU_ITEMS.filter((it) =>
-    puedeVerItem(it, permisos, usuario?.sucursalId),
-  )
+  const grupos = filtrarMenuAgrupado(permisos, usuario?.sucursalId)
 
   const handleLogout = () => {
     cerrarSesion()
@@ -33,39 +105,8 @@ export function AppLayout() {
 
   const Sidebar = (
     <aside className="flex h-full w-64 flex-col border-r bg-card">
-      <div className="flex h-14 items-center border-b px-4">
-        <Link to="/" className="text-sm font-semibold">
-          Sistema de Cafetería
-        </Link>
-      </div>
-      <nav className="flex-1 space-y-1 p-2">
-        {items.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground',
-                isActive && 'bg-primary/10 font-medium text-primary',
-              )
-            }
-            onClick={() => setOpen(false)}
-          >
-            {({ isActive }) => (
-              <>
-                <span
-                  aria-hidden
-                  className={cn(
-                    'size-2 shrink-0 rounded-full transition-colors',
-                    isActive ? 'bg-primary' : 'bg-muted-foreground/40',
-                  )}
-                />
-                {item.label}
-              </>
-            )}
-          </NavLink>
-        ))}
-      </nav>
+      <MarcaPanel />
+      <NavegacionPrincipal grupos={grupos} pathname={pathname} />
     </aside>
   )
 
@@ -87,16 +128,30 @@ export function AppLayout() {
                     <MenuIcon className="size-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="p-0">
-                  {Sidebar}
+                <SheetContent side="left" className="flex flex-col p-0">
+                  <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
+                  <SheetDescription className="sr-only">
+                    Secciones disponibles según tus permisos.
+                  </SheetDescription>
+                  <MarcaPanel />
+                  <NavegacionPrincipal
+                    grupos={grupos}
+                    pathname={pathname}
+                    onNavegar={() => setOpen(false)}
+                  />
                 </SheetContent>
               </Sheet>
               <span className="text-sm text-muted-foreground">Cafetería</span>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  {usuario?.nombre ?? 'Usuario'} — {usuario?.rol ?? '-'}
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <span className="max-w-40 truncate">
+                    {usuario?.nombre ?? 'Usuario'}
+                  </span>
+                  {usuario?.rol && (
+                    <Badge variant="secondary">{usuario.rol}</Badge>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -110,6 +165,7 @@ export function AppLayout() {
             </DropdownMenu>
           </header>
           <main className="flex-1 p-4">
+            <SubnavegacionGrupo />
             <Outlet />
           </main>
         </div>

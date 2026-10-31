@@ -5,10 +5,8 @@
 // fuera de él), sin columna ni filtro de sucursal. Sobre la propia cuenta no se
 // ofrecen las acciones de permisos ni de estado: el backend responde 400.
 import { useEffect, useMemo, useState } from 'react'
-import { PlusIcon, SearchIcon } from 'lucide-react'
+import { PlusIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -17,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { AccionesFila, type AccionFila } from '@/components/shared/AccionesFila'
+import { BarraListado } from '@/components/shared/BarraListado'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { useAuth } from '@/lib/auth/useAuth'
@@ -136,37 +136,48 @@ export function UsuariosPage() {
             className: 'text-right',
             cell: (usuarioFila: UsuarioGestionApi) => {
               const esPropia = usuarioFila.id === usuario?.id
-              return (
-                <div className="flex justify-end gap-1">
-                  {puedeGestionar && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDialogo({ tipo: 'editar', usuario: usuarioFila })}
-                    >
-                      Editar
-                    </Button>
-                  )}
-                  {puedePermisos && !esPropia && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDialogo({ tipo: 'permisos', usuario: usuarioFila })}
-                    >
-                      Permisos
-                    </Button>
-                  )}
-                  {puedeGestionar && !esPropia && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDialogo({ tipo: 'estado', usuario: usuarioFila })}
-                    >
-                      {usuarioFila.estado === 'activo' ? 'Bloquear' : 'Activar'}
-                    </Button>
-                  )}
-                </div>
-              )
+              const acciones: AccionFila[] = []
+
+              if (puedePermisos && !esPropia) {
+                acciones.push({
+                  etiqueta: 'Permisos',
+                  onSelect: () =>
+                    setDialogo({ tipo: 'permisos', usuario: usuarioFila }),
+                })
+              }
+              if (puedeGestionar && !esPropia) {
+                const bloquea = usuarioFila.estado === 'activo'
+                acciones.push({
+                  etiqueta: bloquea ? 'Bloquear' : 'Activar',
+                  destructiva: bloquea,
+                  onSelect: () =>
+                    setDialogo({ tipo: 'estado', usuario: usuarioFila }),
+                })
+              }
+
+              const principal = puedeGestionar ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setDialogo({ tipo: 'editar', usuario: usuarioFila })
+                  }
+                >
+                  Editar
+                </Button>
+              ) : puedePermisos && !esPropia ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    setDialogo({ tipo: 'permisos', usuario: usuarioFila })
+                  }
+                >
+                  Permisos
+                </Button>
+              ) : undefined
+
+              return <AccionesFila principal={principal} acciones={acciones} />
             },
           } satisfies Column<UsuarioGestionApi>,
         ]
@@ -178,7 +189,93 @@ export function UsuariosPage() {
       <PageHeader
         title="Usuarios"
         description="Cuentas del sistema, su rol y sus permisos"
-        actions={
+      />
+
+      <BarraListado
+        busqueda={{
+          id: 'usuario-busqueda',
+          value: texto,
+          onChange: setTexto,
+          placeholder: 'Nombre o usuario…',
+        }}
+        filtrosActivos={
+          Number(rol !== 'todos') +
+          Number(estado !== 'todos') +
+          Number(esAdmin && sucursalAdmin !== 'todas')
+        }
+        filtros={
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="usuario-filtro-rol">Rol</Label>
+              <Select
+                value={rol}
+                onValueChange={(valor) => {
+                  setRol(valor as NombreRolUsuario | 'todos')
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger id="usuario-filtro-rol">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {ROLES_USUARIO.map((opcion) => (
+                    <SelectItem key={opcion} value={opcion}>
+                      {opcion}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="usuario-filtro-estado">Estado</Label>
+              <Select
+                value={estado}
+                onValueChange={(valor) => {
+                  setEstado(valor as EstadoUsuario | 'todos')
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger id="usuario-filtro-estado">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {ESTADOS_USUARIO.map((estadoOp) => (
+                    <SelectItem key={estadoOp} value={estadoOp}>
+                      {ETIQUETA_ESTADO_USUARIO[estadoOp]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {esAdmin && (
+              <div className="space-y-2">
+                <Label htmlFor="usuario-filtro-sucursal">Sucursal</Label>
+                <Select
+                  value={sucursalAdmin}
+                  onValueChange={(valor) => {
+                    setSucursalAdmin(valor)
+                    setPage(1)
+                  }}
+                >
+                  <SelectTrigger id="usuario-filtro-sucursal">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas</SelectItem>
+                    {(sucursales.data ?? []).map((sucursal) => (
+                      <SelectItem key={sucursal.id} value={sucursal.id}>
+                        {sucursal.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
+        }
+        accionPrimaria={
           puedeGestionar ? (
             <Button onClick={() => setDialogo({ tipo: 'crear' })}>
               <PlusIcon className="size-4" />
@@ -187,92 +284,6 @@ export function UsuariosPage() {
           ) : undefined
         }
       />
-
-      <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-2">
-            <Label htmlFor="usuario-busqueda">Buscar</Label>
-            <div className="relative">
-              <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="usuario-busqueda"
-                className="pl-9"
-                value={texto}
-                placeholder="Nombre o usuario…"
-                onChange={(evento) => setTexto(evento.target.value)}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="usuario-filtro-rol">Rol</Label>
-            <Select
-              value={rol}
-              onValueChange={(valor) => {
-                setRol(valor as NombreRolUsuario | 'todos')
-                setPage(1)
-              }}
-            >
-              <SelectTrigger id="usuario-filtro-rol">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {ROLES_USUARIO.map((opcion) => (
-                  <SelectItem key={opcion} value={opcion}>
-                    {opcion}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="usuario-filtro-estado">Estado</Label>
-            <Select
-              value={estado}
-              onValueChange={(valor) => {
-                setEstado(valor as EstadoUsuario | 'todos')
-                setPage(1)
-              }}
-            >
-              <SelectTrigger id="usuario-filtro-estado">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {ESTADOS_USUARIO.map((estadoOp) => (
-                  <SelectItem key={estadoOp} value={estadoOp}>
-                    {ETIQUETA_ESTADO_USUARIO[estadoOp]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {esAdmin && (
-            <div className="space-y-2">
-              <Label htmlFor="usuario-filtro-sucursal">Sucursal</Label>
-              <Select
-                value={sucursalAdmin}
-                onValueChange={(valor) => {
-                  setSucursalAdmin(valor)
-                  setPage(1)
-                }}
-              >
-                <SelectTrigger id="usuario-filtro-sucursal">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  {(sucursales.data ?? []).map((sucursal) => (
-                    <SelectItem key={sucursal.id} value={sucursal.id}>
-                      {sucursal.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <DataTable
         columns={columnas}

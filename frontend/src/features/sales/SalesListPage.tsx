@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { PlusIcon } from 'lucide-react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { MoneyText } from '@/components/shared/MoneyText'
+import { AccionesFila } from '@/components/shared/AccionesFila'
+import { BarraListado } from '@/components/shared/BarraListado'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -29,6 +30,52 @@ const PAGE_SIZE = 20
 
 type FiltroEstado = EstadoVenta | 'todas'
 type FiltroMetodo = MetodoPagoVenta | 'todos'
+
+/**
+ * Acciones de una fila de ventas: "Ver" visible y "Anular" (destructiva) dentro
+ * del menú "⋯", con el diálogo de confirmación que ya exige el motivo.
+ */
+function AccionesVenta({
+  venta,
+  puedeAnular,
+}: {
+  venta: VentaApi
+  puedeAnular: boolean
+}) {
+  const [anularAbierto, setAnularAbierto] = useState(false)
+  const puedeAnularEsta = puedeAnular && venta.estado === 'completada'
+
+  return (
+    <>
+      <AccionesFila
+        principal={
+          <Button variant="ghost" size="sm" asChild>
+            <Link to={`/sales/${venta.id}`}>Ver</Link>
+          </Button>
+        }
+        acciones={
+          puedeAnularEsta
+            ? [
+                {
+                  etiqueta: 'Anular venta',
+                  destructiva: true,
+                  onSelect: () => setAnularAbierto(true),
+                },
+              ]
+            : []
+        }
+      />
+      {puedeAnularEsta && (
+        <AnnulSaleDialog
+          venta={venta}
+          abierto={anularAbierto}
+          onAbiertoChange={setAnularAbierto}
+          ocultarBoton
+        />
+      )}
+    </>
+  )
+}
 
 export function SalesListPage() {
   const { usuario, permisos } = useAuth()
@@ -100,14 +147,7 @@ export function SalesListPage() {
       header: '',
       className: 'text-right',
       cell: (venta) => (
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to={`/sales/${venta.id}`}>Ver</Link>
-          </Button>
-          {venta.estado === 'completada' && puedeAnular && (
-            <AnnulSaleDialog venta={venta} />
-          )}
-        </div>
+        <AccionesVenta venta={venta} puedeAnular={puedeAnular} />
       ),
     },
   ]
@@ -117,7 +157,97 @@ export function SalesListPage() {
       <PageHeader
         title="Ventas"
         description="Historial de ventas y anulaciones"
-        actions={
+      />
+
+      <BarraListado
+        filtrosActivos={
+          Number(estado !== 'todas') +
+          Number(metodoPago !== 'todos') +
+          Number(fecha !== '') +
+          Number(esAdmin && sucursalId !== 'todas')
+        }
+        filtros={
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="filtro-estado">Estado</Label>
+              <Select
+                value={estado}
+                onValueChange={(valor) => {
+                  setEstado(valor as FiltroEstado)
+                  reiniciarPagina()
+                }}
+              >
+                <SelectTrigger id="filtro-estado">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  <SelectItem value="completada">Completadas</SelectItem>
+                  <SelectItem value="anulada">Anuladas</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="filtro-metodo">Método de pago</Label>
+              <Select
+                value={metodoPago}
+                onValueChange={(valor) => {
+                  setMetodoPago(valor as FiltroMetodo)
+                  reiniciarPagina()
+                }}
+              >
+                <SelectTrigger id="filtro-metodo">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="efectivo">Efectivo</SelectItem>
+                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="filtro-fecha">Fecha</Label>
+              <Input
+                id="filtro-fecha"
+                type="date"
+                value={fecha}
+                onChange={(evento) => {
+                  setFecha(evento.target.value)
+                  reiniciarPagina()
+                }}
+              />
+            </div>
+
+            {esAdmin && (
+              <div className="space-y-2">
+                <Label htmlFor="filtro-sucursal">Sucursal</Label>
+                <Select
+                  value={sucursalId}
+                  onValueChange={(valor) => {
+                    setSucursalId(valor)
+                    reiniciarPagina()
+                  }}
+                >
+                  <SelectTrigger id="filtro-sucursal">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas</SelectItem>
+                    {(sucursales.data ?? []).map((sucursal) => (
+                      <SelectItem key={sucursal.id} value={sucursal.id}>
+                        {sucursal.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
+        }
+        accionPrimaria={
           puedeRegistrar ? (
             <Button asChild>
               <Link to="/sales/nueva">
@@ -128,88 +258,6 @@ export function SalesListPage() {
           ) : undefined
         }
       />
-
-      <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-2">
-            <Label htmlFor="filtro-estado">Estado</Label>
-            <Select
-              value={estado}
-              onValueChange={(valor) => {
-                setEstado(valor as FiltroEstado)
-                reiniciarPagina()
-              }}
-            >
-              <SelectTrigger id="filtro-estado">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="completada">Completadas</SelectItem>
-                <SelectItem value="anulada">Anuladas</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="filtro-metodo">Método de pago</Label>
-            <Select
-              value={metodoPago}
-              onValueChange={(valor) => {
-                setMetodoPago(valor as FiltroMetodo)
-                reiniciarPagina()
-              }}
-            >
-              <SelectTrigger id="filtro-metodo">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="efectivo">Efectivo</SelectItem>
-                <SelectItem value="tarjeta">Tarjeta</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="filtro-fecha">Fecha</Label>
-            <Input
-              id="filtro-fecha"
-              type="date"
-              value={fecha}
-              onChange={(evento) => {
-                setFecha(evento.target.value)
-                reiniciarPagina()
-              }}
-            />
-          </div>
-
-          {esAdmin && (
-            <div className="space-y-2">
-              <Label htmlFor="filtro-sucursal">Sucursal</Label>
-              <Select
-                value={sucursalId}
-                onValueChange={(valor) => {
-                  setSucursalId(valor)
-                  reiniciarPagina()
-                }}
-              >
-                <SelectTrigger id="filtro-sucursal">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  {(sucursales.data ?? []).map((sucursal) => (
-                    <SelectItem key={sucursal.id} value={sucursal.id}>
-                      {sucursal.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <DataTable
         columns={columnas}

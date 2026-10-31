@@ -98,6 +98,10 @@ async function rutasDelMenu(page: Page): Promise<string[]> {
     )
 }
 
+/**
+ * Recorre el menú y, en cada ruta, añade los enlaces de la subnavegación del
+ * grupo (Inventario, Productos, Turnos) para cubrir también las subpáginas.
+ */
 async function recorrerRol(
   page: Page,
   cuenta: CuentaVerificacion,
@@ -105,10 +109,14 @@ async function recorrerRol(
 ) {
   const recolector = vigilarConsola(page)
   await iniciarSesion(page, cuenta)
-  const rutas = [...new Set([...((await rutasDelMenu(page))), ...extras])]
+  const pendientes = [...new Set([...((await rutasDelMenu(page))), ...extras])]
+  const visitadas = new Set<string>()
   const problemas: string[] = []
 
-  for (const ruta of rutas) {
+  while (pendientes.length > 0) {
+    const ruta = pendientes.shift()
+    if (!ruta || visitadas.has(ruta)) continue
+    visitadas.add(ruta)
     await page.goto(ruta)
     await page.waitForLoadState('networkidle')
     const texto = await page.locator('body').innerText()
@@ -117,6 +125,9 @@ async function recorrerRol(
     }
     if (await page.getByRole('heading', { name: 'Acceso denegado' }).count()) {
       problemas.push(`${cuenta.usuario} ${ruta}: acceso denegado inesperado`)
+    }
+    for (const enlace of await rutasDelMenu(page)) {
+      if (!visitadas.has(enlace)) pendientes.push(enlace)
     }
   }
 
@@ -155,7 +166,8 @@ test.describe('pulido de pantallas', () => {
     await page.locator('#usuario-busqueda').fill('empleado.centro')
     const fila = page.getByRole('row').filter({ hasText: 'empleado.centro' }).first()
     await expect(fila).toBeVisible()
-    await fila.getByRole('button', { name: 'Permisos' }).click()
+    await fila.getByRole('button', { name: 'Más acciones' }).click()
+    await page.getByRole('menuitem', { name: 'Permisos' }).click()
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toBeVisible()
     const texto = await dialogo.innerText()

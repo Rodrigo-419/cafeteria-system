@@ -52,12 +52,14 @@ describe('Gestión de usuarios', () => {
 
   it('el Gerente solo ve Empleados de su sucursal, sin columna ni filtro de sucursal', async () => {
     renderComoGerente()
+    const user = userEvent.setup({ delay: null })
 
     expect(await screen.findByText('Beto Turno')).toBeInTheDocument()
     expect(screen.queryByText('Ciro Ruiz')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('columnheader', { name: 'Sucursal' }),
     ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Filtros' }))
     expect(screen.queryByLabelText('Sucursal')).not.toBeInTheDocument()
   })
 
@@ -307,11 +309,15 @@ describe('Gestión de usuarios', () => {
 
   it('la propia fila no ofrece Permisos ni Bloquear, pero sí Editar', async () => {
     renderComoAdmin()
+    const user = userEvent.setup({ delay: null })
 
     await screen.findByText('Administrador')
     const filaPropia = screen.getByText('Administrador').closest(
       'tr',
     ) as HTMLElement
+    expect(
+      within(filaPropia).queryByRole('button', { name: 'Más acciones' }),
+    ).not.toBeInTheDocument()
     expect(
       within(filaPropia).queryByRole('button', { name: 'Permisos' }),
     ).not.toBeInTheDocument()
@@ -325,11 +331,18 @@ describe('Gestión de usuarios', () => {
 
     const filaBeto = screen.getByText('Beto Turno').closest('tr') as HTMLElement
     expect(
-      within(filaBeto).getByRole('button', { name: 'Permisos' }),
-    ).toBeInTheDocument()
+      within(filaBeto).queryByRole('button', { name: 'Permisos' }),
+    ).not.toBeInTheDocument()
     expect(
-      within(filaBeto).getByRole('button', { name: 'Bloquear' }),
+      within(filaBeto).queryByRole('button', { name: 'Bloquear' }),
+    ).not.toBeInTheDocument()
+    await user.click(
+      within(filaBeto).getByRole('button', { name: 'Más acciones' }),
+    )
+    expect(
+      await screen.findByRole('menuitem', { name: 'Permisos' }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Bloquear' })).toBeInTheDocument()
   })
 
   it('el Admin edita rol y sucursal de un Empleado', async () => {
@@ -367,7 +380,10 @@ describe('Gestión de usuarios', () => {
     await screen.findByText('Beto Turno')
 
     const filaBeto = screen.getByText('Beto Turno').closest('tr') as HTMLElement
-    await user.click(within(filaBeto).getByRole('button', { name: 'Bloquear' }))
+    await user.click(
+      within(filaBeto).getByRole('button', { name: 'Más acciones' }),
+    )
+    await user.click(await screen.findByRole('menuitem', { name: 'Bloquear' }))
     const confirmacion = await screen.findByRole('alertdialog')
     await user.click(
       within(confirmacion).getByRole('button', { name: 'Bloquear' }),
@@ -376,8 +392,11 @@ describe('Gestión de usuarios', () => {
     await waitFor(() =>
       expect(within(filaBeto).getByText('Bloqueado')).toBeInTheDocument(),
     )
+    await user.click(
+      within(filaBeto).getByRole('button', { name: 'Más acciones' }),
+    )
     expect(
-      within(filaBeto).getByRole('button', { name: 'Activar' }),
+      await screen.findByRole('menuitem', { name: 'Activar' }),
     ).toBeInTheDocument()
   })
 
