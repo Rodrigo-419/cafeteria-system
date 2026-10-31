@@ -1,5 +1,9 @@
 // Configuracion de variables de entorno validadas y tipadas.
 import { z } from 'zod';
+import {
+  MAX_FILAS_POR_CONJUNTO,
+  MAX_FILAS_TOTALES,
+} from '../modules/exports/domain/limites';
 
 /**
  * Esquema de las variables de entorno que la aplicacion necesita.
@@ -28,6 +32,19 @@ export const envSchema = z.object({
   // defecto: sin la variable NO se permite ningun origen, que es el default
   // seguro para una API autenticada con Bearer.
   CORS_ORIGIN: z.string().default(''),
+  // Topes de filas de la exportacion. El plan gratuito de Render tiene 512 MB
+  // para todo el proceso; estos valores se pueden subir cuando la Fase 2 lea
+  // por lotes. Los defaults viven en el dominio de exportaciones.
+  EXPORT_MAX_FILAS_POR_CONJUNTO: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(MAX_FILAS_POR_CONJUNTO),
+  EXPORT_MAX_FILAS_TOTALES: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(MAX_FILAS_TOTALES),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
@@ -50,6 +67,10 @@ const DESCRIPCIONES: Record<string, string> = {
     'debe ser false/off/0 para desactivarlo, true/on, un numero de saltos o una lista de subredes (por defecto false)',
   CORS_ORIGIN:
     'debe ser una lista de origenes separados por comas (por defecto vacio: no se permite ninguno)',
+  EXPORT_MAX_FILAS_POR_CONJUNTO:
+    'debe ser un entero mayor que 0 (por defecto 10000)',
+  EXPORT_MAX_FILAS_TOTALES:
+    'debe ser un entero mayor que 0 (por defecto 20000)',
 };
 
 /**

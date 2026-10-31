@@ -138,9 +138,10 @@ se registra en `historial_permisos` en la misma transacción.
 - **Auditoría**: se lee con el permiso **`usuarios.crear_editar`** (Admin y Gerente;
   no existe un `auditoria.ver` ni un permiso nuevo). El Admin ve todo; el Gerente
   solo los eventos de personas (usuario/empleado) cuyo usuario afectado es un
-  **Empleado de su sucursal** y los eventos operativos de su sucursal; cualquier otro
-  rol recibe `403`. En el historial por usuario, un usuario fuera de su alcance
-  responde **404**.
+  **Empleado de su sucursal**, los eventos operativos de su sucursal y **sus propias
+  exportaciones**; cualquier otro rol recibe `403`. En el historial por usuario, un
+  usuario fuera de su alcance responde **404**. Las exportaciones no tienen usuario
+  ni sucursal afectada, así que no aparecen en ese historial.
 
 ## 6. Modelo de permisos por módulo
 
@@ -156,7 +157,16 @@ se registra en `historial_permisos` en la misma transacción.
 | Turnos      | `turnos.editar` (turnos y asignaciones; no existe `turnos.ver`). | Ídem (Admin y Gerente). |
 | Asistencia  | `asistencia.ver` (Admin, Gerente y Empleado). | Marcar: `asistencia.marcar` (Admin, Gerente y Empleado). Corregir y justificar: `asistencia.corregir` (solo Gerente). |
 | Reportes    | `reportes.comparativos.ver` (solo Admin). | No aplica: el reporte es de solo lectura. |
-| Auditoría   | `usuarios.crear_editar` (Admin y Gerente). El Admin ve todo; el Gerente solo personas de su sucursal y eventos operativos de su sucursal. | No aplica: los eventos los escribe el propio sistema dentro de la transacción de cada operación auditada. |
+| Auditoría   | `usuarios.crear_editar` (Admin y Gerente). El Admin ve todo; el Gerente solo personas de su sucursal, eventos operativos de su sucursal y sus propias exportaciones. | No aplica: los eventos los escribe el propio sistema dentro de la transacción de cada operación auditada. |
+| Exportaciones | `usuarios.crear_editar` más el permiso de lectura del conjunto (`ventas.ver`, `productos.ver`, etc.). El libro completo incluye solo los conjuntos que el usuario puede leer. | No aplica: solo genera archivos y eventos de auditoría; no modifica datos de negocio. |
+
+**La exportación no añade permisos**: reutiliza `usuarios.crear_editar` como puerta
+de entrada y el permiso de lectura que ya exige el listado de cada conjunto. El
+alcance por sucursal también es el del listado: el Gerente exporta solo su sucursal
+y el Admin todas; el cliente no puede elegir otra sucursal. Las exportaciones que
+superan la validación registran `exportacion_generada` o `exportacion_fallida` en
+la auditoría, con metadatos y sin las filas exportadas; los rechazos previos
+(permiso, formato o concurrencia) no crean evento.
 
 ## 7. Notas de verificación
 

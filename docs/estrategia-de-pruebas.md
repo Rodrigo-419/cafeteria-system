@@ -123,18 +123,17 @@ generado a su `.ts` (Node no lo resuelve solo).
 ## 5. Cobertura
 
 Las cifras siguientes corresponden a la última ejecución limpia, verificada en
-**2026-10-18** con `npm run build`, `npm run lint`, `npm test` y
+**2026-10-27** con `npm run build`, `npm run lint`, `npm test` y
 `npm run test:e2e` (Docker con la base de pruebas disponible). Se refrescan
 ejecutando los comandos de la sección 2.
 
 | Nivel     | Suites | Casos |
 | --------- | ------ | ----- |
-| Unitarias | 67     | 905   |
-| E2E       | 17     | 485   |
+| Unitarias | 74     | 977   |
+| E2E       | 21     | 529   |
 
-La suite e2e completa tarda alrededor de **8 minutos** (entre 470 y 492 s en las
-tres últimas ejecuciones consecutivas), dentro del `testTimeout` de 120 s por
-prueba/hook.
+La suite e2e completa se ejecuta en serie (`--runInBand`), dentro del
+`testTimeout` de 120 s por prueba/hook.
 
 > La tabla no incluye un % de cobertura de código: el repo no define el comando
 > `coverage` como parte del flujo estándar.
@@ -222,7 +221,9 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   faltas y justificación—), las sucursales (`SucursalesPage` —alta, edición,
   unicidad con 409 y alcance por rol—) y el reporte comparativo
   (`ReporteComparativoPage` —KPI, comparativo del período, estado actual, filtro
-  por sucursal, validación del rango, 403 y 404—).
+  por sucursal, validación del rango, 403 y 404—), y las exportaciones
+  (`ExportacionesPage`, `BotonExportar`, catálogo, validación del rango,
+  descarga y permisos).
 - **Integración ligera con MSW**: se mockean `POST /api/auth/login`,
   `GET /api/auth/me`, la carta (`GET /api/branches/:id/products`), las
   sucursales (`GET /api/branches`), las ventas (`GET/POST /api/sales`,
@@ -242,9 +243,35 @@ ese archivo la conexión y le sustituye el nombre por `cafeteria_test`. El
   equipos (`GET /api/equipment`,
   `GET/POST /api/equipment`, `GET/PATCH /api/equipment/:id` y
   `GET /api/equipment/:id/history`) y el
-  reporte comparativo (`GET /api/reports/comparativo`), incluidos los escenarios
+  reporte comparativo (`GET /api/reports/comparativo`), las exportaciones
+  (`POST /api/exports` y `POST /api/exports/full`), incluidos los escenarios
   de error 400/403/404/409, y la auditoría (`GET /api/auditoria` y
   `GET /api/auditoria/usuarios/:usuarioId`).
+
+### Regresiones del cuelgue de exportaciones
+
+El cuelgue real tenía dos causas independientes y cada una tiene su prueba de
+regresión; ambas **fallan antes del arreglo y pasan después**.
+
+- **Backend, HTTP real:** `backend/test/exports-http-real.e2e-spec.ts` levanta la
+  app con `app.listen(0)` y habla HTTP de verdad (sin Supertest). Cubre CSV,
+  XLSX, libro completo, un libro de 9 900 filas, **el cliente que corta a mitad
+  del XLSX** (la siguiente exportación debe entrar sin `429`) y **el plazo
+  vencido** (`tiempoMaximoMs` inyectado, `503` en español). Es la prueba que
+  reproduce la ranura de concurrencia que nunca se liberaba.
+- **Frontend, `StrictMode` real:** `ExportacionesPage.cancelacion.test.tsx`
+  monta el árbol con `StrictMode` **por fuera de los proveedores**, como
+  `main.tsx`, porque React solo duplica los efectos en ese orden (pasar
+  `<StrictMode>` dentro de `ui` no lo reproduce). Cubre la descarga, la
+  cancelación en menos de 1 s con una respuesta que no llega, la exportación
+  siguiente tras cancelar y el plazo de 90 s sin reintento.
+
+**Nota sobre MSW:** en MSW 3.0.3, una petición interceptada que se aborta a
+media respuesta deja el socket simulado en mal estado y la petición siguiente
+del mismo archivo acaba en una conexión real a `localhost:80`
+(`fetch failed`, `ECONNREFUSED`). Por eso los escenarios de «el servidor no
+contesta» sustituyen solo `POST /api/exports` en `fetch`; el resto de la red
+sigue pasando por MSW.
 
 ### Herramientas
 
@@ -283,15 +310,15 @@ bloqueo.
 No se sube para "alentar" las pruebas: es el suelo que evita que la carga de la
 máquina decida del resultado. Una prueba que se cuelga de verdad sigue fallando
 porque supera los 15 s, y ningún caso actual se acerca a ese techo (la suite
-completa ronda los 27 s).
+completa ronda los 38 s).
 
 > Análogo en backend: el `testTimeout` de e2e es de 120 s (`test/jest-e2e.json`)
 > por la misma razón de varianza bajo carga, descrita en la sección 2.
 
 ### Cobertura (estado actual)
 
-- **Archivos de prueba**: 59
-- **Total de tests**: **438 passed** (unitaria/componentes, Vitest + MSW)
+- **Archivos de prueba**: 63
+- **Total de tests**: **487 passed** (unitaria/componentes, Vitest + MSW)
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/auth/AuthContext.test.tsx`, `lib/format/money.spec.ts`,
@@ -323,7 +350,12 @@ productos y la carta (`features/products/CatalogoProductos.test.tsx`,
 (`features/users/UsuariosPage.test.tsx`, `features/users/PermisosUsuarioDialog.test.tsx`),
 las sucursales y el reporte comparativo
 (`features/branches/SucursalesPage.test.tsx`,
-`features/reports/ReporteComparativoPage.test.tsx`) y el landing autenticado
+`features/reports/ReporteComparativoPage.test.tsx`), las exportaciones
+(`features/exports/catalogo.test.ts`,
+`features/exports/ExportacionesPage.test.tsx`,
+`features/exports/ExportacionesPage.cancelacion.test.tsx`,
+`features/exports/ExportarListados.test.tsx` y
+`lib/api/exports.test.ts`) y el landing autenticado
 (`features/auth/landing.test.tsx`).
 
 ### Arranque en frío (frontend)
@@ -341,11 +373,12 @@ las sucursales y el reporte comparativo
 
 Además de Vitest/MSW (que mockean la red), hay una suite **Playwright** que
 maneja la aplicación **real** (frontend en Vite + backend + PostgreSQL reales)
-con un navegador Chromium. Vive en `frontend/e2e/` (13 specs, **34 pruebas**),
+con un navegador Chromium. Vive en `frontend/e2e/` (14 specs, **37 pruebas**),
 se lanza con `npm run test:e2e` y **no** se ejecuta en CI (no requiere levantar
 servidores: usa los ya arrancados). Cubre los flujos de extremo a extremo (login
 por rol, cambio de cuenta, menús/rutas, venta y anulación, inventario y alertas,
-usuarios/permisos/bloqueo, auditoría, marcación con PIN, reportes), una pasada de
+usuarios/permisos/bloqueo, auditoría, marcación con PIN, reportes,
+exportaciones en Excel/CSV y el 403 de un Empleado), una pasada de
 **pulido** que recorre cada pantalla por rol buscando códigos técnicos, UUID,
 JSON crudo, `undefined`/`null`/`NaN`, etiquetas en inglés y errores de consola,
 una auditoría de **accesibilidad** con `@axe-core/playwright` (WCAG 2.1 A/AA; la

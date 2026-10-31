@@ -26,6 +26,8 @@ import {
   LoginThrottleService,
   RELOJ_LOGIN,
 } from '../../src/modules/auth/application/login-throttle.service';
+import { LIMITES_EXPORT } from '../../src/modules/exports/exports.service';
+import type { LimitesExport } from '../../src/modules/exports/domain/limites';
 import { exigirBaseDePruebas, urlBaseDePruebas } from './url-base-pruebas';
 
 /**
@@ -76,6 +78,8 @@ export interface OpcionesAppDePruebas {
   neutroLoginThrottle?: boolean;
   /** Valor crudo de `TRUST_PROXY` que se aplicara a la app de pruebas. */
   trustProxy?: string;
+  /** Topes de exportacion distintos de los de produccion (pruebas). */
+  limitesExport?: Partial<LimitesExport>;
 }
 
 /**
@@ -107,6 +111,12 @@ export async function crearAppDePruebas(
     builder = builder
       .overrideProvider(LoginThrottleService)
       .useValue(new LoginThrottleSinLimites());
+  }
+
+  if (opciones.limitesExport !== undefined) {
+    builder = builder
+      .overrideProvider(LIMITES_EXPORT)
+      .useValue(opciones.limitesExport);
   }
 
   const moduleFixture: TestingModule = await builder.compile();

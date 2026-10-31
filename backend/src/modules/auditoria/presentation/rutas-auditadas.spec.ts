@@ -80,6 +80,9 @@ const RUTAS_AUDITADAS = new Set<string>([
   'PATCH /insumos/:id', //                  insumo_editado
   'DELETE /insumos/:id', //                 insumo_eliminado
   'PUT /inventario/sucursales/:sucursalId/insumos/:insumoId', // insumo_sucursal_*
+  // exportaciones (auditoria dentro del caso de uso)
+  'POST /exports', //                       exportacion_generada / exportacion_fallida
+  'POST /exports/full', //                  exportacion_generada / exportacion_fallida
 ]);
 
 /**
