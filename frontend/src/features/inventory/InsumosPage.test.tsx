@@ -79,7 +79,8 @@ describe('Catálogo de insumos', () => {
     const nombre = await screen.findByText('Café en grano')
     const fila = nombre.closest('tr') as HTMLElement
 
-    await user.click(within(fila).getByRole('button', { name: 'Eliminar' }))
+    await user.click(within(fila).getByRole('button', { name: 'Más acciones' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Eliminar' }))
     const dialogo = await screen.findByRole('alertdialog')
     await user.click(within(dialogo).getByRole('button', { name: 'Eliminar' }))
 
@@ -97,6 +98,24 @@ describe('Catálogo de insumos', () => {
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Editar' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('no muestra menú ni acciones con permiso de solo lectura', async () => {
+    renderComoGerente()
+
+    expect(await screen.findByText('Café en grano')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Más acciones' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Editar' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Eliminar' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Nuevo insumo' }),
     ).not.toBeInTheDocument()
   })
 

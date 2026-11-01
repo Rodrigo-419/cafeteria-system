@@ -8,8 +8,6 @@ import { PencilIcon, PlusIcon, TrashIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -18,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { AccionesFila } from '@/components/shared/AccionesFila'
+import { BarraListado } from '@/components/shared/BarraListado'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -86,28 +86,29 @@ export function InsumosPage() {
             header: '',
             className: 'text-right',
             cell: (insumo: InsumoApi) => (
-              <div className="flex justify-end gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDialogo({ insumo })}
-                >
-                  <PencilIcon className="size-4" />
-                  Editar
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => {
-                    setErrorEliminar(null)
-                    setAEliminar(insumo)
-                  }}
-                >
-                  <TrashIcon className="size-4" />
-                  Eliminar
-                </Button>
-              </div>
+              <AccionesFila
+                principal={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDialogo({ insumo })}
+                  >
+                    <PencilIcon className="size-4" />
+                    Editar
+                  </Button>
+                }
+                acciones={[
+                  {
+                    etiqueta: 'Eliminar',
+                    icono: <TrashIcon className="size-4" />,
+                    destructiva: true,
+                    onSelect: () => {
+                      setErrorEliminar(null)
+                      setAEliminar(insumo)
+                    },
+                  },
+                ]}
+              />
             ),
           } satisfies Column<InsumoApi>,
         ]
@@ -121,17 +122,15 @@ export function InsumosPage() {
         description="Catálogo global de insumos operativos y su presentación"
       />
 
-      <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="insumo-busqueda">Buscar</Label>
-            <Input
-              id="insumo-busqueda"
-              value={texto}
-              placeholder="Nombre del insumo…"
-              onChange={(evento) => setTexto(evento.target.value)}
-            />
-          </div>
+      <BarraListado
+        busqueda={{
+          id: 'insumo-busqueda',
+          value: texto,
+          onChange: setTexto,
+          placeholder: 'Nombre del insumo…',
+        }}
+        filtrosActivos={presentacion !== 'todas' ? 1 : 0}
+        filtros={
           <div className="space-y-2">
             <Label htmlFor="insumo-filtro-presentacion">Presentación</Label>
             <Select
@@ -154,17 +153,16 @@ export function InsumosPage() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end">
-        {puedeEditar && (
-          <Button onClick={() => setDialogo('crear')}>
-            <PlusIcon className="size-4" />
-            Nuevo insumo
-          </Button>
-        )}
-      </div>
+        }
+        accionPrimaria={
+          puedeEditar ? (
+            <Button onClick={() => setDialogo('crear')}>
+              <PlusIcon className="size-4" />
+              Nuevo insumo
+            </Button>
+          ) : undefined
+        }
+      />
 
       <DataTable
         columns={columnas}
