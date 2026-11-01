@@ -6,7 +6,6 @@
 // - Admin: puede consultar cualquier sucursal, pero no editar precios.
 import { useMemo, useState } from 'react'
 import { PencilIcon, PlusIcon } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -16,6 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { AccionesFila } from '@/components/shared/AccionesFila'
+import { BarraListado } from '@/components/shared/BarraListado'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { MoneyText } from '@/components/shared/MoneyText'
@@ -88,14 +89,18 @@ export function CartaSeccion() {
               header: '',
               className: 'text-right',
               cell: (fila: CartaOferta) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDialogo({ oferta: fila })}
-                >
-                  <PencilIcon className="size-4" />
-                  Editar precio
-                </Button>
+                <AccionesFila
+                  principal={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDialogo({ oferta: fila })}
+                    >
+                      <PencilIcon className="size-4" />
+                      Editar precio
+                    </Button>
+                  }
+                />
               ),
             } satisfies Column<CartaOferta>,
           ]
@@ -106,9 +111,9 @@ export function CartaSeccion() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2">
-          {esAdmin && (
+      <BarraListado
+        filtrosVisibles={
+          esAdmin ? (
             <div className="space-y-2">
               <Label htmlFor="carta-sucursal">Sucursal</Label>
               <Select value={sucursalAdmin} onValueChange={setSucursalAdmin}>
@@ -124,9 +129,10 @@ export function CartaSeccion() {
                 </SelectContent>
               </Select>
             </div>
-          )}
-
-          {mostrarFiltroEstado && (
+          ) : undefined
+        }
+        filtros={
+          mostrarFiltroEstado ? (
             <div className="space-y-2">
               <Label htmlFor="carta-estado">Estado</Label>
               <Select
@@ -143,18 +149,18 @@ export function CartaSeccion() {
                 </SelectContent>
               </Select>
             </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {puedeEditarPrecio && sucursalId && (
-        <div className="flex justify-end">
-          <Button onClick={() => setDialogo('crear')}>
-            <PlusIcon className="size-4" />
-            Añadir a la carta
-          </Button>
-        </div>
-      )}
+          ) : undefined
+        }
+        filtrosActivos={estado !== 'todas' ? 1 : 0}
+        accionPrimaria={
+          puedeEditarPrecio && sucursalId ? (
+            <Button onClick={() => setDialogo('crear')}>
+              <PlusIcon className="size-4" />
+              Añadir a la carta
+            </Button>
+          ) : undefined
+        }
+      />
 
       {sucursalId === null ? (
         <EmptyState

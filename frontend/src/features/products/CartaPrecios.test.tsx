@@ -137,4 +137,60 @@ describe('Carta por sucursal', () => {
     ).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Estado')).not.toBeInTheDocument()
   })
+
+  it('pliega el filtro de estado y cuenta solo cuando está activo', async () => {
+    renderComoGerente()
+    const user = userEvent.setup()
+
+    expect(await screen.findByText('Café Americano')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Estado')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/filtros activos/)).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Filtros/ }))
+    expect(screen.getByLabelText('Estado')).toBeVisible()
+
+    await user.click(screen.getByLabelText('Estado'))
+    await user.click(await screen.findByRole('option', { name: 'Inactivos' }))
+
+    expect(screen.getByLabelText('1 filtros activos')).toBeInTheDocument()
+  })
+
+  it('muestra el selector de sucursal solo al Admin, sin desplegar filtros', async () => {
+    iniciarSesionDePrueba(
+      usuarioDePrueba(PERMISOS_ADMIN, { rol: 'Admin', sucursalId: null }),
+    )
+    const admin = renderConProveedores(<CartaSeccion />)
+
+    expect(screen.getByLabelText('Sucursal')).toBeVisible()
+    expect(
+      screen.queryByRole('group', { name: 'Filtros del listado' }),
+    ).not.toBeInTheDocument()
+
+    admin.unmount()
+
+    renderComoGerente()
+    expect(await screen.findByText('Café Americano')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Sucursal')).not.toBeInTheDocument()
+  })
+
+  it('no muestra crear ni acciones con permiso de solo lectura', async () => {
+    iniciarSesionDePrueba(
+      usuarioDePrueba(PERMISOS_EMPLEADO, {
+        rol: 'Empleado',
+        sucursalId: 'sucursal-1',
+      }),
+    )
+    renderConProveedores(<CartaSeccion />)
+
+    expect(await screen.findByText('Café Americano')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Añadir a la carta' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Editar precio' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Más acciones' }),
+    ).not.toBeInTheDocument()
+  })
 })
