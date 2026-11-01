@@ -164,6 +164,40 @@ describe('MiHorarioPage', () => {
     ).toBeInTheDocument()
   })
 
+  it('explica el 404 cuando el usuario no tiene ficha de empleado', async () => {
+    iniciarSesionDePrueba(EMPLEADO)
+    server.use(
+      http.get(`${BASE_API}/my/schedule`, () =>
+        HttpResponse.json(
+          {
+            statusCode: 404,
+            message:
+              'No estás vinculado a un empleado. Contacta al administrador.',
+            error: 'Not Found',
+          },
+          { status: 404 },
+        ),
+      ),
+    )
+
+    renderConProveedores(<MiHorarioPage />, { ruta: '/my/schedule' })
+
+    expect(
+      await screen.findByText('Tu usuario no está vinculado a un empleado'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Pide al administrador que vincule tu usuario a una ficha de empleado para ver tu horario.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/no se pudo cargar tu horario/i),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /reintentar/i }),
+    ).not.toBeInTheDocument()
+  })
+
   it('ofrece imprimir y muestra la cabecera', async () => {
     const imprimir = vi.spyOn(window, 'print').mockImplementation(() => {})
     iniciarSesionDePrueba(EMPLEADO)

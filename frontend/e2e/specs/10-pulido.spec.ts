@@ -4,7 +4,7 @@
 // que el texto visible no filtra códigos técnicos, JSON crudo, valores
 // indefinidos ni UUIDs, y que no hay errores de consola. Acumula todos los
 // problemas y falla con la lista completa para poder corregirlos.
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type ConsoleMessage, type Page } from '@playwright/test'
 import {
   cuentaAdmin,
   cuentaEmpleadoCentro,
@@ -98,6 +98,15 @@ async function rutasDelMenu(page: Page): Promise<string[]> {
     )
 }
 
+// gerente.centro no tiene ficha de empleado: el 404 de /api/my/schedule es esperado.
+function es404EsperadoDeMiHorario(mensaje: ConsoleMessage): boolean {
+  return (
+    mensaje.type() === 'error' &&
+    mensaje.text().includes('404') &&
+    mensaje.location().url.includes('/api/my/schedule')
+  )
+}
+
 /**
  * Recorre el menú y, en cada ruta, añade los enlaces de la subnavegación del
  * grupo (Inventario, Productos, Turnos) para cubrir también las subpáginas.
@@ -106,8 +115,17 @@ async function recorrerRol(
   page: Page,
   cuenta: CuentaVerificacion,
   extras: readonly string[],
+  ignorarConsola?: (mensaje: ConsoleMessage) => boolean,
 ) {
   const recolector = vigilarConsola(page)
+  const ignorados: string[] = []
+  if (ignorarConsola) {
+    page.on('console', (mensaje) => {
+      if (ignorarConsola(mensaje)) {
+        ignorados.push(`console.error: ${mensaje.text()}`)
+      }
+    })
+  }
   await iniciarSesion(page, cuenta)
   const pendientes = [...new Set([...((await rutasDelMenu(page))), ...extras])]
   const visitadas = new Set<string>()
@@ -131,6 +149,10 @@ async function recorrerRol(
     }
   }
 
+  for (const texto of ignorados) {
+    const indice = recolector.errores.indexOf(texto)
+    if (indice >= 0) recolector.errores.splice(indice, 1)
+  }
   const erroresConsola = sinErrores(recolector)
   if (erroresConsola !== null) {
     problemas.push(`${cuenta.usuario} errores de consola:\n${erroresConsola}`)
@@ -145,9 +167,12 @@ test.describe('pulido de pantallas', () => {
   })
 
   test('Gerente recorre todas sus pantallas sin códigos técnicos', async ({ page }) => {
-    const problemas = await recorrerRol(page, cuentaGerenteCentro(), [
-      '/attendance/terminal',
-    ])
+    const problemas = await recorrerRol(
+      page,
+      cuentaGerenteCentro(),
+      ['/attendance/terminal'],
+      es404EsperadoDeMiHorario,
+    )
     expect(problemas, problemas.join('\n')).toEqual([])
   })
 
