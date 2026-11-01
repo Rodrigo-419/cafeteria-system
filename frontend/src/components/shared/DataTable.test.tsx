@@ -82,4 +82,36 @@ describe('DataTable', () => {
       .click(screen.getByRole('button', { name: /siguiente/i }))
     expect(onPageChange).toHaveBeenCalledWith(2)
   })
+
+  it('invoca onFilaClick con la fila pulsada', async () => {
+    const onFilaClick = vi.fn()
+    render(
+      <DataTable columns={columnas} data={filas} onFilaClick={onFilaClick} />,
+    )
+
+    const fila = screen.getByText('Té verde').closest('tr')
+    expect(fila).not.toBeNull()
+    await userEvent.setup().click(screen.getByText('Té verde'))
+
+    expect(onFilaClick).toHaveBeenCalledTimes(1)
+    expect(onFilaClick).toHaveBeenCalledWith(filas[1])
+    expect(fila).toHaveClass('cursor-pointer')
+    expect(fila).not.toHaveAttribute('role')
+    expect(fila).not.toHaveAttribute('tabindex')
+  })
+
+  it('no hace nada al pulsar una fila si no se pasa onFilaClick', async () => {
+    render(<DataTable columns={columnas} data={filas} />)
+    const user = userEvent.setup()
+
+    const fila = screen.getByText('Té verde').closest('tr')
+    expect(fila).not.toBeNull()
+    expect(fila).not.toHaveClass('cursor-pointer')
+
+    await user.click(screen.getByText('Té verde'))
+
+    expect(fila).not.toHaveClass('cursor-pointer')
+    expect(fila).not.toHaveAttribute('role')
+    expect(fila).not.toHaveAttribute('tabindex')
+  })
 })

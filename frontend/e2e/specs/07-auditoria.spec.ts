@@ -41,21 +41,34 @@ test.describe('auditoría', () => {
       page.getByRole('heading', { name: 'Bitácora de auditoría' }),
     ).toBeVisible()
 
-    for (const columna of ['Fecha', 'Quién', 'Acción', 'Entidad', 'Detalle']) {
+    for (const columna of ['Fecha', 'Quién', 'Acción', 'Entidad']) {
       await expect(
         page.getByRole('columnheader', { name: columna }),
       ).toBeVisible()
     }
-
     await expect(
-      page.getByRole('button', { name: 'Ver detalle' }).first(),
-    ).toBeVisible()
+      page.getByRole('columnheader', { name: 'Detalle' }),
+    ).toHaveCount(0)
+
+    const botonDetalle = page.getByRole('button', { name: /^Ver detalle:/ })
+    await expect(botonDetalle.first()).toBeVisible()
     await sinRuidoTecnico(page, 'body')
 
-    await page.getByRole('button', { name: 'Ver detalle' }).first().click()
+    await botonDetalle.first().click()
     const detalle = page.getByRole('dialog')
     await expect(detalle).toBeVisible()
     await expect(detalle.getByRole('button', { name: 'Cerrar' }).first()).toBeVisible()
+    await sinRuidoTecnico(page, '[role="dialog"]')
+    await detalle.getByRole('button', { name: 'Cerrar' }).first().click()
+    await expect(detalle).toBeHidden()
+
+    // La fila completa también abre el detalle.
+    const fila = page
+      .getByRole('row')
+      .filter({ has: botonDetalle })
+      .first()
+    await fila.getByRole('cell').first().click()
+    await expect(page.getByRole('dialog')).toBeVisible()
     await sinRuidoTecnico(page, '[role="dialog"]')
   })
 
@@ -66,7 +79,7 @@ test.describe('auditoría', () => {
       page.getByRole('heading', { name: 'Bitácora de auditoría' }),
     ).toBeVisible()
     await expect(
-      page.getByRole('button', { name: 'Ver detalle' }).first(),
+      page.getByRole('button', { name: /^Ver detalle:/ }).first(),
     ).toBeVisible()
     // Su ámbito es la Sucursal Centro: no debería listar la Sucursal Norte.
     await expect(page.getByText('Sucursal Norte')).toHaveCount(0)

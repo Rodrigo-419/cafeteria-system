@@ -27,23 +27,30 @@ function renderComoAdmin() {
   return renderConProveedores(<AuditoriaPage />)
 }
 
+/** Fila de datos cuya acción es `etiquetaAccion`. */
+async function filaDe(accion: string) {
+  return waitFor(() => {
+    const filas = screen.getAllByRole('row')
+    const encontrada = filas.find(
+      (filaActual) =>
+        within(filaActual).queryByRole('button', {
+          name: `Ver detalle: ${accion}`,
+        }) !== null,
+    )
+    if (!encontrada) throw new Error(`No hay fila para "${accion}"`)
+    return encontrada
+  })
+}
+
 /** Abre el diálogo de detalle de la fila cuya acción es `etiquetaAccion`. */
 async function abrirDetalle(
   user: ReturnType<typeof userEvent.setup>,
   accion: string,
 ) {
-  const fila = await waitFor(() => {
-    const filas = screen.getAllByRole('row')
-    const encontrada = filas.find(
-      (filaActual) =>
-        within(filaActual).queryByText(accion) !== null &&
-        within(filaActual).queryByRole('button', { name: 'Ver detalle' }) !==
-          null,
-    )
-    if (!encontrada) throw new Error(`No hay fila para "${accion}"`)
-    return encontrada
-  })
-  await user.click(within(fila).getByRole('button', { name: 'Ver detalle' }))
+  const fila = await filaDe(accion)
+  await user.click(
+    within(fila).getByRole('button', { name: `Ver detalle: ${accion}` }),
+  )
   return screen.findByRole('dialog')
 }
 
@@ -97,6 +104,67 @@ describe('Bitácora de auditoría', () => {
     expect(within(dialogo).getByText('Rol')).toBeInTheDocument()
     expect(within(dialogo).getByText('Empleado')).toBeInTheDocument()
     expect(within(dialogo).getByText('Gerente')).toBeInTheDocument()
+  })
+
+  it('abre el detalle al pulsar una celda de la fila y devuelve el foco', async () => {
+    renderComoAdmin()
+    const user = userEvent.setup({ delay: null })
+    const fila = await filaDe('Rol de usuario cambiado')
+    const boton = within(fila).getByRole('button', {
+      name: 'Ver detalle: Rol de usuario cambiado',
+    })
+
+    await user.click(within(fila).getAllByRole('cell')[0]!)
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText('Empleado')).toBeInTheDocument()
+    expect(within(dialogo).getByText('Gerente')).toBeInTheDocument()
+
+    await user.click(
+      within(dialogo).getAllByRole('button', { name: 'Cerrar' })[0]!,
+    )
+    await waitFor(() => expect(boton).toHaveFocus())
+  })
+
+  it('abre el detalle con el teclado desde el botón de la acción', async () => {
+    renderComoAdmin()
+    const user = userEvent.setup({ delay: null })
+    const boton = await waitFor(
+      () =>
+        screen.getByRole('button', {
+          name: 'Ver detalle: Rol de usuario cambiado',
+        }) as HTMLButtonElement,
+    )
+
+    let enfocado = false
+    for (let i = 0; i < 30 && !enfocado; i += 1) {
+      await user.tab()
+      enfocado = document.activeElement === boton
+    }
+    expect(enfocado).toBe(true)
+
+    await user.keyboard('{Enter}')
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(within(dialogo).getByText('Gerente')).toBeInTheDocument()
+
+    await user.click(
+      within(dialogo).getAllByRole('button', { name: 'Cerrar' })[0]!,
+    )
+    await waitFor(() => expect(boton).toHaveFocus())
+  })
+
+  it('no muestra la columna ni el botón "Detalle"', async () => {
+    renderComoAdmin()
+    await screen.findByText('Rol de usuario cambiado')
+
+    expect(
+      screen.queryByRole('columnheader', { name: 'Detalle' }),
+    ).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Ver detalle' })).toBeNull()
+    expect(
+      screen.getAllByRole('button', { name: /^Ver detalle:/ }).length,
+    ).toBeGreaterThan(0)
   })
 
   it('formatea el precio del detalle como moneda', async () => {

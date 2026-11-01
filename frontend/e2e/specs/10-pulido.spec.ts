@@ -204,7 +204,7 @@ test.describe('pulido de pantallas', () => {
   }) => {
     await iniciarSesion(page, cuentaAdmin())
     await page.goto('/auditoria')
-    const botones = page.getByRole('button', { name: 'Ver detalle' })
+    const botones = page.getByRole('button', { name: /^Ver detalle:/ })
     await expect(botones.first()).toBeVisible()
     const total = await botones.count()
     expect(total).toBeGreaterThan(0)

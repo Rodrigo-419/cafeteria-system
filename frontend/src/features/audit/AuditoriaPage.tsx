@@ -4,10 +4,9 @@
 // entidad, acción y rango de fechas locales. El backend es la autoridad del
 // alcance (el Gerente solo ve los eventos de su sucursal) y de las reglas del
 // rango (máximo 92 días): el frontend no filtra por cliente. Cada fila resume
-// quién hizo qué, sobre qué entidad y cuándo; el botón "Ver detalle" abre el
-// resumen antes → después.
-import { useMemo, useState } from 'react'
-import { Button } from '@/components/ui/button'
+// quién hizo qué, sobre qué entidad y cuándo; pulsar la fila, o el botón de la
+// acción desde el teclado, abre el resumen antes → después.
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -53,6 +52,22 @@ export function AuditoriaPage() {
   const [seleccionado, setSeleccionado] = useState<EventoAuditoriaApi | null>(
     null,
   )
+  const botonesAccion = useRef(new Map<string, HTMLButtonElement>())
+  const ultimoEventoAbierto = useRef<string | null>(null)
+
+  // El diálogo devuelve el foco al elemento activo al abrirse (Radix), pero un
+  // clic en la fila no es un elemento enfocable. Al cerrar, se devuelve el foco
+  // al botón de la acción del evento que abrió el diálogo.
+  useEffect(() => {
+    if (seleccionado !== null) return
+    const id = ultimoEventoAbierto.current
+    if (id === null) return
+    ultimoEventoAbierto.current = null
+    const temporizador = window.setTimeout(() => {
+      botonesAccion.current.get(id)?.focus()
+    }, 0)
+    return () => window.clearTimeout(temporizador)
+  }, [seleccionado])
 
   const sucursales = useSucursalesAuditoria(esAdmin)
 
@@ -76,6 +91,14 @@ export function AuditoriaPage() {
     setPage(1)
   }
 
+  function abrirDetalle(fila: EventoAuditoriaApi) {
+    ultimoEventoAbierto.current = fila.id
+    // Con un clic en la fila el foco aún no está en el botón de la acción: se
+    // mueve aquí para que el diálogo tenga un origen de foco claro.
+    botonesAccion.current.get(fila.id)?.focus()
+    setSeleccionado(fila)
+  }
+
   const columnas: Column<EventoAuditoriaApi>[] = [
     {
       key: 'fecha',
@@ -97,28 +120,28 @@ export function AuditoriaPage() {
     {
       key: 'accion',
       header: 'Acción',
-      cell: (fila) => etiquetaAccion(fila.accion),
+      cell: (fila) => {
+        const etiqueta = etiquetaAccion(fila.accion)
+        return (
+          <button
+            type="button"
+            ref={(elemento) => {
+              if (elemento) botonesAccion.current.set(fila.id, elemento)
+              else botonesAccion.current.delete(fila.id)
+            }}
+            aria-label={`Ver detalle: ${etiqueta}`}
+            aria-haspopup="dialog"
+            className="rounded-sm font-medium text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            {etiqueta}
+          </button>
+        )
+      },
     },
     {
       key: 'entidad',
       header: 'Entidad',
       cell: (fila) => etiquetaEntidad(fila.entidad),
-    },
-    {
-      key: 'detalle',
-      header: 'Detalle',
-      className: 'text-right',
-      cell: (fila) => (
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSeleccionado(fila)}
-          >
-            Ver detalle
-          </Button>
-        </div>
-      ),
     },
   ]
 
@@ -245,6 +268,7 @@ export function AuditoriaPage() {
         total={auditoria.data?.total}
         onPageChange={setPage}
         getRowId={(fila) => fila.id}
+        onFilaClick={abrirDetalle}
         emptyTitle="Sin eventos"
         emptyDescription="No hay eventos que coincidan con los filtros."
       />

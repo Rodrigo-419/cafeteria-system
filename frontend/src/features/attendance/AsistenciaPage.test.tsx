@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AsistenciaPage } from './AsistenciaPage'
 import { iniciarSesionDePrueba, renderConProveedores } from '@/test/render'
 import {
@@ -17,6 +17,13 @@ function renderComoGerente() {
   iniciarSesionDePrueba(usuarioDePrueba(PERMISOS_GERENTE))
   return renderConProveedores(<AsistenciaPage />)
 }
+
+// La pestaña de faltas parte del mes en curso. Estas pruebas fijan solo `Date`
+// (nunca setTimeout/setInterval): MSW, React Query y testing-library necesitan
+// los temporizadores reales.
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 // Empleado real (con registros y faltas propias): en las fixtures el `empleadoId`
 // coincide con el id del usuario, igual que en el alcance del backend.
@@ -197,6 +204,8 @@ describe('Página de asistencia', () => {
   })
 
   it('lista las faltas del rango y permite justificarlas', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-20T12:00:00-05:00'))
     const user = userEvent.setup()
     renderComoGerente()
 
@@ -223,6 +232,8 @@ describe('Página de asistencia', () => {
   })
 
   it('no ofrece justificar a quien solo puede ver registros', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-20T12:00:00-05:00'))
     const user = userEvent.setup()
     iniciarSesionDePrueba(EMPLEADO_BETO)
     renderConProveedores(<AsistenciaPage />)
