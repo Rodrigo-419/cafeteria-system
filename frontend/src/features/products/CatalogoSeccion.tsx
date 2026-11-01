@@ -6,8 +6,6 @@ import { PencilIcon, PlusIcon, TrashIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -17,6 +15,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AccionesFila } from '@/components/shared/AccionesFila'
+import { BarraListado } from '@/components/shared/BarraListado'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { useAuth } from '@/lib/auth/useAuth'
@@ -147,28 +147,29 @@ function ListadoProductos({ puedeEditar }: { puedeEditar: boolean }) {
             header: '',
             className: 'text-right',
             cell: (producto: ProductoApi) => (
-              <div className="flex justify-end gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDialogoProducto({ producto })}
-                >
-                  <PencilIcon className="size-4" />
-                  Editar
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => {
-                    setErrorEliminar(null)
-                    setProductoAEliminar(producto)
-                  }}
-                >
-                  <TrashIcon className="size-4" />
-                  Eliminar
-                </Button>
-              </div>
+              <AccionesFila
+                principal={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDialogoProducto({ producto })}
+                  >
+                    <PencilIcon className="size-4" />
+                    Editar
+                  </Button>
+                }
+                acciones={[
+                  {
+                    etiqueta: 'Eliminar',
+                    icono: <TrashIcon className="size-4" />,
+                    destructiva: true,
+                    onSelect: () => {
+                      setErrorEliminar(null)
+                      setProductoAEliminar(producto)
+                    },
+                  },
+                ]}
+              />
             ),
           } satisfies Column<ProductoApi>,
         ]
@@ -177,17 +178,15 @@ function ListadoProductos({ puedeEditar }: { puedeEditar: boolean }) {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="producto-busqueda">Buscar</Label>
-            <Input
-              id="producto-busqueda"
-              value={texto}
-              placeholder="Nombre del producto…"
-              onChange={(evento) => setTexto(evento.target.value)}
-            />
-          </div>
+      <BarraListado
+        busqueda={{
+          id: 'producto-busqueda',
+          value: texto,
+          onChange: setTexto,
+          placeholder: 'Nombre del producto…',
+        }}
+        filtrosActivos={Number(categoriaId !== 'todas')}
+        filtros={
           <div className="space-y-2">
             <Label htmlFor="producto-filtro-categoria">Categoría</Label>
             <Select
@@ -210,17 +209,16 @@ function ListadoProductos({ puedeEditar }: { puedeEditar: boolean }) {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end">
-        {puedeEditar && (
-          <Button onClick={() => setDialogoProducto('crear')}>
-            <PlusIcon className="size-4" />
-            Nuevo producto
-          </Button>
-        )}
-      </div>
+        }
+        accionPrimaria={
+          puedeEditar ? (
+            <Button onClick={() => setDialogoProducto('crear')}>
+              <PlusIcon className="size-4" />
+              Nuevo producto
+            </Button>
+          ) : undefined
+        }
+      />
 
       <DataTable
         columns={columnas}
@@ -297,28 +295,29 @@ function ListadoCategorias({ puedeEditar }: { puedeEditar: boolean }) {
             header: '',
             className: 'text-right',
             cell: (categoria: CategoriaProductoApi) => (
-              <div className="flex justify-end gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDialogo({ categoria })}
-                >
-                  <PencilIcon className="size-4" />
-                  Editar
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => {
-                    setErrorEliminar(null)
-                    setAEliminar(categoria)
-                  }}
-                >
-                  <TrashIcon className="size-4" />
-                  Eliminar
-                </Button>
-              </div>
+              <AccionesFila
+                principal={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDialogo({ categoria })}
+                  >
+                    <PencilIcon className="size-4" />
+                    Editar
+                  </Button>
+                }
+                acciones={[
+                  {
+                    etiqueta: 'Eliminar',
+                    icono: <TrashIcon className="size-4" />,
+                    destructiva: true,
+                    onSelect: () => {
+                      setErrorEliminar(null)
+                      setAEliminar(categoria)
+                    },
+                  },
+                ]}
+              />
             ),
           } satisfies Column<CategoriaProductoApi>,
         ]
@@ -410,28 +409,29 @@ function ListadoVariantes({ puedeEditar }: { puedeEditar: boolean }) {
                   Variante base
                 </span>
               ) : (
-                <div className="flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDialogo({ variante })}
-                  >
-                    <PencilIcon className="size-4" />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => {
-                      setErrorEliminar(null)
-                      setAEliminar(variante)
-                    }}
-                  >
-                    <TrashIcon className="size-4" />
-                    Eliminar
-                  </Button>
-                </div>
+                <AccionesFila
+                  principal={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDialogo({ variante })}
+                    >
+                      <PencilIcon className="size-4" />
+                      Editar
+                    </Button>
+                  }
+                  acciones={[
+                    {
+                      etiqueta: 'Eliminar',
+                      icono: <TrashIcon className="size-4" />,
+                      destructiva: true,
+                      onSelect: () => {
+                        setErrorEliminar(null)
+                        setAEliminar(variante)
+                      },
+                    },
+                  ]}
+                />
               ),
           } satisfies Column<VarianteApi>,
         ]

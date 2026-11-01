@@ -4,7 +4,12 @@ import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { ProductsPage } from './ProductsPage'
 import { iniciarSesionDePrueba, renderConProveedores } from '@/test/render'
-import { BASE_API, PERMISOS_ADMIN, usuarioDePrueba } from '@/test/handlers'
+import {
+  BASE_API,
+  PERMISOS_ADMIN,
+  PERMISOS_EMPLEADO,
+  usuarioDePrueba,
+} from '@/test/handlers'
 import { server } from '@/test/server'
 
 function renderComoAdmin() {
@@ -63,13 +68,30 @@ describe('Catálogo de productos', () => {
     const nombre = await screen.findByText('Café Americano')
     const fila = nombre.closest('tr') as HTMLElement
 
-    await user.click(within(fila).getByRole('button', { name: 'Eliminar' }))
+    await user.click(within(fila).getByRole('button', { name: 'Más acciones' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Eliminar' }))
     const dialogo = await screen.findByRole('alertdialog')
     await user.click(within(dialogo).getByRole('button', { name: 'Eliminar' }))
 
     expect(
       await screen.findByText(/No se puede eliminar un producto con precios/),
     ).toBeInTheDocument()
+  })
+
+  it('no muestra el menú de acciones con permiso de solo lectura', async () => {
+    iniciarSesionDePrueba(usuarioDePrueba(PERMISOS_EMPLEADO))
+    renderConProveedores(<ProductsPage />)
+
+    expect(await screen.findByText('Café Americano')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Más acciones' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Editar' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Nuevo producto' }),
+    ).not.toBeInTheDocument()
   })
 
   it('muestra el estado vacío cuando no hay productos', async () => {
