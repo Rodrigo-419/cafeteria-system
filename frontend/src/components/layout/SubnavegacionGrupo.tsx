@@ -52,10 +52,10 @@ export function SubnavegacionGrupo() {
             to={subpagina.to}
             aria-current={esActiva ? 'page' : undefined}
             className={cn(
-              'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+              'rounded-lg px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
               esActiva
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                ? 'bg-primary/10 font-semibold text-foreground'
+                : 'font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground',
             )}
           >
             {subpagina.label}
