@@ -37,7 +37,8 @@ opera `RegistroAsistencia` (marcación con PIN, correcciones, lecturas y cálcul
 faltas). El módulo `reports` **no escribe**: lee ventas, inventario y asistencia
 para el reporte comparativo entre sucursales. El módulo `auditoria` **solo inserta
 y lee**: registra un evento por cada operación auditada (personas, sucursales,
-equipos, turnos y el catálogo de productos e insumos) en la tabla `auditoria`, y
+equipos, turnos, el catálogo de productos e insumos y las exportaciones) en la
+tabla `auditoria`, y
 expone el listado general y el historial por usuario. Su tabla es de **solo
 inserción**.
 
@@ -328,8 +329,8 @@ leen de `backend/prisma/schema.prisma`:
 | `VentaMetodoPago`            | `efectivo`, `tarjeta`                                       |
 | `VentaEstado`                | `completada`, `anulada`                                     |
 | `EquipoEstado`               | `funcionando`, `danado`, `en_mantenimiento`, `retirado`     |
-| `AuditoriaEntidad`           | `usuario`, `empleado`, `sucursal`, `categoria`, `variante`, `producto`, `oferta`, `insumo`, `insumo_sucursal`, `turno`, `asignacion`, `equipo` |
-| `AuditoriaAccion`            | 44 valores; ver `schema.prisma` (p. ej. `usuario_creado`, `empleado_cesado`, `oferta_precio_fijado`, `insumo_sucursal_descontinuado`, `equipo_estado_cambiado`) |
+| `AuditoriaEntidad`           | 13 valores: `usuario`, `empleado`, `sucursal`, `categoria`, `variante`, `producto`, `oferta`, `insumo`, `insumo_sucursal`, `turno`, `asignacion`, `equipo`, `exportacion` |
+| `AuditoriaAccion`            | 46 valores; ver `schema.prisma` (p. ej. `usuario_creado`, `empleado_cesado`, `oferta_precio_fijado`, `insumo_sucursal_descontinuado`, `equipo_estado_cambiado`, `exportacion_generada`, `exportacion_fallida`) |
 
 > Nota: `EquipoEstado` usa `danado` (sin tilde) en código y base, tal como quedó
 > documentado en [Decisiones de diseño](architecture/decisiones-de-diseno.md).
@@ -405,8 +406,8 @@ justificaciones del período, cuya única unicidad empieza por `empleado_id`).
 > `corregir-registro.use-case.ts` (`existeParCorreccion`), que responde `409`.
 
 La migración **`20261013120000_auditoria`** crea la tabla **`auditoria`** (solo
-inserción) con sus enums definitivos (`auditoria_entidad`, 12 valores, y
-`auditoria_accion`, 44 valores) y añade:
+inserción) con sus enums definitivos (`auditoria_entidad`, 13 valores, y
+`auditoria_accion`, 46 valores, incluida la entidad `exportacion`) y añade:
 
 12. **`auditoria` es inmutable** (solo insert). El trigger `trg_auditoria_inmutable`
     (`BEFORE UPDATE OR DELETE`) ejecuta `fn_auditoria_es_inmutable`, que rechaza

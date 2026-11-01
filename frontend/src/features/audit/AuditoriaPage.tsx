@@ -32,6 +32,7 @@ import {
   etiquetaAccion,
   etiquetaEntidad,
 } from '@/lib/auditoria/etiquetas'
+import { BotonExportar } from '@/features/exports/BotonExportar'
 import { EventoAuditoriaDialog } from './EventoAuditoriaDialog'
 import { mensajeDeError } from './mensajes'
 import { useAuditoria, useSucursalesAuditoria } from './queries'
@@ -126,6 +127,7 @@ export function AuditoriaPage() {
       <PageHeader
         title="Bitácora de auditoría"
         description="Registro de acciones realizadas sobre el sistema"
+        actions={<BotonExportar conjunto="auditoria" />}
       />
 
       <Card>

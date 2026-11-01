@@ -39,6 +39,7 @@ import { MarcacionPage } from '@/features/attendance/MarcacionPage'
 import { AsistenciaPage } from '@/features/attendance/AsistenciaPage'
 import { SucursalesPage } from '@/features/branches/SucursalesPage'
 import { ReporteComparativoPage } from '@/features/reports/ReporteComparativoPage'
+import { ExportacionesPage } from '@/features/exports/ExportacionesPage'
 
 function crearQueryClient() {
   return new QueryClient({
@@ -78,6 +79,7 @@ export function App({
       item.to !== '/my/schedule' &&
       item.to !== '/users' &&
       item.to !== '/auditoria' &&
+      item.to !== '/exports' &&
       item.to !== '/attendance' &&
       item.to !== '/branches' &&
       item.to !== '/reports',
@@ -354,7 +356,16 @@ export function App({
                     <AuditoriaPage />
                   </RequirePermission>
                 }
-              />              {import.meta.env.DEV && (
+              />
+              <Route
+                path="exports"
+                element={
+                  <RequirePermission permiso="usuarios.crear_editar">
+                    <ExportacionesPage />
+                  </RequirePermission>
+                }
+              />
+              {import.meta.env.DEV && (
                 <Route path="design-system" element={<DesignSystemPage />} />
               )}
               <Route path="403" element={<Forbidden />} />

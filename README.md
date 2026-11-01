@@ -38,7 +38,9 @@ Todos los módulos del backend están implementados y registrados en `AppModule`
 | `shifts`     | Turnos fijos/variables y asignaciones con control de solapamiento. |
 | `attendance` | Marcación con PIN, correcciones, justificaciones de faltas y lecturas. |
 | `reports`    | Reporte comparativo entre sucursales (ventas, inventario y asistencia). |
-| `auditoria`  | Rastro inmutable de cambios (personas, sucursales, equipos, turnos y catálogo) con listado e historial por usuario. |
+| `exports`    | Exportaciones en Excel/CSV por conjunto y libro completo con metadatos. |
+| `my-schedule` | Horario personal del empleado vinculado al usuario autenticado, sin permiso adicional. |
+| `auditoria`  | Rastro inmutable de cambios (personas, sucursales, equipos, turnos, catálogo y exportaciones) con listado e historial por usuario. |
 
 ### Funciones de uso diario
 
@@ -50,6 +52,11 @@ Todos los módulos del backend están implementados y registrados en `AppModule`
 - **Impresión**: el calendario (grupo o individual), el reporte comparativo y
   "Mi horario" se imprimen con cabecera (sucursal, empleado, rango, fecha/hora)
   y una única regla global de impresión.
+- **Exportaciones** (`/exports`): catálogo de 14 conjuntos en Excel o CSV y un
+  libro completo con hoja de Metadatos. Solo está disponible con
+  `usuarios.crear_editar` y el permiso de lectura de cada conjunto; los conjuntos
+  de actividad usan un rango de hasta 92 días en America/Lima y los listados
+  ofrecen un botón "Exportar" que reutiliza ese rango.
 
 ## Roles y permisos
 
@@ -210,8 +217,9 @@ El índice completo está en [docs/README.md](docs/README.md). Documentos destac
   clave de idempotencia en el servidor (un doble envío crearía dos registros); se mitiga
   en el frontend deshabilitando el botón durante la petición.
 - **Bitácora de accesos y seguridad**: la auditoría cubre operaciones de negocio
-  (personas, sucursales, equipos, turnos y catálogo); no registra inicios de sesión ni
-  otros eventos de seguridad (el login queda expresamente excluido).
+  (personas, sucursales, equipos, turnos, catálogo y exportaciones); no registra
+  inicios de sesión ni otros eventos de seguridad (el login queda expresamente
+  excluido).
 - **Motivo y acta de baja de empleados**: el cese fija la fecha y bloquea la cuenta, pero
   no guarda un motivo ni un acta de baja.
 - **Reactivación de empleados**: el cese es definitivo (estado `inactivo`); no hay ruta

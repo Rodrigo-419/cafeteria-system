@@ -72,9 +72,77 @@ si la base se está despertando.
 | `DATABASE_URL` | URL pooled de Neon | **sí** | `sync: false`. |
 | `JWT_SECRET` | cadena de ≥32 caracteres | **sí** | `sync: false`. |
 | `CORS_ORIGIN` | URL de Netlify (y la de preview si procede) | no | `sync: false`. |
+| `EXPORT_MAX_FILAS_POR_CONJUNTO` | `3000` | no | Ajustado a los 512 MB de Render; el default del código sigue siendo `10000`. |
+| `EXPORT_MAX_FILAS_TOTALES` | `6000` | no | Ajustado a los 512 MB de Render; el default del código sigue siendo `20000`. |
+| `EXPORT_TIMEOUT_MS` | `60000` | no | Plazo de una exportación en milisegundos. Debe quedar por debajo de los 90 s que espera el frontend. |
 
 Las sensibles llevan `sync: false`: Render no las gestiona ni las sobrescribe,
 así que un valor del repositorio no puede pisar la URL o el secreto reales.
+
+### Memoria de las exportaciones
+
+El plan gratuito de Render da **512 MB para todo el proceso** (NestJS, Prisma,
+conexiones y la exportación en curso). Por eso `render.yaml` fija topes más
+bajos que los defaults del código:
+
+- **3 000 filas por conjunto** y **6 000 en el libro completo** en producción
+  (Render), con
+  `EXPORT_MAX_FILAS_POR_CONJUNTO` y `EXPORT_MAX_FILAS_TOTALES`. Los defaults de
+  `limites.ts` siguen siendo **10 000** y **20 000** para otros entornos; no se
+  cambiaron.
+- **Una exportación concurrente por usuario y una global**. El límite global
+  evita que dos archivos grandes coincidan en el mismo proceso.
+- **Una exportación nunca deja su ranura tomada.** La ranura se libera en el
+  `finally` de cada exportación: al terminar bien, al fallar, cuando el cliente
+  corta la descarga y cuando vence `EXPORT_TIMEOUT_MS`. Antes, un cliente que
+  cerraba el navegador a mitad del XLSX dejaba la ranura tomada para siempre y
+  el usuario recibía `429` en todos los intentos siguientes.
+- Los **14 lectores actuales materializan el array completo** antes de
+  escribir. Los que usan `contarYLeer` evitan el `findMany` si el total supera
+  el tope, pero dentro del tope cargan todas las filas; **asistencia y faltas
+  cargan todos los registros antes de calcular y recortar**. Por eso los topes
+  no se pueden subir sin cambiar la lectura.
+- La **Fase 2** introducirá lectura por lotes con cursor (`FILAS_POR_LOTE`),
+  escribiendo cada lote al CSV/XLSX antes de pedir el siguiente; entonces se
+  podrán elevar los topes. La decisión y el alcance están en
+  [`docs/architecture/decisiones-de-diseno.md`](architecture/decisiones-de-diseno.md#15-módulo-exportaciones-exports).
+- Los rechazos `413`/`429` solo sugieren filtros que existen: los conjuntos de
+  actividad (`ventas`, `movimientos`, `asistencia`, `faltas`, `reporte`) piden
+  acotar el rango de fechas; los demás no admiten rango y piden reducir el
+  volumen; el libro completo pide exportar los conjuntos por separado. **No hay
+  filtro libre por sucursal**: el Gerente queda limitado a la suya y el Admin
+  exporta todas.
+
+### Cancelación y plazo de una exportación
+
+- **Plazo:** `EXPORT_TIMEOUT_MS` (60 000 ms por defecto y en Render). Al vencer,
+  el backend abandona la generación, libera la ranura y deja
+  `exportacion_fallida` con el motivo. Si todavía no había enviado la cabecera,
+  responde **503** con un mensaje en español; si el archivo ya se estaba
+  enviando, solo corta la respuesta.
+- **Cliente que corta:** el `close` de la respuesta corta la generación igual
+  que el plazo, deja `exportacion_fallida` («El cliente cortó la descarga antes
+  de terminar») y libera la ranura. El XLSX se envía con `pipeline`, así que el
+  `PassThrough` se destruye y `workbook.commit()` deja de esperar.
+- **Frontend:** Cancelar restablece la pantalla al instante, sin esperar a que
+  el servidor reaccione. La espera máxima es de **90 s** (más que el plazo del
+  backend) con un mensaje claro, y **no hay reintento automático**.
+- Si se sube `EXPORT_TIMEOUT_MS`, hay que revisar el plazo del frontend
+  (`TIEMPO_MAXIMO_EXPORTACION_MS` en
+  `frontend/src/features/exports/useExportacion.ts`), que debe seguir siendo
+  mayor.
+
+**Mediciones locales (Jest, no Render).** La prueba actual solo aserta el
+**delta de heap** del propio escenario (techo: 256 MB). Se observaron deltas de **20-49 MB**
+con 10 000 ventas, **48-84 MB** con el libro completo (10 000 ventas y 9 000
+auditorías) y **0,8-87 MB** con 20 000 ventas; el recolector de basura puede
+dejar ese delta cerca de cero. Los picos absolutos dependen de la memoria
+acumulada por las suites anteriores en el mismo proceso de Jest; en una
+ejecución aislada, el caso de 20 000 ventas llegó a **345,8 MB de heap** y
+**1800,5 MB de RSS**. **Advertencia:** ese RSS incluye Jest, Nest, Prisma y
+Supertest; no es el proceso aislado de Render y **no se midió en Render**. **La
+verificación real es observar la memoria del servicio en el panel de Render
+durante una exportación.**
 
 ### `TRUST_PROXY` y el límite de intentos
 
@@ -105,6 +173,38 @@ producción. Si falta alguna, el arranque falla en la validación de Zod con un
 mensaje que nombra la variable y el motivo **sin mostrar el valor recibido**
 (`validate` en `backend/src/config/env.config.ts`). Cubierto por
 `env.config.spec.ts`.
+
+## Auditoría de dependencias
+
+El **2026-10-27** se ejecutó, sin cambiar versiones ni ejecutar `audit fix`:
+
+```bash
+# desde la raíz del repositorio
+cd backend && npm audit --omit=dev --registry=https://registry.npmjs.org
+cd ../frontend && npm audit --omit=dev --registry=https://registry.npmjs.org
+```
+
+Resultado: **backend 12 vulnerabilidades (4 moderadas y 8 altas)** y **frontend
+1 alta**. Ambos comandos terminan con código 1 por los hallazgos.
+
+| Paquete | Severidad | Cadena / uso | Alcanzabilidad real |
+| --- | --- | --- | --- |
+| `body-parser` | alta | `express` -> `body-parser` (runtime) | **Alcanzable**: el parser de Express procesa cuerpos comprimidos antes de los guards; el límite global de 300 req/min reduce el volumen, pero no elimina el DoS. |
+| `multer` | alta | `@nestjs/platform-express` (runtime) | **No alcanzable hoy**: no hay ningún `FileInterceptor` ni ruta de subida; el paquete queda cargado como dependencia de la plataforma. |
+| `qs` | moderada | `express`/`supertest` | **No alcanzable en el servidor**: el aviso afecta a `qs.stringify` con `arrayFormat: 'comma'`; la API solo parsea query/urlencoded. `supertest` es de pruebas. |
+| `zod` (backend) | alta | `zod` (runtime) | **No alcanzable desde peticiones**: solo valida `process.env` al arrancar (`env.config.ts`); los DTO HTTP usan `class-validator`. |
+| `zod` (frontend) | alta | `zod` y `@hookform/resolvers` | **Solo cliente**: valida formularios en el navegador; una entrada manipulada podría consumir memoria de la pestaña, no del backend. |
+| `uuid` | moderada | `exceljs` -> `uuid` | **No alcanzable por la ruta vulnerable**: el aviso afecta a `v3`/`v5`/`v6` con buffer; ExcelJS usa `uuid.v4()` sin buffer. |
+| `deepmerge-ts`, `@prisma/config`, `mysql2` | alta | `prisma` (CLI, `devDependencies`) | **Solo build**: se usan en `prisma generate`/`migrate deploy`; no se cargan en `start:prod`. |
+| `fast-uri` | moderada | `@nestjs/cli` -> `@angular-devkit/core` -> `ajv` | **Solo build**: herramienta de CLI; no forma parte del runtime de Nest. |
+
+`npm audit --omit=dev` sigue mostrando cadenas de `prisma` y de `@nestjs/cli`
+porque npm las resuelve desde el lockfile; `render.yaml` instala también
+`devDependencies` para poder ejecutar Prisma durante el build. **No se
+modificaron versiones en esta entrega**: los avisos quedan documentados y la
+actualización compatible debe hacerse en una tarea aparte, verificando antes
+las suites. La comprobación en producción (Render/Neon) no se ha hecho en esta
+entrega.
 
 ## Frontend en Netlify
 

@@ -26,6 +26,29 @@ describe('validate (variables de entorno)', () => {
     expect(config.JWT_EXPIRES_IN).toBe('8h');
     expect(config.TRUST_PROXY).toBe('false');
     expect(config.CORS_ORIGIN).toBe('');
+    expect(config.EXPORT_MAX_FILAS_POR_CONJUNTO).toBe(10_000);
+    expect(config.EXPORT_MAX_FILAS_TOTALES).toBe(20_000);
+  });
+
+  it('acepta topes de exportacion validos', () => {
+    const config = validate(
+      configBase({
+        EXPORT_MAX_FILAS_POR_CONJUNTO: '2500',
+        EXPORT_MAX_FILAS_TOTALES: '4000',
+      }),
+    );
+
+    expect(config.EXPORT_MAX_FILAS_POR_CONJUNTO).toBe(2_500);
+    expect(config.EXPORT_MAX_FILAS_TOTALES).toBe(4_000);
+  });
+
+  it('rechaza topes de exportacion no positivos', () => {
+    expect(() =>
+      validate(configBase({ EXPORT_MAX_FILAS_POR_CONJUNTO: '0' })),
+    ).toThrow(/EXPORT_MAX_FILAS_POR_CONJUNTO/);
+    expect(() =>
+      validate(configBase({ EXPORT_MAX_FILAS_TOTALES: 'dos mil' })),
+    ).toThrow(/EXPORT_MAX_FILAS_TOTALES/);
   });
 
   it('acepta produccion con todos los secretos presentes', () => {

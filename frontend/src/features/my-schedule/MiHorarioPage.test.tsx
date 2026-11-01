@@ -18,6 +18,11 @@ const EMPLEADO = usuarioDePrueba(['asistencia.marcar', 'asistencia.ver'], {
   sucursalId: 'sucursal-1',
 })
 
+/** Título completo de la semana que empieza en `lunes`. */
+function tituloDeSemana(lunes: string): string {
+  return `Semana del ${formatearDiaLocal(lunes)} al ${formatearDiaLocal(sumarDias(lunes, 6))}`
+}
+
 function responderHorario(dias: unknown[]) {
   server.use(
     http.get(`${BASE_API}/my/schedule`, () =>
@@ -87,14 +92,16 @@ describe('MiHorarioPage', () => {
     renderConProveedores(<MiHorarioPage />, { ruta: '/my/schedule' })
     await screen.findByRole('heading', { name: 'Mi horario' })
 
-    const user = userEvent.setup()
-    // La pantalla abre en la semana actual; se calculan las etiquetas esperadas
-    // con las mismas funciones que usa la página para no depender del día real.
+    // La semana inicial es la actual, así que las expectativas se calculan
+    // desde el día de negocio y no desde fechas fijas del calendario. Se
+    // comparan el texto explícito y el título calculado con las mismas
+    // funciones que usa la página para no depender del día real.
     const lunesActual = lunesDeSemana(diaDeNegocioLima(new Date()))
     const lunesAnterior = sumarDias(lunesActual, -7)
     const domingoAnterior = sumarDias(lunesAnterior, 6)
     const domingoActual = sumarDias(lunesActual, 6)
 
+    const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: /semana anterior/i }))
     await waitFor(() => {
       expect(
@@ -102,6 +109,7 @@ describe('MiHorarioPage', () => {
           `Semana del ${formatearDiaLocal(lunesAnterior)} al ${formatearDiaLocal(domingoAnterior)}`,
         ),
       ).toBeInTheDocument()
+      expect(screen.getByText(tituloDeSemana(lunesAnterior))).toBeInTheDocument()
     })
 
     await user.click(screen.getByRole('button', { name: /semana siguiente/i }))
@@ -111,6 +119,7 @@ describe('MiHorarioPage', () => {
           `Semana del ${formatearDiaLocal(lunesActual)} al ${formatearDiaLocal(domingoActual)}`,
         ),
       ).toBeInTheDocument()
+      expect(screen.getByText(tituloDeSemana(lunesActual))).toBeInTheDocument()
     })
   })
 

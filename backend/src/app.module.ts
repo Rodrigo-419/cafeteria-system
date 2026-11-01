@@ -20,6 +20,7 @@ import { ShiftsModule } from './modules/shifts/shifts.module';
 import { UsersModule } from './modules/users/users.module';
 import { EquipmentModule } from './modules/equipment/equipment.module';
 import { MyScheduleModule } from './modules/my-schedule/my-schedule.module';
+import { ExportsModule } from './modules/exports/exports.module';
 import { JwtAuthGuard } from './modules/auth/presentation/guards/jwt-auth.guard';
 import { PermissionsGuard } from './modules/auth/presentation/guards/permissions.guard';
 
@@ -55,6 +56,7 @@ import { PermissionsGuard } from './modules/auth/presentation/guards/permissions
     EquipmentModule,
     ReportsModule,
     MyScheduleModule,
+    ExportsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -34,6 +34,14 @@ Element.prototype.setPointerCapture ??= () => {}
 Element.prototype.releasePointerCapture ??= () => {}
 Element.prototype.scrollIntoView ??= () => {}
 
+// jsdom tampoco implementa las URLs de objeto que usa la descarga de archivos.
+if (typeof URL.createObjectURL !== 'function') {
+  URL.createObjectURL = () => 'blob:prueba'
+}
+if (typeof URL.revokeObjectURL !== 'function') {
+  URL.revokeObjectURL = () => {}
+}
+
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 
 afterEach(() => {

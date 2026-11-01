@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import type { ReactElement, ReactNode } from 'react'
+import { StrictMode, type ReactElement, type ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { ProveedorAutenticacion } from '@/lib/auth/AuthContext'
 import { crearSesion, guardarSesion } from '@/lib/auth/session'
@@ -17,10 +17,17 @@ import {
 } from './handlers'
 import { server } from './server'
 
-/** Envuelve un componente con QueryClient, Router y proveedor de sesion. */
+/**
+ * Envuelve un componente con QueryClient, Router y proveedor de sesion.
+ *
+ * `estricto` monta todo el arbol dentro de `StrictMode` como lo hace
+ * `main.tsx`. No es lo mismo pasar `<StrictMode>` en `ui`: React solo duplica
+ * los efectos cuando `StrictMode` esta por fuera de los proveedores, y las
+ * pruebas de esta pantalla necesitan reproducir ese ciclo real.
+ */
 export function renderConProveedores(
   ui: ReactElement,
-  { ruta = '/' }: { ruta?: string } = {},
+  { ruta = '/', estricto = false }: { ruta?: string; estricto?: boolean } = {},
 ) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -39,7 +46,12 @@ export function renderConProveedores(
     )
   }
 
-  return { queryClient, ...render(ui, { wrapper: Envoltura }) }
+  const arbol = <Envoltura>{ui}</Envoltura>
+
+  return {
+    queryClient,
+    ...render(estricto ? <StrictMode>{arbol}</StrictMode> : arbol),
+  }
 }
 
 /**

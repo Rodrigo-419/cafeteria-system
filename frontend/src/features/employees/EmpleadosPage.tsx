@@ -33,6 +33,7 @@ import {
   ETIQUETA_ESTADO_EMPLEADO,
 } from './presentacion'
 import { useEmpleados, useSucursalesEmpleados } from './queries'
+import { BotonExportar } from '@/features/exports/BotonExportar'
 import type { EmpleadoApi, EstadoEmpleado } from '@/types/api'
 
 const PAGE_SIZE = 10
@@ -180,12 +181,15 @@ export function EmpleadosPage() {
         title="Empleados"
         description="Personal vinculado a las cuentas de usuario"
         actions={
-          puedeGestionar ? (
-            <Button onClick={() => setDialogo({ tipo: 'crear' })}>
-              <PlusIcon className="size-4" />
-              Registrar empleado
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            <BotonExportar conjunto="empleados" />
+            {puedeGestionar && (
+              <Button onClick={() => setDialogo({ tipo: 'crear' })}>
+                <PlusIcon className="size-4" />
+                Registrar empleado
+              </Button>
+            )}
+          </div>
         }
       />
 

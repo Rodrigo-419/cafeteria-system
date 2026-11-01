@@ -22,11 +22,12 @@ export type ClienteAuditoria = PrismaService | Prisma.TransactionClient;
 
 /**
  * Alcance de lectura. `global` es el Admin; `sucursal` es un Gerente, que solo
- * ve los eventos de personas de su sucursal y los operativos de esa sucursal.
+ * ve los eventos de personas de su sucursal, los operativos de esa sucursal y
+ * sus propias exportaciones (`actorId`).
  */
 export type AlcanceAuditoria =
   | { tipo: 'global' }
-  | { tipo: 'sucursal'; sucursalId: string };
+  | { tipo: 'sucursal'; sucursalId: string; actorId: string };
 
 export type FiltrosAuditoria = {
   page: number;
@@ -203,24 +204,7 @@ export class AuditoriaRepository {
     filtros: FiltrosAuditoria,
     alcance: AlcanceAuditoria,
   ): Prisma.AuditoriaWhereInput {
-    const alcanceWhere: Prisma.AuditoriaWhereInput =
-      alcance.tipo === 'global'
-        ? {}
-        : {
-            OR: [
-              {
-                entidad: { in: ENTIDADES_DE_PERSONAS },
-                usuarioAfectado: {
-                  rol: { nombre: 'Empleado' },
-                  sucursalId: alcance.sucursalId,
-                },
-              },
-              {
-                entidad: { in: ENTIDADES_OPERATIVAS },
-                sucursalAfectadaId: alcance.sucursalId,
-              },
-            ],
-          };
+    const alcanceWhere = whereDeAlcanceAuditoria(alcance);
 
     const filtrosWhere: Prisma.AuditoriaWhereInput = {
       ...(filtros.actorId !== undefined ? { actorId: filtros.actorId } : {}),
@@ -247,6 +231,42 @@ export class AuditoriaRepository {
 
     return { AND: [alcanceWhere, filtrosWhere] };
   }
+}
+
+/**
+ * Condicion de alcance de lectura, exportada para poder probarla como regla
+ * pura sin instanciar Prisma.
+ *
+ * En las exportaciones se filtra por `actorId` (no por sucursal) porque el
+ * evento no toca datos de una sucursal concreta: cada Gerente ve las suyas y
+ * nunca las de otro usuario.
+ */
+export function whereDeAlcanceAuditoria(
+  alcance: AlcanceAuditoria,
+): Prisma.AuditoriaWhereInput {
+  if (alcance.tipo === 'global') {
+    return {};
+  }
+
+  return {
+    OR: [
+      {
+        entidad: { in: ENTIDADES_DE_PERSONAS },
+        usuarioAfectado: {
+          rol: { nombre: 'Empleado' },
+          sucursalId: alcance.sucursalId,
+        },
+      },
+      {
+        entidad: { in: ENTIDADES_OPERATIVAS },
+        sucursalAfectadaId: alcance.sucursalId,
+      },
+      {
+        entidad: AuditoriaEntidad.exportacion,
+        actorId: alcance.actorId,
+      },
+    ],
+  };
 }
 
 function aEventoRespuesta(fila: {

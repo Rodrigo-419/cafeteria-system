@@ -44,6 +44,7 @@ import {
 } from './presentacion'
 import { mensajeDeError } from './mensajes'
 import { useResumenStock, useStock, useSucursales } from './queries'
+import { BotonExportar } from '@/features/exports/BotonExportar'
 import type { EstadoStockInsumo, StockInsumoApi } from '@/types/api'
 
 const PAGE_SIZE = 20
@@ -186,22 +187,28 @@ export function InventarioPage() {
         title="Inventario"
         description="Stock, mínimos y entradas por sucursal"
         actions={
-          sucursalId ? (
-            <div className="flex flex-wrap gap-2">
-              {puedeConfigurar && (
-                <Button variant="outline" onClick={() => setConfig('nuevo')}>
-                  <PlusIcon className="size-4" />
-                  Añadir insumo
-                </Button>
-              )}
-              {puedeRegistrar && (
-                <Button onClick={() => setEntrada('nuevo')}>
-                  <PackagePlusIcon className="size-4" />
-                  Registrar entrada
-                </Button>
-              )}
-            </div>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            <BotonExportar conjunto="stock" />
+            {sucursalId && (
+              <>
+                {puedeConfigurar && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setConfig('nuevo')}
+                  >
+                    <PlusIcon className="size-4" />
+                    Añadir insumo
+                  </Button>
+                )}
+                {puedeRegistrar && (
+                  <Button onClick={() => setEntrada('nuevo')}>
+                    <PackagePlusIcon className="size-4" />
+                    Registrar entrada
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         }
       />
 

@@ -91,7 +91,13 @@ describe('menú agrupado por permisos efectivos', () => {
       },
       {
         titulo: 'ADMINISTRACIÓN',
-        items: ['Sucursales', 'Usuarios', 'Reportes', 'Auditoría'],
+        items: [
+          'Sucursales',
+          'Usuarios',
+          'Reportes',
+          'Exportaciones',
+          'Auditoría',
+        ],
       },
     ])
     expect(etiquetas(PERMISOS_ADMIN)).not.toContain('Mi horario')
@@ -111,7 +117,7 @@ describe('menú agrupado por permisos efectivos', () => {
       },
       {
         titulo: 'ADMINISTRACIÓN',
-        items: ['Sucursales', 'Usuarios', 'Auditoría'],
+        items: ['Sucursales', 'Usuarios', 'Exportaciones', 'Auditoría'],
       },
     ])
   })

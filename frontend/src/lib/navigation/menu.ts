@@ -211,6 +211,11 @@ export const MENU_GRUPOS: readonly MenuGrupoConfig[] = [
         permisos: ['reportes.comparativos.ver'],
       },
       {
+        label: 'Exportaciones',
+        to: '/exports',
+        permisos: ['usuarios.crear_editar'],
+      },
+      {
         label: 'Auditoría',
         to: '/auditoria',
         permisos: ['usuarios.crear_editar'],

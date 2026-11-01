@@ -51,6 +51,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # Falla si el lockfile apunta a un registry distinto del oficial. Se
+      # ejecuta antes de npm ci para no instalar desde un host inesperado.
+      - name: Verificar registry del package-lock
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const malas = [];
+          const visitar = (valor) => {
+            if (!valor || typeof valor !== 'object') return;
+            for (const [clave, hijo] of Object.entries(valor)) {
+              if (clave === 'resolved' && typeof hijo === 'string') {
+                let url;
+                try {
+                  url = new URL(hijo);
+                } catch {
+                  continue;
+                }
+                if (url.hostname !== 'registry.npmjs.org') malas.push(hijo);
+              } else {
+                visitar(hijo);
+              }
+            }
+          };
+
+          visitar(lock);
+          if (malas.length > 0) {
+            console.error('URLs resolved fuera de registry.npmjs.org:');
+            for (const url of malas) console.error(`  ${url}`);
+            process.exit(1);
+          }
+          console.log('Todas las URLs resolved usan registry.npmjs.org.');
+          NODE
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
@@ -97,6 +132,41 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+
+      # Falla si el lockfile apunta a un registry distinto del oficial. Se
+      # ejecuta antes de npm ci para no instalar desde un host inesperado.
+      - name: Verificar registry del package-lock
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const malas = [];
+          const visitar = (valor) => {
+            if (!valor || typeof valor !== 'object') return;
+            for (const [clave, hijo] of Object.entries(valor)) {
+              if (clave === 'resolved' && typeof hijo === 'string') {
+                let url;
+                try {
+                  url = new URL(hijo);
+                } catch {
+                  continue;
+                }
+                if (url.hostname !== 'registry.npmjs.org') malas.push(hijo);
+              } else {
+                visitar(hijo);
+              }
+            }
+          };
+
+          visitar(lock);
+          if (malas.length > 0) {
+            console.error('URLs resolved fuera de registry.npmjs.org:');
+            for (const url of malas) console.error(`  ${url}`);
+            process.exit(1);
+          }
+          console.log('Todas las URLs resolved usan registry.npmjs.org.');
+          NODE
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
