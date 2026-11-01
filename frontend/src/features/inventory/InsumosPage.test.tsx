@@ -79,8 +79,7 @@ describe('Catálogo de insumos', () => {
     const nombre = await screen.findByText('Café en grano')
     const fila = nombre.closest('tr') as HTMLElement
 
-    await user.click(within(fila).getByRole('button', { name: 'Más acciones' }))
-    await user.click(await screen.findByRole('menuitem', { name: 'Eliminar' }))
+    await user.click(within(fila).getByRole('button', { name: 'Eliminar' }))
     const dialogo = await screen.findByRole('alertdialog')
     await user.click(within(dialogo).getByRole('button', { name: 'Eliminar' }))
 

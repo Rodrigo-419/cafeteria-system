@@ -17,6 +17,8 @@ export interface BusquedaListado {
 export interface BarraListadoProps {
   /** Búsqueda a la izquierda. Si la API del listado no la admite, se omite. */
   busqueda?: BusquedaListado
+  /** Filtro visible siempre, junto a la búsqueda. No cuenta como filtro activo. */
+  filtrosVisibles?: ReactNode
   /** Filtros secundarios; se muestran en un panel plegable. */
   filtros?: ReactNode
   /** Número de filtros secundarios activos (sin contar la búsqueda). */
@@ -26,12 +28,14 @@ export interface BarraListadoProps {
 }
 
 /**
- * Barra de listado reutilizable: búsqueda a la izquierda, filtros secundarios
- * plegados en un panel (con contador de activos) y acción primaria a la
- * derecha. No define estilos por página: solo tokens y componentes del tema.
+ * Barra de listado reutilizable: búsqueda a la izquierda, filtro siempre
+ * visible opcional, filtros secundarios plegados en un panel (con contador de
+ * activos) y acción primaria a la derecha. No define estilos por página: solo
+ * tokens y componentes del tema.
  */
 export function BarraListado({
   busqueda,
+  filtrosVisibles,
   filtros,
   filtrosActivos = 0,
   accionPrimaria,
@@ -59,9 +63,13 @@ export function BarraListado({
                 />
               </div>
             </div>
-          ) : (
+          ) : !filtrosVisibles ? (
             <div className="min-w-0 flex-1" />
+          ) : null}
+          {filtrosVisibles && (
+            <div className="min-w-0 sm:shrink-0">{filtrosVisibles}</div>
           )}
+          {!busqueda && filtrosVisibles && <div className="min-w-0 flex-1" />}
           <div className="flex flex-wrap items-center justify-end gap-2">
             {filtros && (
               <Button

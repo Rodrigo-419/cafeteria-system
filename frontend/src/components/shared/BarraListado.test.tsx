@@ -55,4 +55,43 @@ describe('BarraListado', () => {
 
     expect(onChange).toHaveBeenCalledWith('a')
   })
+
+  it('muestra filtrosVisibles siempre y no los cuenta como activos', async () => {
+    const user = userEvent.setup()
+    render(
+      <BarraListado
+        busqueda={{ value: '', onChange: () => {} }}
+        filtrosVisibles={<span>Sucursal</span>}
+        filtros={<span>Estado</span>}
+        filtrosActivos={0}
+      />,
+    )
+
+    expect(screen.getByText('Sucursal')).toBeVisible()
+    expect(screen.queryByText('Estado')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('group', { name: 'Filtros del listado' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/filtros activos/)).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /Filtros/ }))
+
+    expect(screen.getByText('Sucursal')).toBeVisible()
+    expect(screen.getByText('Estado')).toBeVisible()
+  })
+
+  it('funciona sin búsqueda y con filtro visible', () => {
+    render(
+      <BarraListado
+        filtrosVisibles={<span>Sucursal</span>}
+        accionPrimaria={<button type="button">Nuevo insumo</button>}
+      />,
+    )
+
+    expect(screen.queryByLabelText('Buscar')).not.toBeInTheDocument()
+    expect(screen.getByText('Sucursal')).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Nuevo insumo' }),
+    ).toBeVisible()
+  })
 })

@@ -20,7 +20,7 @@ export interface AccionFila {
   etiqueta: string
   onSelect: () => void
   icono?: ReactNode
-  /** Las acciones destructivas SIEMPRE se pintan dentro del menú "⋯". */
+  /** Las acciones destructivas se marcan visualmente; en el menú se pintan en rojo. */
   destructiva?: boolean
   deshabilitada?: boolean
   titulo?: string
@@ -35,15 +35,19 @@ export interface AccionFila {
 export interface AccionesFilaProps {
   /** Acción principal visible (botón o enlace). */
   principal?: ReactNode
-  /** Resto de acciones, siempre dentro del menú "⋯". */
+  /**
+   * Resto de acciones. Si solo hay una y tiene icono, se muestra como botón
+   * directo; en cualquier otro caso van dentro del menú "⋯".
+   */
   acciones?: readonly AccionFila[]
   etiquetaMenu?: string
 }
 
 /**
  * Acciones de una fila de listado: una acción principal visible y el resto en
- * un menú "⋯". Las acciones destructivas nunca se pintan fuera del menú y
- * pueden confirmarse aquí o en el diálogo controlado por el consumidor.
+ * un menú "⋯". Una única acción secundaria con icono se muestra como botón
+ * directo para evitar un clic innecesario. Las acciones destructivas pueden
+ * confirmarse aquí o en el diálogo controlado por el consumidor.
  */
 export function AccionesFila({
   principal,
@@ -54,11 +58,40 @@ export function AccionesFila({
 
   if (!principal && acciones.length === 0) return null
 
+  const accionUnica = acciones.length === 1 ? acciones[0] : undefined
+  const accionDirecta =
+    accionUnica?.icono != null ? accionUnica : undefined
+
+  function ejecutar(accion: AccionFila) {
+    if (accion.confirmacion) {
+      setPendiente(accion)
+      return
+    }
+    accion.onSelect()
+  }
+
   return (
     <div className="flex items-center justify-end gap-1">
       {principal}
-      {acciones.length > 0 && (
-        <>
+      {accionDirecta ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={accionDirecta.etiqueta}
+          title={accionDirecta.etiqueta}
+          disabled={accionDirecta.deshabilitada}
+          className={
+            accionDirecta.destructiva
+              ? 'text-muted-foreground hover:text-destructive focus-visible:text-destructive'
+              : undefined
+          }
+          onClick={() => ejecutar(accionDirecta)}
+        >
+          {accionDirecta.icono}
+        </Button>
+      ) : (
+        acciones.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -77,13 +110,7 @@ export function AccionesFila({
                   variant={accion.destructiva ? 'destructive' : 'default'}
                   disabled={accion.deshabilitada}
                   title={accion.titulo}
-                  onSelect={() => {
-                    if (accion.confirmacion) {
-                      setPendiente(accion)
-                      return
-                    }
-                    accion.onSelect()
-                  }}
+                  onSelect={() => ejecutar(accion)}
                 >
                   {accion.icono}
                   {accion.etiqueta}
@@ -91,24 +118,24 @@ export function AccionesFila({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          {pendiente?.confirmacion && (
-            <ConfirmDialog
-              open
-              onOpenChange={(abierto) => {
-                if (!abierto) setPendiente(null)
-              }}
-              title={pendiente.confirmacion.titulo}
-              description={pendiente.confirmacion.descripcion}
-              confirmText={pendiente.confirmacion.textoConfirmar}
-              cancelText={pendiente.confirmacion.textoCancelar}
-              destructive={pendiente.destructiva}
-              onConfirm={() => {
-                pendiente.onSelect()
-                setPendiente(null)
-              }}
-            />
-          )}
-        </>
+        )
+      )}
+      {pendiente?.confirmacion && (
+        <ConfirmDialog
+          open
+          onOpenChange={(abierto) => {
+            if (!abierto) setPendiente(null)
+          }}
+          title={pendiente.confirmacion.titulo}
+          description={pendiente.confirmacion.descripcion}
+          confirmText={pendiente.confirmacion.textoConfirmar}
+          cancelText={pendiente.confirmacion.textoCancelar}
+          destructive={pendiente.destructiva}
+          onConfirm={() => {
+            pendiente.onSelect()
+            setPendiente(null)
+          }}
+        />
       )}
     </div>
   )
