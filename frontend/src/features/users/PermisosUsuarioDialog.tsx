@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/lib/auth/useAuth'
 import {
   tienePermiso,
@@ -165,6 +166,131 @@ export function PermisosUsuarioDialog({
     )
   }
 
+  const contenidoPermisos = (
+    <>
+      {esPropia && (
+        <Alert variant="destructive">
+          <AlertTitle>No puedes modificar tus propios permisos</AlertTitle>
+          <AlertDescription>
+            Esta lista es de solo lectura para tu cuenta.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {permisosEfectivos.isLoading && (
+        <p className="text-sm text-muted-foreground">Cargando permisos…</p>
+      )}
+
+      {permisosEfectivos.error && (
+        <Alert variant="destructive">
+          <AlertTitle>No se pudieron cargar los permisos</AlertTitle>
+          <AlertDescription>
+            {mensajeDeError(permisosEfectivos.error, 'permisos')}
+          </AlertDescription>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => void permisosEfectivos.refetch()}
+          >
+            Reintentar
+          </Button>
+        </Alert>
+      )}
+
+      {!permisosEfectivos.isLoading &&
+        !permisosEfectivos.error &&
+        permisosEfectivos.data &&
+        permisosEfectivos.data.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Este usuario no tiene permisos asignables.
+          </p>
+        )}
+
+      {!permisosEfectivos.isLoading &&
+        !permisosEfectivos.error &&
+        grupos.map((grupo) => (
+          <div key={grupo.nombre} className="space-y-2">
+            <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              {grupo.etiqueta}
+            </h3>
+            {grupo.items.map((permiso) => {
+              const accion =
+                permiso.origen === 'revocado'
+                  ? 'restablecer'
+                  : permiso.origen === 'concedido'
+                    ? 'quitar'
+                    : permiso.efectivo
+                      ? 'revocar'
+                      : 'conceder'
+              const habilitada =
+                !pendiente &&
+                (accion === 'revocar'
+                  ? puedeRevocar(permiso.codigo)
+                  : accion === 'conceder'
+                    ? puedeConceder(permiso.codigo)
+                    : !esPropia)
+
+              const tituloAccion = esPropia
+                ? 'No puedes modificar tus propios permisos'
+                : accion === 'conceder' && !puedeConceder(permiso.codigo)
+                  ? usuario.rol === 'Empleado'
+                    ? 'Este permiso no se puede conceder a un Empleado.'
+                    : 'No puedes conceder un permiso que no posees.'
+                  : accion === 'revocar' && !puedeRevocar(permiso.codigo)
+                    ? 'No puedes revocar un permiso que no posees.'
+                    : undefined
+
+              return (
+                <div
+                  key={permiso.permisoId}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p className="truncate text-sm font-medium">
+                      {permiso.descripcion}
+                    </p>
+                    {(permiso.origen === 'concedido' ||
+                      permiso.origen === 'revocado') && (
+                      <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        {ETIQUETA_ORIGEN_PERMISO[permiso.origen]}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {cambiando === permiso.permisoId && (
+                      <span className="text-xs text-muted-foreground">
+                        Guardando…
+                      </span>
+                    )}
+                    <Switch
+                      checked={permiso.efectivo}
+                      disabled={!habilitada}
+                      title={tituloAccion}
+                      aria-label={permiso.descripcion}
+                      onCheckedChange={() => {
+                        if (accion === 'revocar') revocar(permiso)
+                        else if (accion === 'quitar') quitar(permiso)
+                        else if (accion === 'restablecer') restablecer(permiso)
+                        else conceder(permiso)
+                      }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ))}
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>No se pudo aplicar el cambio</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+    </>
+  )
+
   return (
     <Dialog open onOpenChange={(abierto) => !abierto && onClose()}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
@@ -176,140 +302,22 @@ export function PermisosUsuarioDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {esPropia && (
-            <Alert variant="destructive">
-              <AlertTitle>No puedes modificar tus propios permisos</AlertTitle>
-              <AlertDescription>
-                Esta lista es de solo lectura para tu cuenta.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {permisosEfectivos.isLoading && (
-            <p className="text-sm text-muted-foreground">Cargando permisos…</p>
-          )}
-
-          {permisosEfectivos.error && (
-            <Alert variant="destructive">
-              <AlertTitle>No se pudieron cargar los permisos</AlertTitle>
-              <AlertDescription>
-                {mensajeDeError(permisosEfectivos.error, 'permisos')}
-              </AlertDescription>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3"
-                onClick={() => void permisosEfectivos.refetch()}
-              >
-                Reintentar
-              </Button>
-            </Alert>
-          )}
-
-          {!permisosEfectivos.isLoading &&
-            !permisosEfectivos.error &&
-            permisosEfectivos.data &&
-            permisosEfectivos.data.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Este usuario no tiene permisos asignables.
-              </p>
-            )}
-
-          {!permisosEfectivos.isLoading &&
-            !permisosEfectivos.error &&
-            grupos.map((grupo) => (
-              <div key={grupo.nombre} className="space-y-2">
-                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  {grupo.etiqueta}
-                </h3>
-                {grupo.items.map((permiso) => {
-                  const accion =
-                    permiso.origen === 'revocado'
-                      ? 'restablecer'
-                      : permiso.origen === 'concedido'
-                        ? 'quitar'
-                        : permiso.efectivo
-                          ? 'revocar'
-                          : 'conceder'
-                  const habilitada =
-                    !pendiente &&
-                    (accion === 'revocar'
-                      ? puedeRevocar(permiso.codigo)
-                      : accion === 'conceder'
-                        ? puedeConceder(permiso.codigo)
-                        : !esPropia)
-
-                  const tituloAccion = esPropia
-                    ? 'No puedes modificar tus propios permisos'
-                    : accion === 'conceder' &&
-                        !puedeConceder(permiso.codigo)
-                      ? usuario.rol === 'Empleado'
-                        ? 'Este permiso no se puede conceder a un Empleado.'
-                        : 'No puedes conceder un permiso que no posees.'
-                      : accion === 'revocar' &&
-                          !puedeRevocar(permiso.codigo)
-                        ? 'No puedes revocar un permiso que no posees.'
-                        : undefined
-
-                  return (
-                    <div
-                      key={permiso.permisoId}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-border p-3"
-                    >
-                      <div className="min-w-0 space-y-1">
-                        <p className="truncate text-sm font-medium">
-                          {permiso.descripcion}
-                        </p>
-                        {(permiso.origen === 'concedido' ||
-                          permiso.origen === 'revocado') && (
-                          <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                            {ETIQUETA_ORIGEN_PERMISO[permiso.origen]}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        {cambiando === permiso.permisoId && (
-                          <span className="text-xs text-muted-foreground">
-                            Guardando…
-                          </span>
-                        )}
-                        <Switch
-                          checked={permiso.efectivo}
-                          disabled={!habilitada}
-                          title={tituloAccion}
-                          aria-label={permiso.descripcion}
-                          onCheckedChange={() => {
-                            if (accion === 'revocar') revocar(permiso)
-                            else if (accion === 'quitar') quitar(permiso)
-                            else if (accion === 'restablecer')
-                              restablecer(permiso)
-                            else conceder(permiso)
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertTitle>No se pudo aplicar el cambio</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {puedeVerHistorial && (
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Historial
-              </h3>
+        {puedeVerHistorial ? (
+          <Tabs defaultValue="permisos">
+            <TabsList>
+              <TabsTrigger value="permisos">Permisos</TabsTrigger>
+              <TabsTrigger value="historial">Historial</TabsTrigger>
+            </TabsList>
+            <TabsContent value="permisos" className="space-y-4">
+              {contenidoPermisos}
+            </TabsContent>
+            <TabsContent value="historial">
               <HistorialUsuario usuarioId={usuario.id} />
-            </div>
-          )}
-        </div>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="space-y-4">{contenidoPermisos}</div>
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={pendiente}>

@@ -11,6 +11,18 @@ import {
   usuarioDePrueba,
 } from '@/test/handlers'
 import { server } from '@/test/server'
+import type { UsuarioGestionApi } from '@/types/api'
+
+const USUARIO_ADMIN: UsuarioGestionApi = {
+  id: 'admin-1',
+  nombre: 'Administrador',
+  nombreUsuario: 'admin',
+  rol: 'Admin',
+  sucursalId: null,
+  estado: 'activo',
+  createdAt: '2026-10-01T10:00:00.000Z',
+  updatedAt: '2026-10-01T10:00:00.000Z',
+}
 
 function renderComoAdmin() {
   iniciarSesionDePrueba(
@@ -211,6 +223,56 @@ describe('Permisos de un usuario', () => {
     ).toBeInTheDocument()
   })
 
+  it('no muestra pestañas si no puede ver el historial', async () => {
+    const sinHistorial = PERMISOS_ADMIN.filter(
+      (permiso) => permiso !== 'usuarios.crear_editar',
+    )
+    iniciarSesionDePrueba(
+      usuarioDePrueba(sinHistorial, {
+        id: 'admin-2',
+        nombre: 'Administrador sin historial',
+        nombreUsuario: 'admin2',
+        rol: 'Admin',
+        sucursalId: null,
+      }),
+    )
+    renderConProveedores(
+      <PermisosUsuarioDialog usuario={USUARIO_ADMIN} onClose={() => {}} />,
+    )
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(
+      await within(dialogo).findByText('Asignar y revocar permisos de usuarios'),
+    ).toBeInTheDocument()
+    expect(within(dialogo).queryByRole('tablist')).not.toBeInTheDocument()
+    expect(within(dialogo).queryAllByRole('tab')).toHaveLength(0)
+  })
+
+  it('no solicita el historial hasta abrir su pestaña', async () => {
+    let peticionesHistorial = 0
+    server.use(
+      http.get(`${BASE_API}/auditoria/usuarios/usuario-2`, () => {
+        peticionesHistorial += 1
+        return HttpResponse.json({
+          eventos: [],
+          total: 0,
+          page: 1,
+          limit: 10,
+        })
+      }),
+    )
+    const user = userEvent.setup({ delay: null })
+    renderComoAdmin()
+    await abrirPermisos(user, 'Beto Turno')
+
+    expect(await screen.findByText('Ver productos')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Historial' })).toBeInTheDocument()
+    expect(peticionesHistorial).toBe(0)
+
+    await user.click(screen.getByRole('tab', { name: 'Historial' }))
+    await waitFor(() => expect(peticionesHistorial).toBe(1))
+  })
+
   it('deshabilita el interruptor en la cuenta propia', async () => {
     iniciarSesionDePrueba(
       usuarioDePrueba(PERMISOS_ADMIN, {
@@ -222,19 +284,7 @@ describe('Permisos de un usuario', () => {
       }),
     )
     renderConProveedores(
-      <PermisosUsuarioDialog
-        usuario={{
-          id: 'admin-1',
-          nombre: 'Administrador',
-          nombreUsuario: 'admin',
-          rol: 'Admin',
-          sucursalId: null,
-          estado: 'activo',
-          createdAt: '2026-10-01T10:00:00.000Z',
-          updatedAt: '2026-10-01T10:00:00.000Z',
-        }}
-        onClose={() => {}}
-      />,
+      <PermisosUsuarioDialog usuario={USUARIO_ADMIN} onClose={() => {}} />,
     )
 
     const dialogo = await screen.findByRole('dialog')
