@@ -6,6 +6,7 @@ import { CartaSeccion } from './CartaSeccion'
 import { iniciarSesionDePrueba, renderConProveedores } from '@/test/render'
 import {
   BASE_API,
+  CARTA_PRUEBA,
   PERMISOS_ADMIN,
   PERMISOS_EMPLEADO,
   PERMISOS_GERENTE,
@@ -192,5 +193,39 @@ describe('Carta por sucursal', () => {
     expect(
       screen.queryByRole('button', { name: 'Más acciones' }),
     ).not.toBeInTheDocument()
+  })
+
+  it('el Admin sin sucursal ve el estado vacío y no consulta la carta', async () => {
+    let peticionesCarta = 0
+    server.use(
+      http.get(`${BASE_API}/branches/:sucursalId/products`, () => {
+        peticionesCarta += 1
+        return HttpResponse.json(CARTA_PRUEBA)
+      }),
+    )
+    iniciarSesionDePrueba(
+      usuarioDePrueba(PERMISOS_ADMIN, { rol: 'Admin', sucursalId: null }),
+    )
+    renderConProveedores(<CartaSeccion />)
+    const user = userEvent.setup()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Selecciona una sucursal' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Error al cargar datos'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(/No se pudo conectar con el servidor/),
+    ).not.toBeInTheDocument()
+    expect(peticionesCarta).toBe(0)
+
+    await user.click(screen.getByLabelText('Sucursal'))
+    await user.click(
+      await screen.findByRole('option', { name: 'Sucursal Centro' }),
+    )
+
+    expect(await screen.findByText('Café Americano')).toBeInTheDocument()
+    expect(peticionesCarta).toBe(1)
   })
 })

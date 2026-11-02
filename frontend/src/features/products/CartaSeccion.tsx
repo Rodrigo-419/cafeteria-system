@@ -42,7 +42,9 @@ export function CartaSeccion() {
     { oferta: CartaOferta } | 'crear' | null
   >(null)
 
-  const sucursalId = esAdmin ? sucursalAdmin : (usuario?.sucursalId ?? null)
+  const sucursalId = esAdmin
+    ? sucursalAdmin || null
+    : (usuario?.sucursalId ?? null)
   const sucursales = useSucursales(esAdmin)
   const { data, isLoading, error, refetch } = useCartaSucursal(
     sucursalId,
