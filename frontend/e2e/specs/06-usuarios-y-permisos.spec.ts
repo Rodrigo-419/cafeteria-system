@@ -45,12 +45,9 @@ test.describe('usuarios y permisos', () => {
     await expect(
       dialogoPermisos.getByRole('heading', { name: new RegExp(`Permisos de`) }),
     ).toBeVisible()
-    await dialogoPermisos.getByRole('button', { name: 'Revocar' }).first().click()
+    await dialogoPermisos.getByRole('switch').first().click()
     await expect(page.getByText(/Permiso revocado/)).toBeVisible()
-    await dialogoPermisos
-      .getByRole('button', { name: 'Restablecer' })
-      .first()
-      .click()
+    await dialogoPermisos.getByRole('switch').first().click()
     await expect(
       page.getByText('Permiso restablecido al valor del rol'),
     ).toBeVisible()

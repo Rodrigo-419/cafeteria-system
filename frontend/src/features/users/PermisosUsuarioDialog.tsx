@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { StatusPill } from '@/components/shared/StatusPill'
+import { Switch } from '@/components/ui/switch'
 import { useAuth } from '@/lib/auth/useAuth'
 import {
   tienePermiso,
@@ -240,12 +240,15 @@ export function PermisosUsuarioDialog({
                         ? puedeConceder(permiso.codigo)
                         : !esPropia)
 
-                  const tituloAccion =
-                    accion === 'conceder' && !puedeConceder(permiso.codigo)
+                  const tituloAccion = esPropia
+                    ? 'No puedes modificar tus propios permisos'
+                    : accion === 'conceder' &&
+                        !puedeConceder(permiso.codigo)
                       ? usuario.rol === 'Empleado'
                         ? 'Este permiso no se puede conceder a un Empleado.'
                         : 'No puedes conceder un permiso que no posees.'
-                      : accion === 'revocar' && !puedeRevocar(permiso.codigo)
+                      : accion === 'revocar' &&
+                          !puedeRevocar(permiso.codigo)
                         ? 'No puedes revocar un permiso que no posees.'
                         : undefined
 
@@ -258,42 +261,33 @@ export function PermisosUsuarioDialog({
                         <p className="truncate text-sm font-medium">
                           {permiso.descripcion}
                         </p>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                        {(permiso.origen === 'concedido' ||
+                          permiso.origen === 'revocado') && (
+                          <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                             {ETIQUETA_ORIGEN_PERMISO[permiso.origen]}
                           </span>
-                          {permiso.efectivo ? (
-                            <StatusPill tono="success">Activo</StatusPill>
-                          ) : (
-                            <StatusPill tono="error">Inactivo</StatusPill>
-                          )}
-                        </div>
+                        )}
                       </div>
-                      {!esPropia && (
-                        <Button
-                          variant="outline"
-                          size="sm"
+                      <div className="flex shrink-0 items-center gap-2">
+                        {cambiando === permiso.permisoId && (
+                          <span className="text-xs text-muted-foreground">
+                            Guardando…
+                          </span>
+                        )}
+                        <Switch
+                          checked={permiso.efectivo}
                           disabled={!habilitada}
                           title={tituloAccion}
-                          onClick={() => {
+                          aria-label={permiso.descripcion}
+                          onCheckedChange={() => {
                             if (accion === 'revocar') revocar(permiso)
                             else if (accion === 'quitar') quitar(permiso)
                             else if (accion === 'restablecer')
                               restablecer(permiso)
                             else conceder(permiso)
                           }}
-                        >
-                          {cambiando === permiso.permisoId
-                            ? 'Guardando…'
-                            : accion === 'revocar'
-                              ? 'Revocar'
-                              : accion === 'quitar'
-                                ? 'Quitar'
-                                : accion === 'restablecer'
-                                  ? 'Restablecer'
-                                  : 'Conceder'}
-                        </Button>
-                      )}
+                        />
+                      </div>
                     </div>
                   )
                 })}
