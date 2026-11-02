@@ -5,9 +5,10 @@
 // mes en curso y permite justificar cuando el usuario tiene `asistencia.corregir`.
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { AccionesFila } from '@/components/shared/AccionesFila'
+import { BarraListado } from '@/components/shared/BarraListado'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { useAuth } from '@/lib/auth/useAuth'
 import { diaDeNegocioLima, formatearDiaLocal } from '@/lib/format/dates'
@@ -54,13 +55,17 @@ export function FaltasTab() {
             header: '',
             className: 'text-right',
             cell: (falta: FaltaApi) => (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setJustificar(falta)}
-              >
-                Justificar
-              </Button>
+              <AccionesFila
+                principal={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setJustificar(falta)}
+                  >
+                    Justificar
+                  </Button>
+                }
+              />
             ),
           } satisfies Column<FaltaApi>,
         ]
@@ -69,28 +74,30 @@ export function FaltasTab() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="faltas-desde">Desde</Label>
-            <Input
-              id="faltas-desde"
-              type="date"
-              value={desde}
-              onChange={(evento) => setDesde(evento.target.value)}
-            />
+      <BarraListado
+        filtrosVisibles={
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="w-40 space-y-2">
+              <Label htmlFor="faltas-desde">Desde</Label>
+              <Input
+                id="faltas-desde"
+                type="date"
+                value={desde}
+                onChange={(evento) => setDesde(evento.target.value)}
+              />
+            </div>
+            <div className="w-40 space-y-2">
+              <Label htmlFor="faltas-hasta">Hasta</Label>
+              <Input
+                id="faltas-hasta"
+                type="date"
+                value={hasta}
+                onChange={(evento) => setHasta(evento.target.value)}
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="faltas-hasta">Hasta</Label>
-            <Input
-              id="faltas-hasta"
-              type="date"
-              value={hasta}
-              onChange={(evento) => setHasta(evento.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
+        }
+      />
 
       <DataTable
         columns={columnas}

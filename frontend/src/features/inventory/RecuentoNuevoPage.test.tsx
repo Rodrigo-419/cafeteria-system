@@ -105,6 +105,27 @@ describe('Nuevo recuento', () => {
     ).toBeDisabled()
   })
 
+  it('quita el aviso largo y resume la confirmación en una frase', async () => {
+    renderComoGerente()
+    const user = userEvent.setup()
+
+    await user.type(
+      await screen.findByLabelText('Conteo de Café en grano'),
+      '10',
+    )
+    expect(
+      screen.queryByText('El recuento fija el stock al valor contado'),
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Revisar recuento' }))
+    const dialogo = await screen.findByRole('alertdialog')
+    expect(
+      within(dialogo).getByText(
+        'Se fijará el stock al valor contado solo en las líneas con valor y no se puede deshacer; revisa las diferencias.',
+      ),
+    ).toBeInTheDocument()
+  })
+
   it('muestra el mensaje del servidor si el recuento está fuera de alcance', async () => {
     server.use(
       http.post(`${BASE_API}/inventario/sucursales/:sucursalId/recuentos`, () =>

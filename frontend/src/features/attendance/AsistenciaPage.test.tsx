@@ -37,6 +37,7 @@ async function seleccionarEstado(
   user: ReturnType<typeof userEvent.setup>,
   etiqueta: string,
 ) {
+  await user.click(screen.getByRole('button', { name: /^Filtros/ }))
   await user.click(screen.getByRole('combobox'))
   await user.click(await screen.findByRole('option', { name: etiqueta }))
 }
@@ -244,6 +245,40 @@ describe('Página de asistencia', () => {
     expect(screen.queryByText('Dora Nueva')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Justificar' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('con solo permiso de lectura no muestra acciones de gestión en Registros', async () => {
+    iniciarSesionDePrueba(EMPLEADO_BETO)
+    renderConProveedores(<AsistenciaPage />)
+
+    expect((await screen.findAllByText('Beto Turno')).length).toBeGreaterThan(0)
+    expect(
+      screen.queryByRole('button', { name: 'Corregir' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Más acciones' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getAllByRole('button', { name: 'Historial' }).length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('con solo permiso de lectura no muestra acciones de gestión en Faltas', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-20T12:00:00-05:00'))
+    const user = userEvent.setup()
+    iniciarSesionDePrueba(EMPLEADO_BETO)
+    renderConProveedores(<AsistenciaPage />)
+
+    await user.click(await screen.findByRole('tab', { name: 'Faltas' }))
+
+    expect(await screen.findByText('Beto Turno')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Justificar' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Más acciones' }),
     ).not.toBeInTheDocument()
   })
 })

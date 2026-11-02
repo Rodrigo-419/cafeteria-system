@@ -148,15 +148,6 @@ export function RecuentoNuevoPage() {
         }
       />
 
-      <Alert>
-        <AlertTitle>El recuento fija el stock al valor contado</AlertTitle>
-        <AlertDescription>
-          Solo se envían las líneas con un valor introducido. El stock baja o
-          sube hasta lo contado y queda un movimiento de ajuste; no se puede
-          deshacer.
-        </AlertDescription>
-      </Alert>
-
       {esAdmin && (
         <Card>
           <CardContent className="pt-6">
@@ -304,7 +295,7 @@ export function RecuentoNuevoPage() {
         open={confirmar}
         onOpenChange={setConfirmar}
         title="Confirmar recuento"
-        description="Se fijará el stock al valor contado. Revisa las diferencias antes de continuar."
+        description="Se fijará el stock al valor contado solo en las líneas con valor y no se puede deshacer; revisa las diferencias."
         confirmText={crear.isPending ? 'Registrando…' : 'Confirmar recuento'}
         loading={crear.isPending}
         onConfirm={registrar}
