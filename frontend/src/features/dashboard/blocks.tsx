@@ -38,7 +38,11 @@ import { StatCard } from '@/components/shared/StatCard'
 import { StatusPill } from '@/components/shared/StatusPill'
 import { ApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/useAuth'
-import { formatearHora } from '@/lib/format/dates'
+import {
+  diaDeNegocioLima,
+  formatearFechaHora,
+  formatearHora,
+} from '@/lib/format/dates'
 import { filtrarMenu } from '@/lib/navigation/menu'
 import { tienePermiso } from '@/lib/permissions/permissions'
 import { SaleStatusBadge } from '@/features/sales/SaleStatusBadge'
@@ -294,13 +298,23 @@ export function AlertasStock() {
 /** Entradas de asistencia que siguen abiertas (sin salida cerrada). */
 export function AsistenciaAbierta() {
   const { data, isPending, error, refetch } = useAsistenciaAbierta()
+  const hoy = diaDeNegocioLima(new Date())
+  const deDiasAnteriores = data
+    ? data.items.filter(
+        (registro) => diaDeNegocioLima(registro.fechaHora) < hoy,
+      ).length
+    : 0
 
   return (
     <TarjetaBloque
       titulo="Personal en turno"
       descripcion={
         data
-          ? `${data.total} ${data.total === 1 ? 'entrada abierta' : 'entradas abiertas'}`
+          ? `${data.total} ${data.total === 1 ? 'entrada abierta' : 'entradas abiertas'}${
+              deDiasAnteriores > 0
+                ? ` · ${deDiasAnteriores} de días anteriores`
+                : ''
+            }`
           : 'Entradas sin salida cerrada'
       }
     >
@@ -317,19 +331,30 @@ export function AsistenciaAbierta() {
         </p>
       ) : (
         <ul className="divide-y">
-          {data.items.slice(0, 5).map((registro) => (
-            <li
-              key={registro.id}
-              className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-            >
-              <p className="truncate text-sm font-medium">
-                {registro.empleado.nombre}
-              </p>
-              <p className="shrink-0 text-xs text-muted-foreground">
-                Entrada {formatearHora(registro.fechaHora)}
-              </p>
-            </li>
-          ))}
+          {data.items.slice(0, 5).map((registro) => {
+            const esDeHoy = diaDeNegocioLima(registro.fechaHora) === hoy
+            return (
+              <li
+                key={registro.id}
+                className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+              >
+                <p className="truncate text-sm font-medium">
+                  {registro.empleado.nombre}
+                </p>
+                <div className="flex shrink-0 items-center gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    Entrada{' '}
+                    {esDeHoy
+                      ? formatearHora(registro.fechaHora)
+                      : formatearFechaHora(registro.fechaHora)}
+                  </p>
+                  {!esDeHoy && (
+                    <StatusPill tono="warning">Sin salida</StatusPill>
+                  )}
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
     </TarjetaBloque>

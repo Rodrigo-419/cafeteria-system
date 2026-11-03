@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DashboardPage } from '@/routes/DashboardPage'
 import {
   BASE_API,
@@ -12,6 +12,7 @@ import {
 } from '@/test/handlers'
 import { iniciarSesionDePrueba, renderConProveedores } from '@/test/render'
 import { server } from '@/test/server'
+import { formatearFechaHora, formatearHora } from '@/lib/format/dates'
 import type { UsuarioApi } from '@/types/api'
 
 const ADMIN = usuarioDePrueba(PERMISOS_ADMIN, {
@@ -182,5 +183,70 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Ventas de hoy')).toBeInTheDocument()
     expect(screen.getByText('Últimas ventas')).toBeInTheDocument()
     expect(screen.getByText('Personal en turno')).toBeInTheDocument()
+  })
+
+  it('muestra la fecha de las entradas abiertas de días anteriores', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-15T15:00:00.000Z'))
+    try {
+      server.use(
+        http.get(`${BASE_API}/attendance/records`, () =>
+          HttpResponse.json({
+            items: [
+              {
+                id: 'asistencia-hoy',
+                empleadoId: 'empleado-hoy',
+                sucursalId: 'sucursal-1',
+                tipo: 'entrada',
+                fechaHora: '2026-10-15T13:12:00.000Z',
+                metodo: 'pin',
+                abierta: true,
+                corregido: false,
+                empleado: { id: 'empleado-hoy', nombre: 'Ana Hoy' },
+              },
+              {
+                id: 'asistencia-anterior',
+                empleadoId: 'empleado-anterior',
+                sucursalId: 'sucursal-1',
+                tipo: 'entrada',
+                fechaHora: '2026-10-11T13:12:00.000Z',
+                metodo: 'pin',
+                abierta: true,
+                corregido: false,
+                empleado: {
+                  id: 'empleado-anterior',
+                  nombre: 'Beto Anterior',
+                },
+              },
+            ],
+            total: 2,
+            page: 1,
+            limit: 20,
+          }),
+        ),
+      )
+
+      renderizar(ADMIN)
+
+      expect(await screen.findByText('Ana Hoy')).toBeInTheDocument()
+      // La entrada de hoy conserva solo la hora.
+      expect(
+        screen.getByText(
+          `Entrada ${formatearHora('2026-10-15T13:12:00.000Z')}`,
+        ),
+      ).toBeInTheDocument()
+      // La de un día anterior muestra la fecha y la marca de sin salida.
+      expect(
+        screen.getByText(
+          `Entrada ${formatearFechaHora('2026-10-11T13:12:00.000Z')}`,
+        ),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Sin salida')).toBeInTheDocument()
+      expect(
+        screen.getByText(/2 entradas abiertas · 1 de días anteriores/),
+      ).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

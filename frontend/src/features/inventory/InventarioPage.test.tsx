@@ -33,21 +33,52 @@ async function elegirSucursal(
 }
 
 describe('Inventario por sucursal', () => {
-  it('pide elegir sucursal al Admin y luego carga KPIs y tabla', async () => {
+  it('carga por defecto la primera sucursal del Admin con KPIs y tabla', async () => {
     renderComoAdmin()
-    const user = userEvent.setup()
-
-    expect(
-      await screen.findByRole('heading', { name: 'Selecciona una sucursal' }),
-    ).toBeInTheDocument()
-
-    await elegirSucursal(user, 'Sucursal Centro')
 
     expect(await screen.findByText('Café en grano')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sucursal')).toHaveTextContent(
+      'Sucursal Centro',
+    )
     expect(screen.getByText('Total registrado')).toBeInTheDocument()
     expect(
       screen.getByText('Normal', { selector: '.uppercase' }),
     ).toBeInTheDocument()
+  })
+
+  it('muestra el stock de la primera sucursal al Admin sin elegir nada', async () => {
+    renderComoAdmin()
+
+    expect(await screen.findByText('Café en grano')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sucursal')).toHaveTextContent(
+      'Sucursal Centro',
+    )
+    expect(
+      screen.queryByRole('heading', { name: 'Selecciona una sucursal' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('cambia el stock al elegir otra sucursal', async () => {
+    renderComoAdmin()
+    const user = userEvent.setup()
+    expect(await screen.findByText('Café en grano')).toBeInTheDocument()
+
+    await elegirSucursal(user, 'Sucursal Norte')
+
+    expect(
+      await screen.findByText('Sin insumos en la sucursal'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Café en grano')).not.toBeInTheDocument()
+  })
+
+  it('muestra el estado vacío si la lista de sucursales está vacía', async () => {
+    server.use(http.get(`${BASE_API}/branches`, () => HttpResponse.json([])))
+    renderComoAdmin()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Selecciona una sucursal' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Café en grano')).not.toBeInTheDocument()
   })
 
   it('registra una entrada y actualiza el stock', async () => {
@@ -72,7 +103,7 @@ describe('Inventario por sucursal', () => {
   it('añade un insumo a una sucursal vacía (upsert)', async () => {
     renderComoAdmin()
     const user = userEvent.setup()
-    await screen.findByRole('heading', { name: 'Selecciona una sucursal' })
+    await screen.findByText('Café en grano')
 
     await elegirSucursal(user, 'Sucursal Norte')
     expect(
