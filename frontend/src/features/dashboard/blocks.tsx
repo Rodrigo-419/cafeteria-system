@@ -133,9 +133,9 @@ export function ResumenVentasHoy() {
 
   if (isPending) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {[0, 1, 2].map((indice) => (
-          <Skeleton key={indice} className="h-32 rounded-xl" />
+          <Skeleton key={indice} className="h-24 rounded-xl sm:h-32" />
         ))}
       </div>
     )
@@ -163,25 +163,28 @@ export function ResumenVentasHoy() {
   const anuladas = ventas.length - completadas.length
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
       <StatCard
         title="Ventas de hoy"
         icon={BanknoteIcon}
         value={<MoneyText amountCents={totalCentimos} />}
         hint={`${completadas.length} ${completadas.length === 1 ? 'venta completada' : 'ventas completadas'}`}
+        compacto
       />
       <StatCard
         title="Ticket promedio"
         icon={ReceiptIcon}
         value={<MoneyText amountCents={ticketPromedio} />}
         hint="Sobre ventas completadas"
+        compacto
       />
       <StatCard
         title="Anuladas hoy"
         icon={BanIcon}
         value={anuladas}
-        tone={anuladas > 0 ? 'warning' : 'default'}
+        tone="default"
         hint={anuladas === 0 ? 'Ninguna venta anulada' : 'Ventas anuladas del día'}
+        compacto
       />
     </div>
   )

@@ -31,6 +31,11 @@ const EMPLEADO = usuarioDePrueba(PERMISOS_EMPLEADO, {
   rol: 'Empleado',
 })
 
+const SOLO_PRODUCTOS = usuarioDePrueba(['productos.ver'], {
+  nombre: 'Solo Productos',
+  rol: 'Empleado',
+})
+
 function renderizar(usuario: UsuarioApi) {
   iniciarSesionDePrueba(usuario)
   renderConProveedores(<DashboardPage />)
@@ -94,17 +99,19 @@ function espiarRutasDelPanel() {
 }
 
 describe('DashboardPage', () => {
-  it('muestra todos los bloques para un Admin', async () => {
+  it('con permiso de reporte oculta los paneles operativos', async () => {
     renderizar(ADMIN)
 
     expect(await screen.findByText('Ventas de hoy')).toBeInTheDocument()
-    expect(screen.getByText('Últimas ventas')).toBeInTheDocument()
     expect(screen.getByText('Alertas de stock')).toBeInTheDocument()
-    expect(screen.getByText('Personal en turno')).toBeInTheDocument()
-    expect(
-      screen.getByText('Equipos', { selector: '[data-slot="card-title"]' }),
-    ).toBeInTheDocument()
     expect(await screen.findByText('Comparativo entre sucursales')).toBeInTheDocument()
+
+    expect(screen.queryByText('Últimas ventas')).not.toBeInTheDocument()
+    expect(screen.queryByText('Personal en turno')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Equipos', { selector: '[data-slot="card-title"]' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Accesos disponibles')).not.toBeInTheDocument()
 
     expect(screen.getByRole('link', { name: /ver ventas/i })).toBeInTheDocument()
     expect(
@@ -122,11 +129,17 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('Ventas de hoy')).toBeInTheDocument()
     expect(await screen.findByText('Personal en turno')).toBeInTheDocument()
+    expect(screen.getByText('Últimas ventas')).toBeInTheDocument()
+    expect(screen.getByText('Alertas de stock')).toBeInTheDocument()
+    expect(
+      screen.getByText('Equipos', { selector: '[data-slot="card-title"]' }),
+    ).toBeInTheDocument()
 
     expect(
       screen.queryByText('Comparativo entre sucursales'),
     ).not.toBeInTheDocument()
     expect(llamadas.reporte).toBe(0)
+    expect(screen.queryByText('Accesos disponibles')).not.toBeInTheDocument()
 
     // Con permiso de marcación y sucursal ve el atajo al terminal.
     expect(
@@ -148,6 +161,7 @@ describe('DashboardPage', () => {
     expect(
       screen.queryByText('Comparativo entre sucursales'),
     ).not.toBeInTheDocument()
+    expect(screen.queryByText('Accesos disponibles')).not.toBeInTheDocument()
 
     expect(llamadas.ventas).toBe(0)
     expect(llamadas.alertas).toBe(0)
@@ -158,6 +172,22 @@ describe('DashboardPage', () => {
     expect(
       screen.getByRole('link', { name: /marcar asistencia/i }),
     ).toHaveAttribute('href', '/attendance/terminal')
+  })
+
+  it('muestra los accesos disponibles cuando no hay bloques de resumen', async () => {
+    renderizar(SOLO_PRODUCTOS)
+
+    expect(await screen.findByText('Accesos disponibles')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Productos' })).toHaveAttribute(
+      'href',
+      '/products',
+    )
+    expect(screen.getByText('No hay información para tu perfil')).toBeInTheDocument()
+
+    expect(screen.queryByText('Ventas de hoy')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Comparativo entre sucursales'),
+    ).not.toBeInTheDocument()
   })
 
   it('aísla el error de un bloque sin romper los demás', async () => {
@@ -226,7 +256,7 @@ describe('DashboardPage', () => {
         ),
       )
 
-      renderizar(ADMIN)
+      renderizar(GERENTE)
 
       expect(await screen.findByText('Ana Hoy')).toBeInTheDocument()
       // La entrada de hoy conserva solo la hora.

@@ -44,15 +44,15 @@ export function DashboardPage() {
       {puedeVentas && <ResumenVentasHoy />}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {puedeVentas && <UltimasVentas />}
+        {puedeVentas && !puedeReporte && <UltimasVentas />}
         {puedeAlertas && <AlertasStock />}
-        {puedeAsistencia && <AsistenciaAbierta />}
-        {puedeEquipos && <EquiposResumen />}
+        {puedeAsistencia && !puedeReporte && <AsistenciaAbierta />}
+        {puedeEquipos && !puedeReporte && <EquiposResumen />}
       </div>
 
       {puedeReporte && <ReporteComparativoSucursales />}
 
-      <AccesosDisponibles />
+      {!hayResumen && <AccesosDisponibles />}
 
       {!hayResumen && (hayAccesos ? <SinResumen /> : <SinModulos />)}
     </div>
