@@ -56,7 +56,8 @@ Todos los módulos del backend están implementados y registrados en `AppModule`
   libro completo con hoja de Metadatos. Solo está disponible con
   `usuarios.crear_editar` y el permiso de lectura de cada conjunto; los conjuntos
   de actividad usan un rango de hasta 92 días en America/Lima y los listados
-  ofrecen un botón "Exportar" que reutiliza ese rango.
+  ofrecen un botón "Exportar" que reutiliza ese rango; cuando falta un rango
+  válido, muestra «Exportar…» y abre la pantalla de Exportaciones para completarlo.
 
 ## Roles y permisos
 

@@ -320,7 +320,7 @@ completa ronda los 38 s).
 ### Cobertura (estado actual)
 
 - **Archivos de prueba**: 67
-- **Total de tests**: **513 passed** (unitaria/componentes, Vitest + MSW)
+- **Total de tests**: **548 passed** (unitaria/componentes, Vitest + MSW)
 
 Detalle: `lib/api/errors.spec.ts`, `lib/auth/session.spec.ts`,
 `lib/auth/AuthContext.test.tsx`, `lib/format/money.spec.ts`,
@@ -595,11 +595,13 @@ eventos del usuario y, ante un 404, muestra el aviso neutro sin revelar nada.
   con cierre interno y la **subnavegación** (`aria-current="page"` en la pestaña
   correcta, incluidas las rutas que comparten prefijo).
 - `BarraListado.test.tsx` cubre el plegado del panel, el contador de **filtros
-  activos** y la propagación de la búsqueda. `AccionesFila.test.tsx` verifica que
-  la acción destructiva **solo** existe dentro del menú «⋯» y que la confirmación
-  integrada no ejecuta la acción hasta confirmar. Los pilotos de `UsuariosPage` y
-  `SalesListPage` abren «Filtros» y «Más acciones» en sus pruebas sin relajar las
-  aserciones de comportamiento.
+  activos**, la propagación de la búsqueda y el filtro siempre visible.
+  `AccionesFila.test.tsx` verifica la acción principal, el menú «Más acciones»
+  (incluidas las destructivas cuando hay varias), la acción secundaria única con
+  icono como botón directo y la confirmación integrada sin ejecutar la acción
+  hasta confirmar. Los listados migrados (Ventas, Usuarios, Productos, Insumos,
+  Empleados y Asistencia) abren «Filtros» y «Más acciones» en sus pruebas sin
+  relajar las aserciones de comportamiento.
 - El **panel de control** se prueba sobre `DashboardPage` con los permisos
   reales de cada rol; el bloque del reporte comparativo no debe montar su
   consulta cuando falta el permiso (se afirma que la ruta no se llamó), y el
