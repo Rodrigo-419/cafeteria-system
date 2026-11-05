@@ -100,6 +100,24 @@ describe('Catálogo de insumos', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('no muestra menú ni acciones con permiso de solo lectura', async () => {
+    renderComoGerente()
+
+    expect(await screen.findByText('Café en grano')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Más acciones' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Editar' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Eliminar' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Nuevo insumo' }),
+    ).not.toBeInTheDocument()
+  })
+
   it('muestra el estado vacío cuando no hay insumos', async () => {
     server.use(
       http.get(`${BASE_API}/insumos`, () =>

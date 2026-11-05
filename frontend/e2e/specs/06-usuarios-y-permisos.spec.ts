@@ -38,25 +38,24 @@ test.describe('usuarios y permisos', () => {
     await page.locator('#usuario-busqueda').fill(nombreUsuario)
     const fila = page.getByRole('row').filter({ hasText: nombreUsuario }).first()
     await expect(fila).toBeVisible()
-    await fila.getByRole('button', { name: 'Permisos' }).click()
+    await fila.getByRole('button', { name: 'Más acciones' }).click()
+    await page.getByRole('menuitem', { name: 'Permisos' }).click()
 
     const dialogoPermisos = page.getByRole('dialog')
     await expect(
       dialogoPermisos.getByRole('heading', { name: new RegExp(`Permisos de`) }),
     ).toBeVisible()
-    await dialogoPermisos.getByRole('button', { name: 'Revocar' }).first().click()
+    await dialogoPermisos.getByRole('switch').first().click()
     await expect(page.getByText(/Permiso revocado/)).toBeVisible()
-    await dialogoPermisos
-      .getByRole('button', { name: 'Restablecer' })
-      .first()
-      .click()
+    await dialogoPermisos.getByRole('switch').first().click()
     await expect(
       page.getByText('Permiso restablecido al valor del rol'),
     ).toBeVisible()
     await dialogoPermisos.getByRole('button', { name: 'Cerrar' }).first().click()
 
     // Bloqueo.
-    await fila.getByRole('button', { name: 'Bloquear' }).click()
+    await fila.getByRole('button', { name: 'Más acciones' }).click()
+    await page.getByRole('menuitem', { name: 'Bloquear' }).click()
     await page
       .getByRole('alertdialog')
       .getByRole('button', { name: 'Bloquear' })

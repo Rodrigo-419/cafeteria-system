@@ -36,6 +36,8 @@ export interface DataTableProps<T> {
   onPageChange?: (page: number) => void
   /** Identidad estable de cada fila; si falta se usa el indice. */
   getRowId?: (item: T, index: number) => string
+  /** Si se pasa, cada fila de datos se puede pulsar para abrir su detalle. */
+  onFilaClick?: (item: T) => void
   className?: string
 }
 
@@ -52,6 +54,7 @@ export function DataTable<T>({
   total,
   onPageChange,
   getRowId,
+  onFilaClick,
   className,
 }: DataTableProps<T>) {
   const totalPages =
@@ -101,7 +104,15 @@ export function DataTable<T>({
           </TableHeader>
           <TableBody>
             {data.map((item, idx) => (
-              <TableRow key={getRowId ? getRowId(item, idx) : idx}>
+              <TableRow
+                key={getRowId ? getRowId(item, idx) : idx}
+                onClick={onFilaClick ? () => onFilaClick(item) : undefined}
+                className={
+                  onFilaClick
+                    ? 'cursor-pointer hover:bg-muted/50'
+                    : undefined
+                }
+              >
                 {columns.map((c) => (
                   <TableCell key={c.key} className={c.className}>
                     {c.cell(item, idx)}

@@ -4,7 +4,7 @@
 // que el texto visible no filtra códigos técnicos, JSON crudo, valores
 // indefinidos ni UUIDs, y que no hay errores de consola. Acumula todos los
 // problemas y falla con la lista completa para poder corregirlos.
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type ConsoleMessage, type Page } from '@playwright/test'
 import {
   cuentaAdmin,
   cuentaEmpleadoCentro,
@@ -98,17 +98,43 @@ async function rutasDelMenu(page: Page): Promise<string[]> {
     )
 }
 
+// gerente.centro no tiene ficha de empleado: el 404 de /api/my/schedule es esperado.
+function es404EsperadoDeMiHorario(mensaje: ConsoleMessage): boolean {
+  return (
+    mensaje.type() === 'error' &&
+    mensaje.text().includes('404') &&
+    mensaje.location().url.includes('/api/my/schedule')
+  )
+}
+
+/**
+ * Recorre el menú y, en cada ruta, añade los enlaces de la subnavegación del
+ * grupo (Inventario, Productos, Turnos) para cubrir también las subpáginas.
+ */
 async function recorrerRol(
   page: Page,
   cuenta: CuentaVerificacion,
   extras: readonly string[],
+  ignorarConsola?: (mensaje: ConsoleMessage) => boolean,
 ) {
   const recolector = vigilarConsola(page)
+  const ignorados: string[] = []
+  if (ignorarConsola) {
+    page.on('console', (mensaje) => {
+      if (ignorarConsola(mensaje)) {
+        ignorados.push(`console.error: ${mensaje.text()}`)
+      }
+    })
+  }
   await iniciarSesion(page, cuenta)
-  const rutas = [...new Set([...((await rutasDelMenu(page))), ...extras])]
+  const pendientes = [...new Set([...((await rutasDelMenu(page))), ...extras])]
+  const visitadas = new Set<string>()
   const problemas: string[] = []
 
-  for (const ruta of rutas) {
+  while (pendientes.length > 0) {
+    const ruta = pendientes.shift()
+    if (!ruta || visitadas.has(ruta)) continue
+    visitadas.add(ruta)
     await page.goto(ruta)
     await page.waitForLoadState('networkidle')
     const texto = await page.locator('body').innerText()
@@ -118,8 +144,15 @@ async function recorrerRol(
     if (await page.getByRole('heading', { name: 'Acceso denegado' }).count()) {
       problemas.push(`${cuenta.usuario} ${ruta}: acceso denegado inesperado`)
     }
+    for (const enlace of await rutasDelMenu(page)) {
+      if (!visitadas.has(enlace)) pendientes.push(enlace)
+    }
   }
 
+  for (const texto of ignorados) {
+    const indice = recolector.errores.indexOf(texto)
+    if (indice >= 0) recolector.errores.splice(indice, 1)
+  }
   const erroresConsola = sinErrores(recolector)
   if (erroresConsola !== null) {
     problemas.push(`${cuenta.usuario} errores de consola:\n${erroresConsola}`)
@@ -134,9 +167,12 @@ test.describe('pulido de pantallas', () => {
   })
 
   test('Gerente recorre todas sus pantallas sin códigos técnicos', async ({ page }) => {
-    const problemas = await recorrerRol(page, cuentaGerenteCentro(), [
-      '/attendance/terminal',
-    ])
+    const problemas = await recorrerRol(
+      page,
+      cuentaGerenteCentro(),
+      ['/attendance/terminal'],
+      es404EsperadoDeMiHorario,
+    )
     expect(problemas, problemas.join('\n')).toEqual([])
   })
 
@@ -155,7 +191,8 @@ test.describe('pulido de pantallas', () => {
     await page.locator('#usuario-busqueda').fill('empleado.centro')
     const fila = page.getByRole('row').filter({ hasText: 'empleado.centro' }).first()
     await expect(fila).toBeVisible()
-    await fila.getByRole('button', { name: 'Permisos' }).click()
+    await fila.getByRole('button', { name: 'Más acciones' }).click()
+    await page.getByRole('menuitem', { name: 'Permisos' }).click()
     const dialogo = page.getByRole('dialog')
     await expect(dialogo).toBeVisible()
     const texto = await dialogo.innerText()
@@ -167,7 +204,7 @@ test.describe('pulido de pantallas', () => {
   }) => {
     await iniciarSesion(page, cuentaAdmin())
     await page.goto('/auditoria')
-    const botones = page.getByRole('button', { name: 'Ver detalle' })
+    const botones = page.getByRole('button', { name: /^Ver detalle:/ })
     await expect(botones.first()).toBeVisible()
     const total = await botones.count()
     expect(total).toBeGreaterThan(0)

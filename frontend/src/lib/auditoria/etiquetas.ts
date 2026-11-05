@@ -10,6 +10,8 @@
 // También vive aquí el resumen legible del `detalle` (`{ antes?, despues? }`):
 // "Rol: Empleado → Gerente", "Precio: S/ 10.00 → S/ 12.50", nunca JSON crudo.
 import { aCentimos, formatearMoneda } from '@/lib/format/money'
+import { esFechaLocalValida } from '@/lib/format/dates'
+import { definicionDeConjunto } from '@/features/exports/catalogo'
 import type { AccionAuditoria, DetalleAuditoriaApi } from '@/types/api'
 
 // --------------------------------------------------------------- áreas
@@ -510,6 +512,136 @@ function formatearFechaLocal(texto: string): string {
   return `${dia} ${etiquetaMes} ${anio}`
 }
 
+// --------------------------------------------- detalle de exportaciones
+
+/** Claves planas que el backend guarda en el detalle de una exportación. */
+interface DetalleExportacion {
+  conjuntos?: unknown
+  formato?: unknown
+  filtros?: unknown
+  filasPorConjunto?: unknown
+  motivo?: unknown
+}
+
+const ETIQUETA_FORMATO_EXPORT: Record<string, string> = {
+  xlsx: 'Excel',
+  csv: 'CSV',
+}
+
+/** `true` si el detalle tiene la forma plana de una exportación. */
+function esDetalleExportacion(
+  detalle: DetalleAuditoriaApi | null | undefined,
+): detalle is DetalleAuditoriaApi & DetalleExportacion {
+  if (detalle === null || detalle === undefined) return false
+  return Array.isArray((detalle as DetalleExportacion).conjuntos)
+}
+
+/** Etiqueta del catálogo de exportaciones; `null` si la clave es desconocida. */
+function etiquetaDeConjuntoExport(clave: string): string | null {
+  return definicionDeConjunto(clave)?.etiqueta ?? null
+}
+
+/** "del DD mmm AAAA al DD mmm AAAA" con los días locales del rango. */
+function formatearPeriodoExport(filtros: unknown): string | null {
+  if (filtros === null || typeof filtros !== 'object') return null
+  const { desde, hasta } = filtros as { desde?: unknown; hasta?: unknown }
+  if (
+    typeof desde !== 'string' ||
+    typeof hasta !== 'string' ||
+    !esFechaLocalValida(desde) ||
+    !esFechaLocalValida(hasta)
+  ) {
+    return null
+  }
+  return `del ${formatearFechaLocal(desde)} al ${formatearFechaLocal(hasta)}`
+}
+
+/** Total de filas exportadas; `null` si el detalle no trae el desglose. */
+function totalDeFilas(filasPorConjunto: unknown): number | null {
+  if (filasPorConjunto === null || typeof filasPorConjunto !== 'object') {
+    return null
+  }
+  const valores = Object.values(filasPorConjunto as Record<string, unknown>)
+  if (valores.length === 0) return null
+  return valores.reduce<number>(
+    (suma, valor) => (typeof valor === 'number' ? suma + valor : suma),
+    0,
+  )
+}
+
+function filaExportacion(
+  campo: string,
+  etiqueta: string,
+  valor: string | null,
+): CampoDetalleAuditoria {
+  return { campo, etiqueta, antes: null, despues: valor }
+}
+
+/**
+ * Filas legibles del detalle de una exportación: conjunto (o libro completo),
+ * formato, período, filas y, en los fallos, el motivo.
+ *
+ * Las claves del catálogo se traducen a su etiqueta; una clave desconocida se
+ * muestra como "—", igual que cualquier valor no representable.
+ */
+function resumenExportacion(
+  detalle: DetalleExportacion,
+): CampoDetalleAuditoria[] {
+  const filas: CampoDetalleAuditoria[] = []
+  const conjuntos = Array.isArray(detalle.conjuntos)
+    ? detalle.conjuntos.filter(
+        (clave): clave is string => typeof clave === 'string',
+      )
+    : []
+
+  if (typeof detalle.motivo === 'string' && detalle.motivo !== '') {
+    filas.push(filaExportacion('motivo', 'Motivo', detalle.motivo))
+  }
+
+  if (conjuntos.length === 1) {
+    filas.push(
+      filaExportacion(
+        'conjuntos',
+        'Conjunto',
+        etiquetaDeConjuntoExport(conjuntos[0]!),
+      ),
+    )
+  } else if (conjuntos.length > 1) {
+    filas.push(
+      filaExportacion(
+        'conjuntos',
+        'Conjunto',
+        `Libro completo (${conjuntos.length} conjuntos)`,
+      ),
+    )
+  }
+
+  // Un fallo solo informa del motivo y del conjunto afectado.
+  if (typeof detalle.motivo === 'string') {
+    return filas
+  }
+
+  const formato =
+    typeof detalle.formato === 'string'
+      ? (ETIQUETA_FORMATO_EXPORT[detalle.formato.toLowerCase()] ?? null)
+      : null
+  if (formato !== null) {
+    filas.push(filaExportacion('formato', 'Formato', formato))
+  }
+
+  const periodo = formatearPeriodoExport(detalle.filtros)
+  if (periodo !== null) {
+    filas.push(filaExportacion('filtros', 'Período', periodo))
+  }
+
+  const total = totalDeFilas(detalle.filasPorConjunto)
+  if (total !== null) {
+    filas.push(filaExportacion('filasPorConjunto', 'Filas', String(total)))
+  }
+
+  return filas
+}
+
 /**
  * Resumen legible del `detalle` de un evento: una fila por campo, con el valor
  * anterior y el nuevo. Nunca devuelve JSON crudo.
@@ -517,6 +649,10 @@ function formatearFechaLocal(texto: string): string {
 export function resumenDetalle(
   detalle: DetalleAuditoriaApi | null | undefined,
 ): CampoDetalleAuditoria[] {
+  if (esDetalleExportacion(detalle)) {
+    return resumenExportacion(detalle)
+  }
+
   const antes = (detalle?.antes ?? {}) as Record<string, unknown>
   const despues = (detalle?.despues ?? {}) as Record<string, unknown>
 

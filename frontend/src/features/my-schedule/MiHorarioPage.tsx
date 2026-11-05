@@ -20,6 +20,7 @@ import { ErrorState } from '@/components/shared/ErrorState'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { useMiHorario } from './queries'
 import { BotonImprimir, CabeceraImpresion } from '@/components/shared/Impresion'
+import { ApiError } from '@/lib/api/errors'
 import {
   diaDeNegocioLima,
   formatearDiaLocal,
@@ -76,6 +77,8 @@ export function MiHorarioPage() {
 
   const domingo = sumarDias(lunes, 6)
   const dias = useMemo(() => horario.data?.dias ?? [], [horario.data])
+  const sinEmpleadoVinculado =
+    horario.error instanceof ApiError && horario.error.status === 404
 
   return (
     <div className="space-y-6">
@@ -183,11 +186,18 @@ export function MiHorarioPage() {
           </CardContent>
         </Card>
       ) : horario.isError ? (
-        <ErrorState
-          title="No se pudo cargar tu horario"
-          description="Inténtalo de nuevo en unos momentos."
-          onRetry={() => void horario.refetch()}
-        />
+        sinEmpleadoVinculado ? (
+          <EmptyState
+            title="Tu usuario no está vinculado a un empleado"
+            description="Pide al administrador que vincule tu usuario a una ficha de empleado para ver tu horario."
+          />
+        ) : (
+          <ErrorState
+            title="No se pudo cargar tu horario"
+            description="Inténtalo de nuevo en unos momentos."
+            onRetry={() => void horario.refetch()}
+          />
+        )
       ) : dias.every((d) => d.turno === null) ? (
         <EmptyState
           title="Sin turnos esta semana"

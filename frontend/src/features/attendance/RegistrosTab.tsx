@@ -5,8 +5,8 @@
 // correcciones y, si el usuario tiene `asistencia.corregir`, permite corregirla.
 // El alcance real lo aplica el backend; aquí no se replica esa regla.
 import { useState } from 'react'
+import { PencilIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -16,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { AccionesFila } from '@/components/shared/AccionesFila'
+import { BarraListado } from '@/components/shared/BarraListado'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { StatusPill } from '@/components/shared/StatusPill'
 import { useAuth } from '@/lib/auth/useAuth'
@@ -102,56 +104,64 @@ export function RegistrosTab() {
       header: '',
       className: 'text-right',
       cell: (registro) => (
-        <div className="flex justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDetalleId(registro.id)}
-          >
-            Historial
-          </Button>
-          {puedeCorregir && (
+        <AccionesFila
+          principal={
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setCorregir(registro)}
+              onClick={() => setDetalleId(registro.id)}
             >
-              Corregir
+              Historial
             </Button>
-          )}
-        </div>
+          }
+          acciones={
+            puedeCorregir
+              ? [
+                  {
+                    etiqueta: 'Corregir',
+                    icono: <PencilIcon className="size-4" />,
+                    onSelect: () => setCorregir(registro),
+                  },
+                ]
+              : []
+          }
+        />
       ),
     },
   ]
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="asistencia-desde">Desde</Label>
-            <Input
-              id="asistencia-desde"
-              type="date"
-              value={desde}
-              onChange={(evento) => {
-                setDesde(evento.target.value)
-                setPage(1)
-              }}
-            />
+      <BarraListado
+        filtrosVisibles={
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="w-40 space-y-2">
+              <Label htmlFor="asistencia-desde">Desde</Label>
+              <Input
+                id="asistencia-desde"
+                type="date"
+                value={desde}
+                onChange={(evento) => {
+                  setDesde(evento.target.value)
+                  setPage(1)
+                }}
+              />
+            </div>
+            <div className="w-40 space-y-2">
+              <Label htmlFor="asistencia-hasta">Hasta</Label>
+              <Input
+                id="asistencia-hasta"
+                type="date"
+                value={hasta}
+                onChange={(evento) => {
+                  setHasta(evento.target.value)
+                  setPage(1)
+                }}
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="asistencia-hasta">Hasta</Label>
-            <Input
-              id="asistencia-hasta"
-              type="date"
-              value={hasta}
-              onChange={(evento) => {
-                setHasta(evento.target.value)
-                setPage(1)
-              }}
-            />
-          </div>
+        }
+        filtros={
           <div className="space-y-2">
             <Label htmlFor="asistencia-estado">Estado</Label>
             <Select
@@ -170,16 +180,16 @@ export function RegistrosTab() {
               </SelectContent>
             </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end">
-        <BotonExportar
-          conjunto="asistencia"
-          desde={desde}
-          hasta={hasta}
-        />
-      </div>
+        }
+        filtrosActivos={Number(estado !== 'todas')}
+        accionPrimaria={
+          <BotonExportar
+            conjunto="asistencia"
+            desde={desde}
+            hasta={hasta}
+          />
+        }
+      />
 
       <DataTable
         columns={columnas}

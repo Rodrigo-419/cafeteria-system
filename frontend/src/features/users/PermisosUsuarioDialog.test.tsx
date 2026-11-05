@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { PermisosUsuarioDialog } from './PermisosUsuarioDialog'
 import { UsuariosPage } from './UsuariosPage'
 import { iniciarSesionDePrueba, renderConProveedores } from '@/test/render'
 import {
@@ -10,6 +11,18 @@ import {
   usuarioDePrueba,
 } from '@/test/handlers'
 import { server } from '@/test/server'
+import type { UsuarioGestionApi } from '@/types/api'
+
+const USUARIO_ADMIN: UsuarioGestionApi = {
+  id: 'admin-1',
+  nombre: 'Administrador',
+  nombreUsuario: 'admin',
+  rol: 'Admin',
+  sucursalId: null,
+  estado: 'activo',
+  createdAt: '2026-10-01T10:00:00.000Z',
+  updatedAt: '2026-10-01T10:00:00.000Z',
+}
 
 function renderComoAdmin() {
   iniciarSesionDePrueba(
@@ -30,7 +43,8 @@ async function abrirPermisos(
 ): Promise<HTMLElement> {
   await screen.findByText(nombre)
   const fila = screen.getByText(nombre).closest('tr') as HTMLElement
-  await user.click(within(fila).getByRole('button', { name: 'Permisos' }))
+  await user.click(within(fila).getByRole('button', { name: 'Más acciones' }))
+  await user.click(await screen.findByRole('menuitem', { name: 'Permisos' }))
   const dialogo = await screen.findByRole('dialog')
   expect(within(dialogo).getByText(`Permisos de ${nombre}`)).toBeInTheDocument()
   return dialogo
@@ -43,7 +57,7 @@ function filaDelPermiso(descripcion: string): HTMLElement {
 }
 
 describe('Permisos de un usuario', () => {
-  it('muestra un permiso revocado como Inactivo y permite restablecerlo', async () => {
+  it('muestra un permiso revocado y permite restablecerlo', async () => {
     const user = userEvent.setup({ delay: null })
     renderComoAdmin()
     await abrirPermisos(user, 'Beto Turno')
@@ -51,14 +65,20 @@ describe('Permisos de un usuario', () => {
     await screen.findByText('Ver productos')
     const fila = filaDelPermiso('Ver productos')
     expect(within(fila).getByText('Revocado')).toBeInTheDocument()
-    expect(within(fila).getByText('Inactivo')).toBeInTheDocument()
 
-    expect(
-      within(fila).getByRole('button', { name: 'Restablecer' }),
-    ).toBeEnabled()
-    expect(
-      within(fila).queryByRole('button', { name: 'Conceder' }),
-    ).toBeNull()
+    const interruptor = within(fila).getByRole('switch', {
+      name: 'Ver productos',
+    })
+    expect(interruptor).toHaveAttribute('aria-checked', 'false')
+    expect(interruptor).toBeEnabled()
+
+    await user.click(interruptor)
+    await waitFor(() =>
+      expect(
+        within(fila).getByRole('switch', { name: 'Ver productos' }),
+      ).toHaveAttribute('aria-checked', 'true'),
+    )
+    expect(within(fila).queryByText('Revocado')).not.toBeInTheDocument()
   })
 
   it('quita una concesión y vuelve al valor que da el rol', async () => {
@@ -87,12 +107,21 @@ describe('Permisos de un usuario', () => {
     await screen.findByText('Registrar recuentos de inventario')
     const fila = filaDelPermiso('Registrar recuentos de inventario')
     expect(within(fila).getByText('Concedido')).toBeInTheDocument()
+    const interruptor = within(fila).getByRole('switch', {
+      name: 'Registrar recuentos de inventario',
+    })
+    expect(interruptor).toHaveAttribute('aria-checked', 'true')
 
-    await user.click(within(fila).getByRole('button', { name: 'Quitar' }))
+    await user.click(interruptor)
     await waitFor(() =>
-      expect(within(fila).getByRole('button')).toHaveTextContent('Revocar'),
+      expect(within(fila).queryByText('Concedido')).not.toBeInTheDocument(),
     )
-    expect(within(fila).getByText('Del rol')).toBeInTheDocument()
+    expect(
+      within(fila).getByRole('switch', {
+        name: 'Registrar recuentos de inventario',
+      }),
+    ).toHaveAttribute('aria-checked', 'true')
+    expect(within(fila).queryByText('Del rol')).not.toBeInTheDocument()
   })
 
   it('restablece un permiso revocado y luego puede volver a revocarlo', async () => {
@@ -103,21 +132,24 @@ describe('Permisos de un usuario', () => {
     await screen.findByText('Registrar recuentos de inventario')
     const fila = filaDelPermiso('Registrar recuentos de inventario')
     expect(within(fila).getByText('Revocado')).toBeInTheDocument()
-    expect(within(fila).getByText('Inactivo')).toBeInTheDocument()
+    const interruptor = () =>
+      within(fila).getByRole('switch', {
+        name: 'Registrar recuentos de inventario',
+      })
+    expect(interruptor()).toHaveAttribute('aria-checked', 'false')
 
-    await user.click(within(fila).getByRole('button', { name: 'Restablecer' }))
+    await user.click(interruptor())
     await waitFor(() =>
-      expect(within(fila).getByRole('button')).toHaveTextContent('Revocar'),
+      expect(interruptor()).toHaveAttribute('aria-checked', 'true'),
     )
-    expect(within(fila).getByText('Del rol')).toBeInTheDocument()
-    expect(within(fila).getByText('Activo')).toBeInTheDocument()
+    expect(within(fila).queryByText('Revocado')).not.toBeInTheDocument()
+    expect(within(fila).queryByText('Del rol')).not.toBeInTheDocument()
 
-    await user.click(within(fila).getByRole('button', { name: 'Revocar' }))
+    await user.click(interruptor())
     await waitFor(() =>
-      expect(within(fila).getByRole('button')).toHaveTextContent('Restablecer'),
+      expect(interruptor()).toHaveAttribute('aria-checked', 'false'),
     )
     expect(within(fila).getByText('Revocado')).toBeInTheDocument()
-    expect(within(fila).getByText('Inactivo')).toBeInTheDocument()
   })
 
   it('revoca un permiso que el rol otorga por defecto', async () => {
@@ -127,15 +159,16 @@ describe('Permisos de un usuario', () => {
 
     await screen.findByText('Crear y editar usuarios')
     const fila = filaDelPermiso('Crear y editar usuarios')
-    expect(within(fila).getByText('Del rol')).toBeInTheDocument()
-    expect(within(fila).getByText('Activo')).toBeInTheDocument()
+    expect(within(fila).queryByText('Del rol')).not.toBeInTheDocument()
+    const interruptor = () =>
+      within(fila).getByRole('switch', { name: 'Crear y editar usuarios' })
+    expect(interruptor()).toHaveAttribute('aria-checked', 'true')
 
-    await user.click(within(fila).getByRole('button', { name: 'Revocar' }))
+    await user.click(interruptor())
     await waitFor(() =>
-      expect(within(fila).getByRole('button')).toHaveTextContent('Restablecer'),
+      expect(interruptor()).toHaveAttribute('aria-checked', 'false'),
     )
     expect(within(fila).getByText('Revocado')).toBeInTheDocument()
-    expect(within(fila).getByText('Inactivo')).toBeInTheDocument()
   })
 
   it('no permite revocar un permiso que el actor no posee', async () => {
@@ -145,9 +178,12 @@ describe('Permisos de un usuario', () => {
 
     await screen.findByText('Registrar ventas')
     const fila = filaDelPermiso('Registrar ventas')
-    const boton = within(fila).getByRole('button', { name: 'Revocar' })
-    expect(boton).toBeDisabled()
-    expect(boton).toHaveAttribute(
+    const interruptor = within(fila).getByRole('switch', {
+      name: 'Registrar ventas',
+    })
+    expect(interruptor).toHaveAttribute('aria-checked', 'true')
+    expect(interruptor).toBeDisabled()
+    expect(interruptor).toHaveAttribute(
       'title',
       'No puedes revocar un permiso que no posees.',
     )
@@ -185,5 +221,81 @@ describe('Permisos de un usuario', () => {
     expect(
       await screen.findByText('Este usuario no tiene permisos asignables.'),
     ).toBeInTheDocument()
+  })
+
+  it('no muestra pestañas si no puede ver el historial', async () => {
+    const sinHistorial = PERMISOS_ADMIN.filter(
+      (permiso) => permiso !== 'usuarios.crear_editar',
+    )
+    iniciarSesionDePrueba(
+      usuarioDePrueba(sinHistorial, {
+        id: 'admin-2',
+        nombre: 'Administrador sin historial',
+        nombreUsuario: 'admin2',
+        rol: 'Admin',
+        sucursalId: null,
+      }),
+    )
+    renderConProveedores(
+      <PermisosUsuarioDialog usuario={USUARIO_ADMIN} onClose={() => {}} />,
+    )
+
+    const dialogo = await screen.findByRole('dialog')
+    expect(
+      await within(dialogo).findByText('Asignar y revocar permisos de usuarios'),
+    ).toBeInTheDocument()
+    expect(within(dialogo).queryByRole('tablist')).not.toBeInTheDocument()
+    expect(within(dialogo).queryAllByRole('tab')).toHaveLength(0)
+  })
+
+  it('no solicita el historial hasta abrir su pestaña', async () => {
+    let peticionesHistorial = 0
+    server.use(
+      http.get(`${BASE_API}/auditoria/usuarios/usuario-2`, () => {
+        peticionesHistorial += 1
+        return HttpResponse.json({
+          eventos: [],
+          total: 0,
+          page: 1,
+          limit: 10,
+        })
+      }),
+    )
+    const user = userEvent.setup({ delay: null })
+    renderComoAdmin()
+    await abrirPermisos(user, 'Beto Turno')
+
+    expect(await screen.findByText('Ver productos')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Historial' })).toBeInTheDocument()
+    expect(peticionesHistorial).toBe(0)
+
+    await user.click(screen.getByRole('tab', { name: 'Historial' }))
+    await waitFor(() => expect(peticionesHistorial).toBe(1))
+  })
+
+  it('deshabilita el interruptor en la cuenta propia', async () => {
+    iniciarSesionDePrueba(
+      usuarioDePrueba(PERMISOS_ADMIN, {
+        id: 'admin-1',
+        nombre: 'Administrador',
+        nombreUsuario: 'admin',
+        rol: 'Admin',
+        sucursalId: null,
+      }),
+    )
+    renderConProveedores(
+      <PermisosUsuarioDialog usuario={USUARIO_ADMIN} onClose={() => {}} />,
+    )
+
+    const dialogo = await screen.findByRole('dialog')
+    const interruptor = await within(dialogo).findByRole('switch', {
+      name: 'Asignar y revocar permisos de usuarios',
+    })
+    expect(interruptor).toHaveAttribute('aria-checked', 'true')
+    expect(interruptor).toBeDisabled()
+    expect(interruptor).toHaveAttribute(
+      'title',
+      'No puedes modificar tus propios permisos',
+    )
   })
 })

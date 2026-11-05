@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
@@ -24,7 +24,9 @@ describe('SalesListPage', () => {
   it('no muestra el filtro de sucursal a quien no es Admin', async () => {
     iniciarSesionDePrueba(usuarioDePrueba(['ventas.ver']))
     renderConProveedores(<SalesListPage />)
+    const user = userEvent.setup()
 
+    await user.click(await screen.findByRole('button', { name: 'Filtros' }))
     expect(await screen.findByLabelText('Estado')).toBeInTheDocument()
     expect(screen.queryByLabelText('Sucursal')).not.toBeInTheDocument()
   })
@@ -37,7 +39,9 @@ describe('SalesListPage', () => {
       }),
     )
     renderConProveedores(<SalesListPage />)
+    const user = userEvent.setup()
 
+    await user.click(await screen.findByRole('button', { name: 'Filtros' }))
     expect(await screen.findByLabelText('Sucursal')).toBeInTheDocument()
   })
 
@@ -59,12 +63,37 @@ describe('SalesListPage', () => {
     renderConProveedores(<SalesListPage />)
 
     const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'Filtros' }))
     await user.click(await screen.findByLabelText('Estado'))
     await user.click(await screen.findByRole('option', { name: 'Anuladas' }))
 
+    expect(screen.getByLabelText('1 filtros activos')).toBeInTheDocument()
     await waitFor(() =>
       expect(urls.some((url) => url.includes('estado=anulada'))).toBe(true),
     )
     expect(await screen.findByText('Anulada')).toBeInTheDocument()
+  })
+
+  it('solo ofrece anular dentro del menú de acciones y pide confirmación', async () => {
+    iniciarSesionDePrueba(usuarioDePrueba(['ventas.ver', 'ventas.anular']))
+    renderConProveedores(<SalesListPage />)
+    const user = userEvent.setup()
+
+    const fila = (await screen.findByText('Completada')).closest(
+      'tr',
+    ) as HTMLElement
+    expect(
+      within(fila).queryByRole('button', { name: 'Anular venta' }),
+    ).not.toBeInTheDocument()
+    expect(within(fila).getByRole('link', { name: 'Ver' })).toBeInTheDocument()
+
+    await user.click(within(fila).getByRole('button', { name: 'Más acciones' }))
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Anular venta' }),
+    )
+    const dialogo = await screen.findByRole('alertdialog')
+    expect(
+      within(dialogo).getByLabelText('Motivo de la anulación'),
+    ).toBeInTheDocument()
   })
 })

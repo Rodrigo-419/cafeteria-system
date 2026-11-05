@@ -6,10 +6,13 @@
 // cesado no ofrece cese ni generación de PIN.
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PlusIcon, SearchIcon } from 'lucide-react'
+import {
+  KeyRoundIcon,
+  PencilIcon,
+  PlusIcon,
+  UserXIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -18,6 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { AccionesFila } from '@/components/shared/AccionesFila'
+import { BarraListado } from '@/components/shared/BarraListado'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { useAuth } from '@/lib/auth/useAuth'
@@ -139,38 +144,42 @@ export function EmpleadosPage() {
       header: '',
       className: 'text-right',
       cell: (empleado) => (
-        <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to={`/employees/${empleado.id}`}>Ver detalle</Link>
-          </Button>
-          {puedeGestionar && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDialogo({ tipo: 'editar', empleado })}
-            >
-              Editar
+        <AccionesFila
+          principal={
+            <Button variant="ghost" size="sm" asChild>
+              <Link to={`/employees/${empleado.id}`}>Ver detalle</Link>
             </Button>
-          )}
-          {puedeGestionar && empleado.estado === 'activo' && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDialogo({ tipo: 'pin', empleado })}
-              >
-                Generar PIN
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDialogo({ tipo: 'cesar', empleado })}
-              >
-                Cesar
-              </Button>
-            </>
-          )}
-        </div>
+          }
+          acciones={
+            puedeGestionar
+              ? [
+                  {
+                    etiqueta: 'Editar',
+                    icono: <PencilIcon className="size-4" />,
+                    onSelect: () =>
+                      setDialogo({ tipo: 'editar', empleado }),
+                  },
+                  ...(empleado.estado === 'activo'
+                    ? [
+                        {
+                          etiqueta: 'Generar PIN',
+                          icono: <KeyRoundIcon className="size-4" />,
+                          onSelect: () =>
+                            setDialogo({ tipo: 'pin', empleado }),
+                        },
+                        {
+                          etiqueta: 'Cesar',
+                          icono: <UserXIcon className="size-4" />,
+                          destructiva: true,
+                          onSelect: () =>
+                            setDialogo({ tipo: 'cesar', empleado }),
+                        },
+                      ]
+                    : []),
+                ]
+              : []
+          }
+        />
       ),
     },
   ]
@@ -180,7 +189,70 @@ export function EmpleadosPage() {
       <PageHeader
         title="Empleados"
         description="Personal vinculado a las cuentas de usuario"
-        actions={
+      />
+
+      <BarraListado
+        busqueda={{
+          id: 'empleado-busqueda',
+          value: texto,
+          onChange: setTexto,
+          placeholder: 'Nombre, usuario o cargo…',
+        }}
+        filtrosActivos={
+          Number(estado !== 'todos') +
+          Number(esAdmin && sucursalAdmin !== 'todas')
+        }
+        filtros={
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="empleado-filtro-estado">Estado</Label>
+              <Select
+                value={estado}
+                onValueChange={(valor) => {
+                  setEstado(valor as EstadoEmpleado | 'todos')
+                  setPage(1)
+                }}
+              >
+                <SelectTrigger id="empleado-filtro-estado">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {ESTADOS_EMPLEADO.map((valor) => (
+                    <SelectItem key={valor} value={valor}>
+                      {ETIQUETA_ESTADO_EMPLEADO[valor]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {esAdmin && (
+              <div className="space-y-2">
+                <Label htmlFor="empleado-filtro-sucursal">Sucursal</Label>
+                <Select
+                  value={sucursalAdmin}
+                  onValueChange={(valor) => {
+                    setSucursalAdmin(valor)
+                    setPage(1)
+                  }}
+                >
+                  <SelectTrigger id="empleado-filtro-sucursal">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas</SelectItem>
+                    {(sucursales.data ?? []).map((sucursal) => (
+                      <SelectItem key={sucursal.id} value={sucursal.id}>
+                        {sucursal.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </>
+        }
+        accionPrimaria={
           <div className="flex flex-wrap items-center gap-2">
             <BotonExportar conjunto="empleados" />
             {puedeGestionar && (
@@ -192,70 +264,6 @@ export function EmpleadosPage() {
           </div>
         }
       />
-
-      <Card>
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="empleado-busqueda">Buscar</Label>
-            <div className="relative">
-              <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="empleado-busqueda"
-                className="pl-9"
-                value={texto}
-                placeholder="Nombre, usuario o cargo…"
-                onChange={(evento) => setTexto(evento.target.value)}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="empleado-filtro-estado">Estado</Label>
-            <Select
-              value={estado}
-              onValueChange={(valor) => {
-                setEstado(valor as EstadoEmpleado | 'todos')
-                setPage(1)
-              }}
-            >
-              <SelectTrigger id="empleado-filtro-estado">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {ESTADOS_EMPLEADO.map((valor) => (
-                  <SelectItem key={valor} value={valor}>
-                    {ETIQUETA_ESTADO_EMPLEADO[valor]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {esAdmin && (
-            <div className="space-y-2">
-              <Label htmlFor="empleado-filtro-sucursal">Sucursal</Label>
-              <Select
-                value={sucursalAdmin}
-                onValueChange={(valor) => {
-                  setSucursalAdmin(valor)
-                  setPage(1)
-                }}
-              >
-                <SelectTrigger id="empleado-filtro-sucursal">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas</SelectItem>
-                  {(sucursales.data ?? []).map((sucursal) => (
-                    <SelectItem key={sucursal.id} value={sucursal.id}>
-                      {sucursal.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <DataTable
         columns={columnas}

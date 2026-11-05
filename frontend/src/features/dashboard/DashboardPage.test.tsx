@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { DashboardPage } from '@/routes/DashboardPage'
 import {
   BASE_API,
@@ -12,6 +12,7 @@ import {
 } from '@/test/handlers'
 import { iniciarSesionDePrueba, renderConProveedores } from '@/test/render'
 import { server } from '@/test/server'
+import { formatearFechaHora, formatearHora } from '@/lib/format/dates'
 import type { UsuarioApi } from '@/types/api'
 
 const ADMIN = usuarioDePrueba(PERMISOS_ADMIN, {
@@ -27,6 +28,11 @@ const GERENTE = usuarioDePrueba(PERMISOS_GERENTE, {
 
 const EMPLEADO = usuarioDePrueba(PERMISOS_EMPLEADO, {
   nombre: 'Empleado Tres',
+  rol: 'Empleado',
+})
+
+const SOLO_PRODUCTOS = usuarioDePrueba(['productos.ver'], {
+  nombre: 'Solo Productos',
   rol: 'Empleado',
 })
 
@@ -93,17 +99,19 @@ function espiarRutasDelPanel() {
 }
 
 describe('DashboardPage', () => {
-  it('muestra todos los bloques para un Admin', async () => {
+  it('con permiso de reporte oculta los paneles operativos', async () => {
     renderizar(ADMIN)
 
     expect(await screen.findByText('Ventas de hoy')).toBeInTheDocument()
-    expect(screen.getByText('Últimas ventas')).toBeInTheDocument()
     expect(screen.getByText('Alertas de stock')).toBeInTheDocument()
-    expect(screen.getByText('Personal en turno')).toBeInTheDocument()
-    expect(
-      screen.getByText('Equipos', { selector: '[data-slot="card-title"]' }),
-    ).toBeInTheDocument()
     expect(await screen.findByText('Comparativo entre sucursales')).toBeInTheDocument()
+
+    expect(screen.queryByText('Últimas ventas')).not.toBeInTheDocument()
+    expect(screen.queryByText('Personal en turno')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Equipos', { selector: '[data-slot="card-title"]' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Accesos disponibles')).not.toBeInTheDocument()
 
     expect(screen.getByRole('link', { name: /ver ventas/i })).toBeInTheDocument()
     expect(
@@ -121,11 +129,17 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText('Ventas de hoy')).toBeInTheDocument()
     expect(await screen.findByText('Personal en turno')).toBeInTheDocument()
+    expect(screen.getByText('Últimas ventas')).toBeInTheDocument()
+    expect(screen.getByText('Alertas de stock')).toBeInTheDocument()
+    expect(
+      screen.getByText('Equipos', { selector: '[data-slot="card-title"]' }),
+    ).toBeInTheDocument()
 
     expect(
       screen.queryByText('Comparativo entre sucursales'),
     ).not.toBeInTheDocument()
     expect(llamadas.reporte).toBe(0)
+    expect(screen.queryByText('Accesos disponibles')).not.toBeInTheDocument()
 
     // Con permiso de marcación y sucursal ve el atajo al terminal.
     expect(
@@ -147,6 +161,7 @@ describe('DashboardPage', () => {
     expect(
       screen.queryByText('Comparativo entre sucursales'),
     ).not.toBeInTheDocument()
+    expect(screen.queryByText('Accesos disponibles')).not.toBeInTheDocument()
 
     expect(llamadas.ventas).toBe(0)
     expect(llamadas.alertas).toBe(0)
@@ -157,6 +172,22 @@ describe('DashboardPage', () => {
     expect(
       screen.getByRole('link', { name: /marcar asistencia/i }),
     ).toHaveAttribute('href', '/attendance/terminal')
+  })
+
+  it('muestra los accesos disponibles cuando no hay bloques de resumen', async () => {
+    renderizar(SOLO_PRODUCTOS)
+
+    expect(await screen.findByText('Accesos disponibles')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Productos' })).toHaveAttribute(
+      'href',
+      '/products',
+    )
+    expect(screen.getByText('No hay información para tu perfil')).toBeInTheDocument()
+
+    expect(screen.queryByText('Ventas de hoy')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Comparativo entre sucursales'),
+    ).not.toBeInTheDocument()
   })
 
   it('aísla el error de un bloque sin romper los demás', async () => {
@@ -182,5 +213,70 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Ventas de hoy')).toBeInTheDocument()
     expect(screen.getByText('Últimas ventas')).toBeInTheDocument()
     expect(screen.getByText('Personal en turno')).toBeInTheDocument()
+  })
+
+  it('muestra la fecha de las entradas abiertas de días anteriores', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-15T15:00:00.000Z'))
+    try {
+      server.use(
+        http.get(`${BASE_API}/attendance/records`, () =>
+          HttpResponse.json({
+            items: [
+              {
+                id: 'asistencia-hoy',
+                empleadoId: 'empleado-hoy',
+                sucursalId: 'sucursal-1',
+                tipo: 'entrada',
+                fechaHora: '2026-10-15T13:12:00.000Z',
+                metodo: 'pin',
+                abierta: true,
+                corregido: false,
+                empleado: { id: 'empleado-hoy', nombre: 'Ana Hoy' },
+              },
+              {
+                id: 'asistencia-anterior',
+                empleadoId: 'empleado-anterior',
+                sucursalId: 'sucursal-1',
+                tipo: 'entrada',
+                fechaHora: '2026-10-11T13:12:00.000Z',
+                metodo: 'pin',
+                abierta: true,
+                corregido: false,
+                empleado: {
+                  id: 'empleado-anterior',
+                  nombre: 'Beto Anterior',
+                },
+              },
+            ],
+            total: 2,
+            page: 1,
+            limit: 20,
+          }),
+        ),
+      )
+
+      renderizar(GERENTE)
+
+      expect(await screen.findByText('Ana Hoy')).toBeInTheDocument()
+      // La entrada de hoy conserva solo la hora.
+      expect(
+        screen.getByText(
+          `Entrada ${formatearHora('2026-10-15T13:12:00.000Z')}`,
+        ),
+      ).toBeInTheDocument()
+      // La de un día anterior muestra la fecha y la marca de sin salida.
+      expect(
+        screen.getByText(
+          `Entrada ${formatearFechaHora('2026-10-11T13:12:00.000Z')}`,
+        ),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Sin salida')).toBeInTheDocument()
+      expect(
+        screen.getByText(/2 entradas abiertas · 1 de días anteriores/),
+      ).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

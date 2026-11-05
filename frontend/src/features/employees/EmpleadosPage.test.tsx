@@ -87,7 +87,8 @@ describe('Gestión de empleados', () => {
       'tr',
     ) as HTMLElement
 
-    await user.click(within(fila).getByRole('button', { name: 'Generar PIN' }))
+    await user.click(within(fila).getByRole('button', { name: 'Más acciones' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Generar PIN' }))
     const confirmacion = await screen.findByRole('alertdialog')
     await user.click(
       within(confirmacion).getByRole('button', { name: 'Generar PIN' }),
@@ -108,7 +109,8 @@ describe('Gestión de empleados', () => {
       'tr',
     ) as HTMLElement
 
-    await user.click(within(fila).getByRole('button', { name: 'Cesar' }))
+    await user.click(within(fila).getByRole('button', { name: 'Más acciones' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Cesar' }))
     const dialogo = await screen.findByRole('alertdialog')
     expect(within(dialogo).getByText(/bloquea su cuenta/)).toBeInTheDocument()
     await user.click(
@@ -138,7 +140,8 @@ describe('Gestión de empleados', () => {
       'tr',
     ) as HTMLElement
 
-    await user.click(within(fila).getByRole('button', { name: 'Editar' }))
+    await user.click(within(fila).getByRole('button', { name: 'Más acciones' }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Editar' }))
     const dialogo = await screen.findByRole('dialog')
     const cargo = within(dialogo).getByLabelText('Cargo')
     await user.clear(cargo)
@@ -194,6 +197,15 @@ describe('Gestión de empleados', () => {
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Editar' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Más acciones' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Generar PIN' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Cesar' }),
     ).not.toBeInTheDocument()
   })
 

@@ -74,10 +74,15 @@ export function InventarioPage() {
     return () => clearTimeout(temporizador)
   }, [texto])
 
-  const sucursalId = esAdmin
-    ? sucursalAdmin || null
-    : (usuario?.sucursalId ?? null)
   const sucursales = useSucursales(esAdmin)
+  const sucursalPredeterminada =
+    esAdmin && sucursalAdmin === ''
+      ? (sucursales.data?.[0]?.id ?? '')
+      : ''
+  const sucursalSeleccionada = sucursalAdmin || sucursalPredeterminada
+  const sucursalId = esAdmin
+    ? sucursalSeleccionada || null
+    : (usuario?.sucursalId ?? null)
 
   const filtros = useMemo(
     () => ({
@@ -242,7 +247,7 @@ export function InventarioPage() {
             <div className="space-y-2">
               <Label htmlFor="inventario-sucursal">Sucursal</Label>
               <Select
-                value={sucursalAdmin}
+                value={sucursalSeleccionada}
                 onValueChange={(valor) => {
                   setSucursalAdmin(valor)
                   setPage(1)

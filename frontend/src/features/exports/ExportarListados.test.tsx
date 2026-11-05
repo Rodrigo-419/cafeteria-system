@@ -63,7 +63,9 @@ describe('botón Exportar de los listados', () => {
     const primera = renderConProveedores(<SalesListPage />)
     await screen.findByText('Completada')
     expect(
-      screen.queryByRole('button', { name: 'Exportar Ventas en Excel' }),
+      screen.queryByRole('button', {
+        name: 'Exportar Ventas: elegir rango en Exportaciones',
+      }),
     ).not.toBeInTheDocument()
     primera.unmount()
 
@@ -73,7 +75,7 @@ describe('botón Exportar de los listados', () => {
     renderConProveedores(<SalesListPage />)
     expect(
       await screen.findByRole('button', {
-        name: 'Exportar Ventas en Excel',
+        name: 'Exportar Ventas: elegir rango en Exportaciones',
       }),
     ).toBeInTheDocument()
   })
@@ -86,7 +88,9 @@ describe('botón Exportar de los listados', () => {
       await screen.findByRole('heading', { name: 'Ventas' }),
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Exportar Ventas en Excel' }),
+      screen.queryByRole('button', {
+        name: 'Exportar Ventas: elegir rango en Exportaciones',
+      }),
     ).not.toBeInTheDocument()
   })
 
@@ -106,6 +110,7 @@ describe('botón Exportar de los listados', () => {
     renderConProveedores(<SalesListPage />)
     await screen.findByText('Completada')
 
+    await user.click(screen.getByRole('button', { name: 'Filtros' }))
     fireEvent.change(screen.getByLabelText('Fecha'), {
       target: { value: HOY },
     })
@@ -141,9 +146,53 @@ describe('botón Exportar de los listados', () => {
     await screen.findByText('Completada')
 
     await user.click(
-      screen.getByRole('button', { name: 'Exportar Ventas en Excel' }),
+      screen.getByRole('button', {
+        name: 'Exportar Ventas: elegir rango en Exportaciones',
+      }),
     )
 
+    expect(
+      await screen.findByText('/exports?conjunto=ventas'),
+    ).toBeInTheDocument()
+  })
+
+  it('avisa cuando Exportar abre Exportaciones y mantiene el nombre con rango válido', async () => {
+    const user = userEvent.setup()
+    prepararDescarga()
+    iniciarSesionDePrueba(
+      usuarioDePrueba(['ventas.ver', 'usuarios.crear_editar']),
+    )
+    renderConProveedores(
+      <>
+        <SalesListPage />
+        <SondaRuta />
+      </>,
+    )
+    await screen.findByText('Completada')
+
+    await user.click(screen.getByRole('button', { name: 'Filtros' }))
+    fireEvent.change(screen.getByLabelText('Fecha'), {
+      target: { value: HOY },
+    })
+    const conRango = screen.getByRole('button', {
+      name: 'Exportar Ventas en Excel',
+    })
+    expect(conRango.textContent).toBe('Exportar')
+    expect(conRango).not.toHaveAttribute('title')
+
+    fireEvent.change(screen.getByLabelText('Fecha'), {
+      target: { value: '' },
+    })
+    const sinRango = screen.getByRole('button', {
+      name: 'Exportar Ventas: elegir rango en Exportaciones',
+    })
+    expect(sinRango.textContent).toBe('Exportar…')
+    expect(sinRango).toHaveAttribute(
+      'title',
+      'Exportar Ventas: elegir rango en Exportaciones',
+    )
+
+    await user.click(sinRango)
     expect(
       await screen.findByText('/exports?conjunto=ventas'),
     ).toBeInTheDocument()
@@ -244,7 +293,9 @@ describe('botón Exportar de los listados', () => {
     await screen.findByText('Dora Nueva')
 
     await user.click(
-      screen.getByRole('button', { name: 'Exportar Asistencia en Excel' }),
+      screen.getByRole('button', {
+        name: 'Exportar Asistencia: elegir rango en Exportaciones',
+      }),
     )
 
     expect(

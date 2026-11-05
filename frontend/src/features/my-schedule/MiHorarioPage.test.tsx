@@ -93,18 +93,32 @@ describe('MiHorarioPage', () => {
     await screen.findByRole('heading', { name: 'Mi horario' })
 
     // La semana inicial es la actual, así que las expectativas se calculan
-    // desde el día de negocio y no desde fechas fijas del calendario.
+    // desde el día de negocio y no desde fechas fijas del calendario. Se
+    // comparan el texto explícito y el título calculado con las mismas
+    // funciones que usa la página para no depender del día real.
     const lunesActual = lunesDeSemana(diaDeNegocioLima(new Date()))
     const lunesAnterior = sumarDias(lunesActual, -7)
+    const domingoAnterior = sumarDias(lunesAnterior, 6)
+    const domingoActual = sumarDias(lunesActual, 6)
 
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: /semana anterior/i }))
     await waitFor(() => {
+      expect(
+        screen.getByText(
+          `Semana del ${formatearDiaLocal(lunesAnterior)} al ${formatearDiaLocal(domingoAnterior)}`,
+        ),
+      ).toBeInTheDocument()
       expect(screen.getByText(tituloDeSemana(lunesAnterior))).toBeInTheDocument()
     })
 
     await user.click(screen.getByRole('button', { name: /semana siguiente/i }))
     await waitFor(() => {
+      expect(
+        screen.getByText(
+          `Semana del ${formatearDiaLocal(lunesActual)} al ${formatearDiaLocal(domingoActual)}`,
+        ),
+      ).toBeInTheDocument()
       expect(screen.getByText(tituloDeSemana(lunesActual))).toBeInTheDocument()
     })
   })
@@ -148,6 +162,40 @@ describe('MiHorarioPage', () => {
     expect(
       await screen.findByText(/no se pudo cargar tu horario/i),
     ).toBeInTheDocument()
+  })
+
+  it('explica el 404 cuando el usuario no tiene ficha de empleado', async () => {
+    iniciarSesionDePrueba(EMPLEADO)
+    server.use(
+      http.get(`${BASE_API}/my/schedule`, () =>
+        HttpResponse.json(
+          {
+            statusCode: 404,
+            message:
+              'No estás vinculado a un empleado. Contacta al administrador.',
+            error: 'Not Found',
+          },
+          { status: 404 },
+        ),
+      ),
+    )
+
+    renderConProveedores(<MiHorarioPage />, { ruta: '/my/schedule' })
+
+    expect(
+      await screen.findByText('Tu usuario no está vinculado a un empleado'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Pide al administrador que vincule tu usuario a una ficha de empleado para ver tu horario.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(/no se pudo cargar tu horario/i),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /reintentar/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('ofrece imprimir y muestra la cabecera', async () => {

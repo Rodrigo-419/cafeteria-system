@@ -193,3 +193,15 @@ requieren una decisión antes de implementarse (no son solo trabajo técnico).
   otras quedan como **POR CONFIRMAR** por no tener requisito escrito
   ([docs/README](README.md) y [Decisiones de diseño](architecture/decisiones-de-diseno.md) §1).
 - **Alcance:** documentación (sin cambios de código).
+
+### 8. Multiidioma (español, inglés y quizá portugués)
+
+- **Qué es:** soportar español, inglés y quizá portugués en la interfaz, con selector de
+  idioma y formatos localizados.
+- **Por qué importa:** hoy todas las cadenas de la interfaz están escritas en español.
+- **Propuesta:** catálogos por idioma con una librería de i18n y selector de idioma,
+  formatos de fecha y número por idioma, mensajes del backend por códigos traducibles,
+  encabezados de las exportaciones a Excel y CSV, y datos de demostración.
+- **Recomendación:** empezar por español e inglés solo en la interfaz, módulo a módulo,
+  protegiendo las pruebas existentes con el español como idioma por defecto.
+- **Alcance:** ambos (catálogos y selector en frontend; códigos de mensajes en backend).

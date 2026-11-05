@@ -38,7 +38,11 @@ import { StatCard } from '@/components/shared/StatCard'
 import { StatusPill } from '@/components/shared/StatusPill'
 import { ApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/useAuth'
-import { formatearHora } from '@/lib/format/dates'
+import {
+  diaDeNegocioLima,
+  formatearFechaHora,
+  formatearHora,
+} from '@/lib/format/dates'
 import { filtrarMenu } from '@/lib/navigation/menu'
 import { tienePermiso } from '@/lib/permissions/permissions'
 import { SaleStatusBadge } from '@/features/sales/SaleStatusBadge'
@@ -129,9 +133,9 @@ export function ResumenVentasHoy() {
 
   if (isPending) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {[0, 1, 2].map((indice) => (
-          <Skeleton key={indice} className="h-32 rounded-xl" />
+          <Skeleton key={indice} className="h-24 rounded-xl sm:h-32" />
         ))}
       </div>
     )
@@ -159,25 +163,28 @@ export function ResumenVentasHoy() {
   const anuladas = ventas.length - completadas.length
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-3 gap-2 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
       <StatCard
         title="Ventas de hoy"
         icon={BanknoteIcon}
         value={<MoneyText amountCents={totalCentimos} />}
         hint={`${completadas.length} ${completadas.length === 1 ? 'venta completada' : 'ventas completadas'}`}
+        compacto
       />
       <StatCard
         title="Ticket promedio"
         icon={ReceiptIcon}
         value={<MoneyText amountCents={ticketPromedio} />}
         hint="Sobre ventas completadas"
+        compacto
       />
       <StatCard
         title="Anuladas hoy"
         icon={BanIcon}
         value={anuladas}
-        tone={anuladas > 0 ? 'warning' : 'default'}
+        tone="default"
         hint={anuladas === 0 ? 'Ninguna venta anulada' : 'Ventas anuladas del día'}
+        compacto
       />
     </div>
   )
@@ -294,13 +301,23 @@ export function AlertasStock() {
 /** Entradas de asistencia que siguen abiertas (sin salida cerrada). */
 export function AsistenciaAbierta() {
   const { data, isPending, error, refetch } = useAsistenciaAbierta()
+  const hoy = diaDeNegocioLima(new Date())
+  const deDiasAnteriores = data
+    ? data.items.filter(
+        (registro) => diaDeNegocioLima(registro.fechaHora) < hoy,
+      ).length
+    : 0
 
   return (
     <TarjetaBloque
       titulo="Personal en turno"
       descripcion={
         data
-          ? `${data.total} ${data.total === 1 ? 'entrada abierta' : 'entradas abiertas'}`
+          ? `${data.total} ${data.total === 1 ? 'entrada abierta' : 'entradas abiertas'}${
+              deDiasAnteriores > 0
+                ? ` · ${deDiasAnteriores} de días anteriores`
+                : ''
+            }`
           : 'Entradas sin salida cerrada'
       }
     >
@@ -317,19 +334,30 @@ export function AsistenciaAbierta() {
         </p>
       ) : (
         <ul className="divide-y">
-          {data.items.slice(0, 5).map((registro) => (
-            <li
-              key={registro.id}
-              className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-            >
-              <p className="truncate text-sm font-medium">
-                {registro.empleado.nombre}
-              </p>
-              <p className="shrink-0 text-xs text-muted-foreground">
-                Entrada {formatearHora(registro.fechaHora)}
-              </p>
-            </li>
-          ))}
+          {data.items.slice(0, 5).map((registro) => {
+            const esDeHoy = diaDeNegocioLima(registro.fechaHora) === hoy
+            return (
+              <li
+                key={registro.id}
+                className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+              >
+                <p className="truncate text-sm font-medium">
+                  {registro.empleado.nombre}
+                </p>
+                <div className="flex shrink-0 items-center gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    Entrada{' '}
+                    {esDeHoy
+                      ? formatearHora(registro.fechaHora)
+                      : formatearFechaHora(registro.fechaHora)}
+                  </p>
+                  {!esDeHoy && (
+                    <StatusPill tono="warning">Sin salida</StatusPill>
+                  )}
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
     </TarjetaBloque>

@@ -91,7 +91,10 @@ describe('aterrizaje tras iniciar sesión', () => {
       await screen.findByText(/Hola, Empleado Tres/),
     ).toBeInTheDocument()
     expect(screen.queryByText('Acceso denegado')).not.toBeInTheDocument()
-    expect(screen.getByText('Accesos disponibles')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Panel de control' }),
+    ).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/')
   })
 
   it('un Empleado sin módulos ve el aviso de que no tiene acceso', async () => {

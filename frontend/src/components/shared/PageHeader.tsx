@@ -25,12 +25,14 @@ export function PageHeader({
         <h1
           ref={titleRef}
           tabIndex={titleTabIndex}
-          className="text-2xl font-semibold tracking-tight outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="text-titulo-pagina tracking-tight outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           {title}
         </h1>
         {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-subtitulo-pagina text-muted-foreground">
+            {description}
+          </p>
         )}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}

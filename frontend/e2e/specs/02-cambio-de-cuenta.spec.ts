@@ -38,7 +38,9 @@ test.describe('cambio de cuenta', () => {
         )
         // Sin menús técnicos que no le corresponden.
         await expect(
-          page.getByRole('navigation').getByRole('link', { name: 'Auditoría' }),
+          page
+            .getByRole('navigation', { name: 'Navegación principal' })
+            .getByRole('link', { name: 'Auditoría' }),
         ).toHaveCount(0)
         await cerrarSesion(page)
       }

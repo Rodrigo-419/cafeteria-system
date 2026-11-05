@@ -59,6 +59,15 @@ export function BotonExportar({
     return null
   }
 
+  const abrePantalla =
+    definicion.exigeRango &&
+    validarRangoExportacion(desde, hasta, diaDeNegocioLima(new Date())) !==
+      null
+
+  const etiquetaExportar = abrePantalla
+    ? `Exportar ${definicion.etiqueta}: elegir rango en Exportaciones`
+    : `Exportar ${definicion.etiqueta} en Excel`
+
   const irAPantalla = () => {
     const parametros = new URLSearchParams({ conjunto: definicion.clave })
     if (desde) parametros.set('desde', desde)
@@ -127,10 +136,11 @@ export function BotonExportar({
             size="sm"
             onClick={alExportar}
             ref={botonRef}
-            aria-label={`Exportar ${definicion.etiqueta} en Excel`}
+            aria-label={etiquetaExportar}
+            title={abrePantalla ? etiquetaExportar : undefined}
           >
             <DownloadIcon aria-hidden="true" />
-            Exportar
+            {abrePantalla ? 'Exportar…' : 'Exportar'}
           </Button>
         )}
       </div>
